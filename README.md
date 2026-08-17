@@ -2,6 +2,8 @@
 
 This project demonstrates how to expose a Quarkus-based Java microservice as a **stateless Model Context Protocol (MCP) server** that the [Goose AI Agent](https://block.github.io/goose/) can discover and invoke over Streamable HTTP.
 
+![MCP Enterprise Tool Services Dashboard](assets/images/mcp_ui.png)
+
 ## Prerequisites
 
 - **Java 25+** -- verify with `java -version`
@@ -92,13 +94,19 @@ governed-mcp-tools/
 ├── pom.xml
 ├── goose-extension-config.yaml
 ├── README.md
+├── assets/images/mcp_ui.png
 └── src/main/
     ├── java/com/example/mcp/
     │   ├── model/
-    │   │   └── CustomerStatusResponse.java
+    │   │   ├── AuditEvent.java
+    │   │   ├── CustomerStatusResponse.java
+    │   │   ├── OrderStatusResponse.java
+    │   │   └── SLAComplianceResponse.java
     │   └── tools/
     │       └── CustomerServiceTools.java
     └── resources/
+        ├── META-INF/resources/
+        │   └── index.html
         └── application.properties
 ```
 
@@ -116,6 +124,9 @@ governed-mcp-tools/
 |------|-------------|------------|
 | `getCustomerStatus` | Returns account status, tier, and region for a customer | `customerId` (format: `CUST-XXXX`) |
 | `getZoneHealthLogs` | Returns health-check metrics for an availability zone | `zoneId` (e.g., `US-EAST-1`) |
+| `getOrderStatus` | Tracks status, items, amount, and delivery for an enterprise order | `orderId` (format: `ORD-XXXXXXXX`) |
+| `getSLACompliance` | Returns SLA compliance %, uptime, p99 latency, and violations | `serviceId` (e.g., `api-gateway`) |
+| `getAuditTrail` | Returns security audit events for a customer | `customerId` (format: `CUST-XXXX`) |
 
 ## Configuration
 
