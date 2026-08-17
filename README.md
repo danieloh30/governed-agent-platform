@@ -20,13 +20,14 @@ The MCP Streamable HTTP endpoint becomes available at `http://localhost:8080/mcp
 
 ### 2. Register with Goose
 
-Add the MCP server as a Goose extension:
+Add the MCP server as a Goose extension by copying `goose-extension-config.yaml` into your Goose config:
 
 ```bash
-goose extension add customer-tools --type http --uri http://localhost:8080/mcp
+mkdir -p ~/.config/goose
+cp goose-extension-config.yaml ~/.config/goose/config.yaml
 ```
 
-Or copy the contents of `goose-extension-config.yaml` into your `~/.config/goose/config.yaml`.
+Or add the `customer-tools` block to your existing `~/.config/goose/config.yaml`.
 
 ### 3. Test with Goose
 
@@ -46,13 +47,14 @@ Get zone health logs for US-EAST-1
 
 ## Verifying with curl
 
-You can test the MCP endpoint directly without Goose.
+You can test the MCP endpoint directly without Goose. The Streamable HTTP transport requires the `Accept: application/json, text/event-stream` header.
 
 ### Initialize the MCP Session
 
 ```bash
 curl -s http://localhost:8080/mcp \
   -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
   -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"curl","version":"1.0"}}}' | jq .
 ```
 
@@ -61,6 +63,7 @@ curl -s http://localhost:8080/mcp \
 ```bash
 curl -s http://localhost:8080/mcp \
   -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
   -d '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' | jq .
 ```
 
@@ -69,6 +72,7 @@ curl -s http://localhost:8080/mcp \
 ```bash
 curl -s http://localhost:8080/mcp \
   -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
   -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"getCustomerStatus","arguments":{"customerId":"CUST-4091"}}}' | jq .
 ```
 
@@ -77,6 +81,7 @@ curl -s http://localhost:8080/mcp \
 ```bash
 curl -s http://localhost:8080/mcp \
   -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
   -d '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"getZoneHealthLogs","arguments":{"zoneId":"US-EAST-1"}}}' | jq .
 ```
 
