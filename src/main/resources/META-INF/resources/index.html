@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MCP Enterprise Tool Services</title>
+<style>
+/* === Palette: dataviz-validated reference instance === */
+:root {
+  color-scheme: light;
+  --surface-page:     #f9f9f7;
+  --surface-card:     #fcfcfb;
+  --text-primary:     #0b0b0b;
+  --text-secondary:   #52514e;
+  --text-muted:       #898781;
+  --gridline:         #e1e0d9;
+  --baseline:         #c3c2b7;
+  --border:           rgba(11,11,11,0.10);
+
+  --cat-1: #2a78d6;
+  --cat-2: #eb6834;
+  --cat-3: #1baf7a;
+  --cat-4: #eda100;
+  --cat-5: #e87ba4;
+
+  --status-good:     #0ca30c;
+  --status-warn:     #fab219;
+  --status-serious:  #ec835a;
+  --status-critical: #d03b3b;
+  --status-good-text: #006300;
+
+  --seq-100: #cde2fb;
+  --seq-300: #6da7ec;
+  --seq-500: #256abf;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --surface-page:   #0d0d0d;
+    --surface-card:   #1a1a19;
+    --text-primary:   #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted:     #898781;
+    --gridline:       #2c2c2a;
+    --baseline:       #383835;
+    --border:         rgba(255,255,255,0.10);
+    --cat-1: #3987e5; --cat-2: #d95926; --cat-3: #199e70;
+    --cat-4: #c98500; --cat-5: #d55181;
+    --status-good: #0ca30c; --status-warn: #fab219;
+    --status-serious: #ec835a; --status-critical: #d03b3b;
+    --status-good-text: #0ca30c;
+    --seq-100: #184f95; --seq-300: #3987e5; --seq-500: #86b6ef;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --surface-page:   #0d0d0d;
+  --surface-card:   #1a1a19;
+  --text-primary:   #ffffff;
+  --text-secondary: #c3c2b7;
+  --text-muted:     #898781;
+  --gridline:       #2c2c2a;
+  --baseline:       #383835;
+  --border:         rgba(255,255,255,0.10);
+  --cat-1: #3987e5; --cat-2: #d95926; --cat-3: #199e70;
+  --cat-4: #c98500; --cat-5: #d55181;
+  --status-good: #0ca30c; --status-warn: #fab219;
+  --status-serious: #ec835a; --status-critical: #d03b3b;
+  --status-good-text: #0ca30c;
+  --seq-100: #184f95; --seq-300: #3987e5; --seq-500: #86b6ef;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: var(--surface-page);
+  color: var(--text-primary);
+  line-height: 1.5;
+  min-height: 100vh;
+}
+.shell { max-width: 1200px; margin: 0 auto; padding: 32px 24px; }
+header { display: flex; align-items: baseline; gap: 16px; margin-bottom: 32px; flex-wrap: wrap; }
+header h1 { font-size: 1.25rem; font-weight: 600; }
+header .badge {
+  font-size: 0.75rem; font-weight: 500; padding: 2px 8px;
+  border-radius: 10px; background: var(--cat-1); color: #fff;
+}
+.theme-toggle {
+  margin-left: auto; background: none; border: 1px solid var(--baseline);
+  border-radius: 6px; padding: 4px 10px; color: var(--text-secondary);
+  cursor: pointer; font-size: 0.8rem;
+}
+
+/* Stat tiles */
+.stats-row {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px; margin-bottom: 32px;
+}
+.stat-tile {
+  background: var(--surface-card); border: 1px solid var(--border);
+  border-radius: 8px; padding: 20px;
+}
+.stat-tile .label { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 4px; }
+.stat-tile .value { font-size: 1.75rem; font-weight: 600; line-height: 1.2; }
+.stat-tile .delta { font-size: 0.8rem; margin-top: 4px; }
+.delta-up   { color: var(--status-good-text); }
+.delta-down { color: var(--status-critical); }
+
+/* Cards */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+@media (max-width: 800px) { .grid-2 { grid-template-columns: 1fr; } }
+.card {
+  background: var(--surface-card); border: 1px solid var(--border);
+  border-radius: 8px; padding: 24px;
+}
+.card-full { grid-column: 1 / -1; }
+.card h2 { font-size: 0.95rem; font-weight: 600; margin-bottom: 16px; }
+
+/* Horizontal bar chart */
+.bar-chart { display: flex; flex-direction: column; gap: 2px; }
+.bar-row { display: grid; grid-template-columns: 110px 1fr 50px; align-items: center; gap: 8px; height: 28px; }
+.bar-row .bar-label { font-size: 0.8rem; color: var(--text-secondary); text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar-row .bar-track { height: 20px; background: var(--gridline); border-radius: 0 4px 4px 0; overflow: hidden; }
+.bar-row .bar-fill { height: 100%; border-radius: 0 4px 4px 0; transition: width 0.5s ease; }
+.bar-row .bar-value { font-size: 0.8rem; font-weight: 500; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+
+/* SLA meters */
+.meter-group { display: flex; flex-direction: column; gap: 14px; }
+.meter-item .meter-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
+.meter-item .meter-name { font-size: 0.8rem; color: var(--text-secondary); }
+.meter-item .meter-val { font-size: 0.8rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.meter-item .meter-track { height: 8px; background: var(--gridline); border-radius: 4px; overflow: hidden; }
+.meter-item .meter-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
+
+/* Tool explorer */
+.tool-list { display: flex; flex-direction: column; gap: 2px; }
+.tool-item {
+  display: grid; grid-template-columns: 1fr auto; align-items: center;
+  padding: 10px 12px; border-radius: 6px; cursor: pointer; transition: background 0.15s;
+}
+.tool-item:hover { background: var(--gridline); }
+.tool-item.active { background: var(--seq-100); }
+.tool-item .tool-name { font-size: 0.85rem; font-weight: 500; font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace; }
+.tool-item .tool-desc { font-size: 0.75rem; color: var(--text-muted); grid-column: 1; }
+.tool-item .tool-arrow { font-size: 0.75rem; color: var(--text-muted); }
+
+/* Tool tester */
+.tester-title {
+  font-size: 0.85rem; font-weight: 600; margin-bottom: 12px; color: var(--cat-1);
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+}
+.param-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.param-row label { font-size: 0.8rem; color: var(--text-secondary); min-width: 80px; }
+.param-row input {
+  flex: 1; padding: 6px 10px; border: 1px solid var(--baseline); border-radius: 6px;
+  font-size: 0.85rem; background: var(--surface-page); color: var(--text-primary);
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+}
+.btn {
+  display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px;
+  border: none; border-radius: 6px; font-size: 0.85rem; font-weight: 500;
+  cursor: pointer; transition: opacity 0.15s;
+}
+.btn:hover { opacity: 0.85; }
+.btn-primary { background: var(--cat-1); color: #fff; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Rich result rendering */
+.result-area { margin-top: 16px; display: none; }
+.result-area.visible { display: block; }
+
+.result-header {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--gridline);
+}
+.result-header .result-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* Detail card for single-record results */
+.detail-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+}
+.detail-field {
+  padding: 10px 0; border-bottom: 1px solid var(--gridline);
+}
+.detail-field:nth-last-child(-n+2) { border-bottom: none; }
+.detail-field .field-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 2px; }
+.detail-field .field-value { font-size: 0.9rem; font-weight: 500; }
+.detail-field .field-value.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace; font-size: 0.85rem; }
+
+/* Status badges */
+.status-pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 0.8rem; font-weight: 600; padding: 3px 10px;
+  border-radius: 12px;
+}
+.status-active    { background: rgba(12,163,12,0.12); color: var(--status-good-text); }
+.status-shipped   { background: rgba(42,120,214,0.12); color: var(--cat-1); }
+.status-processing{ background: rgba(237,161,0,0.12); color: var(--cat-4); }
+.status-delivered { background: rgba(12,163,12,0.12); color: var(--status-good-text); }
+.status-suspended { background: rgba(208,59,59,0.12); color: var(--status-critical); }
+.status-notfound  { background: var(--gridline); color: var(--text-muted); }
+
+/* Audit table */
+.audit-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.8rem; }
+.audit-table th { text-align: left; color: var(--text-muted); font-weight: 500; padding: 8px 10px; border-bottom: 1px solid var(--baseline); }
+.audit-table td { padding: 8px 10px; border-bottom: 1px solid var(--gridline); color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.audit-table tr:last-child td { border-bottom: none; }
+.outcome-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 0.75rem; font-weight: 500; padding: 1px 8px; border-radius: 10px;
+}
+.outcome-success { background: rgba(12,163,12,0.12); color: var(--status-good-text); }
+.outcome-denied  { background: rgba(208,59,59,0.12); color: var(--status-critical); }
+
+/* Health log inline rendering */
+.health-log-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 0; border-bottom: 1px solid var(--gridline);
+  font-size: 0.8rem;
+}
+.health-log-item:last-child { border-bottom: none; }
+.health-log-item .log-metric { font-weight: 500; min-width: 120px; color: var(--text-primary); }
+.health-log-item .log-val { font-variant-numeric: tabular-nums; color: var(--text-secondary); }
+.health-log-item .log-status { font-size: 0.7rem; padding: 1px 6px; border-radius: 8px; }
+.log-healthy { background: rgba(12,163,12,0.10); color: var(--status-good-text); }
+.log-normal  { background: rgba(42,120,214,0.10); color: var(--cat-1); }
+.log-within  { background: rgba(27,175,122,0.10); color: var(--cat-3); }
+
+/* SLA inline meter */
+.sla-result-meter { margin-top: 8px; }
+.sla-result-meter .sla-big {
+  font-size: 2rem; font-weight: 600; line-height: 1.2;
+}
+.sla-result-track {
+  height: 10px; background: var(--gridline); border-radius: 5px;
+  overflow: hidden; margin: 8px 0 12px;
+}
+.sla-result-fill { height: 100%; border-radius: 5px; transition: width 0.5s ease; }
+.sla-detail-row {
+  display: flex; gap: 24px; flex-wrap: wrap;
+}
+.sla-detail-item { }
+.sla-detail-item .sla-d-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.sla-detail-item .sla-d-value { font-size: 0.9rem; font-weight: 500; font-variant-numeric: tabular-nums; }
+
+/* Error box */
+.error-box {
+  padding: 12px; border-radius: 6px; font-size: 0.85rem;
+  background: rgba(208,59,59,0.08); color: var(--status-critical);
+  border: 1px solid rgba(208,59,59,0.2);
+}
+
+/* Spinner */
+.spinner {
+  display: inline-block; width: 14px; height: 14px;
+  border: 2px solid var(--gridline); border-top-color: var(--cat-1);
+  border-radius: 50%; animation: spin 0.6s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div class="shell">
+  <header>
+    <h1>MCP Enterprise Tool Services</h1>
+    <span class="badge">Streamable HTTP</span>
+    <button class="theme-toggle" onclick="toggleTheme()">Toggle theme</button>
+  </header>
+
+  <div class="stats-row">
+    <div class="stat-tile">
+      <div class="label">Available tools</div>
+      <div class="value" id="stat-tools">--</div>
+    </div>
+    <div class="stat-tile">
+      <div class="label">Server version</div>
+      <div class="value" id="stat-version">--</div>
+    </div>
+    <div class="stat-tile">
+      <div class="label">Protocol</div>
+      <div class="value" id="stat-protocol" style="font-size:1.1rem">--</div>
+    </div>
+    <div class="stat-tile">
+      <div class="label">SLA compliance (avg)</div>
+      <div class="value" id="stat-sla">--</div>
+      <div class="delta delta-up" id="stat-sla-delta"></div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h2>Zone health: US-EAST-1</h2>
+      <div class="bar-chart" id="health-bars"></div>
+    </div>
+    <div class="card">
+      <h2>SLA compliance by service</h2>
+      <div class="meter-group" id="sla-meters"></div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h2>Tool explorer</h2>
+      <div class="tool-list" id="tool-list"></div>
+    </div>
+    <div class="card">
+      <h2>Interactive tester</h2>
+      <div id="tester-area">
+        <p style="font-size:0.85rem;color:var(--text-muted)">Select a tool to get started.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-2" style="margin-top:0">
+    <div class="card card-full">
+      <h2>Audit trail: CUST-4091</h2>
+      <table class="audit-table">
+        <thead><tr><th>Timestamp</th><th>Actor</th><th>Action</th><th>Resource</th><th>Outcome</th></tr></thead>
+        <tbody id="audit-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+const MCP = '/mcp';
+const HEADERS = { 'Content-Type': 'application/json', 'Accept': 'application/json, text/event-stream' };
+let rpcId = 0;
+
+async function mcpCall(method, params = {}) {
+  const res = await fetch(MCP, {
+    method: 'POST', headers: HEADERS,
+    body: JSON.stringify({ jsonrpc: '2.0', id: ++rpcId, method, params })
+  });
+  return res.json();
+}
+
+function toggleTheme() {
+  const cur = document.documentElement.getAttribute('data-theme');
+  document.documentElement.setAttribute('data-theme', cur === 'dark' ? 'light' : 'dark');
+}
+
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s || '';
+  return d.innerHTML;
+}
+
+function parseContent(res) {
+  const content = res.result?.content;
+  if (!content || !content.length) return null;
+  if (content.length === 1) {
+    try { return JSON.parse(content[0].text); } catch { return content[0].text; }
+  }
+  return content.map(c => {
+    try { return JSON.parse(c.text); } catch { return c.text; }
+  });
+}
+
+// ========== INIT ==========
+async function init() {
+  const initRes = await mcpCall('initialize', {
+    protocolVersion: '2025-03-26', capabilities: {},
+    clientInfo: { name: 'dashboard', version: '1.0' }
+  });
+  const info = initRes.result || {};
+  document.getElementById('stat-version').textContent = info.serverInfo?.version || '--';
+  document.getElementById('stat-protocol').textContent = info.protocolVersion || '--';
+
+  const toolsRes = await mcpCall('tools/list');
+  const tools = toolsRes.result?.tools || [];
+  document.getElementById('stat-tools').textContent = tools.length;
+  renderToolList(tools);
+  loadHealth();
+  loadSLA();
+  loadAudit();
+}
+
+// ========== DASHBOARD PANELS ==========
+async function loadHealth() {
+  const res = await mcpCall('tools/call', { name: 'getZoneHealthLogs', arguments: { zoneId: 'US-EAST-1' } });
+  const logs = (res.result?.content || []).map(c => c.text);
+  const metrics = [];
+  for (const line of logs) {
+    let m;
+    if ((m = line.match(/CPU utilization:\s*([\d.]+)%/)))
+      metrics.push({ label: 'CPU', value: +m[1], color: 'var(--cat-1)' });
+    else if ((m = line.match(/Memory pressure:\s*([\d.]+)%/)))
+      metrics.push({ label: 'Memory', value: +m[1], color: 'var(--cat-2)' });
+    else if ((m = line.match(/Active connections:\s*([\d,]+)\s*\(capacity:\s*([\d,]+)\)/)))
+      metrics.push({ label: 'Connections', value: Math.round(+m[1].replace(/,/g,'') / +m[2].replace(/,/g,'') * 100), color: 'var(--cat-3)' });
+  }
+  const c = document.getElementById('health-bars');
+  c.innerHTML = metrics.map(m => `
+    <div class="bar-row">
+      <span class="bar-label">${esc(m.label)}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${m.value}%;background:${m.color}"></div></div>
+      <span class="bar-value">${m.value}%</span>
+    </div>`).join('');
+}
+
+async function loadSLA() {
+  const services = ['api-gateway','auth-service','data-pipeline','notification-hub'];
+  const c = document.getElementById('sla-meters');
+  c.innerHTML = ''; let total = 0;
+  for (const svc of services) {
+    const res = await mcpCall('tools/call', { name: 'getSLACompliance', arguments: { serviceId: svc } });
+    const d = parseContent(res);
+    if (!d) continue;
+    total += d.compliancePct || 0;
+    let fc = 'var(--status-good)';
+    if (d.compliancePct < 99.0) fc = 'var(--status-serious)';
+    else if (d.compliancePct < 99.9) fc = 'var(--status-warn)';
+    c.innerHTML += `<div class="meter-item">
+      <div class="meter-header"><span class="meter-name">${esc(d.serviceId)}</span><span class="meter-val">${d.compliancePct}%</span></div>
+      <div class="meter-track"><div class="meter-fill" style="width:${d.compliancePct}%;background:${fc}"></div></div>
+    </div>`;
+  }
+  const avg = (total / services.length).toFixed(2);
+  document.getElementById('stat-sla').textContent = avg + '%';
+  const delta = document.getElementById('stat-sla-delta');
+  delta.textContent = avg >= 99.5 ? 'Above target' : 'Below 99.5% target';
+  delta.className = 'delta ' + (avg >= 99.5 ? 'delta-up' : 'delta-down');
+}
+
+async function loadAudit() {
+  const res = await mcpCall('tools/call', { name: 'getAuditTrail', arguments: { customerId: 'CUST-4091' } });
+  const events = parseContent(res);
+  if (!Array.isArray(events)) return;
+  document.getElementById('audit-body').innerHTML = events.map(e => {
+    const cls = e.outcome === 'SUCCESS' ? 'outcome-success' : 'outcome-denied';
+    const icon = e.outcome === 'SUCCESS' ? '&#10003;' : '&#10007;';
+    return `<tr>
+      <td>${esc(formatTs(e.timestamp))}</td><td>${esc(e.actor)}</td>
+      <td>${esc(e.action)}</td><td>${esc(e.resource)}</td>
+      <td><span class="outcome-badge ${cls}">${icon} ${esc(e.outcome)}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function formatTs(ts) {
+  if (!ts || ts === 'N/A') return ts;
+  try { const d = new Date(ts); return d.toLocaleString(); } catch { return ts; }
+}
+
+// ========== TOOL EXPLORER ==========
+function renderToolList(tools) {
+  const c = document.getElementById('tool-list');
+  c.innerHTML = '';
+  for (const t of tools) {
+    const el = document.createElement('div');
+    el.className = 'tool-item';
+    el.innerHTML = `<span class="tool-name">${esc(t.name)}</span><span class="tool-arrow">&#9656;</span><span class="tool-desc">${esc(t.description)}</span>`;
+    el.addEventListener('click', () => {
+      document.querySelectorAll('.tool-item').forEach(i => i.classList.remove('active'));
+      el.classList.add('active');
+      renderTester(t);
+    });
+    c.appendChild(el);
+  }
+}
+
+function renderTester(tool) {
+  const area = document.getElementById('tester-area');
+  const params = tool.inputSchema?.properties || {};
+  const required = tool.inputSchema?.required || [];
+  const defaults = {
+    customerId: 'CUST-4091', zoneId: 'US-EAST-1',
+    orderId: 'ORD-20240815', serviceId: 'api-gateway'
+  };
+
+  let html = `<div class="tester-title">${esc(tool.name)}</div>`;
+  for (const [name, schema] of Object.entries(params)) {
+    const req = required.includes(name) ? ' *' : '';
+    html += `<div class="param-row">
+      <label>${esc(name)}${req}</label>
+      <input type="text" id="param-${esc(name)}" placeholder="${esc(schema.description || '')}" value="${esc(defaults[name] || '')}">
+    </div>`;
+  }
+  html += `<button class="btn btn-primary" id="run-btn">Run tool</button>
+    <div class="result-area" id="result-area"></div>`;
+  area.innerHTML = html;
+  document.getElementById('run-btn').addEventListener('click', () => runTool(tool.name));
+}
+
+async function runTool(name) {
+  const btn = document.getElementById('run-btn');
+  const box = document.getElementById('result-area');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Running...';
+  box.classList.remove('visible');
+
+  const args = {};
+  document.querySelectorAll('#tester-area input').forEach(inp => {
+    const key = inp.id.replace('param-', '');
+    if (inp.value) args[key] = inp.value;
+  });
+
+  try {
+    const res = await mcpCall('tools/call', { name, arguments: args });
+    if (res.error) {
+      box.innerHTML = `<div class="error-box">${esc(res.error.message || JSON.stringify(res.error))}</div>`;
+    } else {
+      const data = parseContent(res);
+      box.innerHTML = renderResult(name, data);
+    }
+  } catch (err) {
+    box.innerHTML = `<div class="error-box">${esc(err.message)}</div>`;
+  }
+  box.classList.add('visible');
+  btn.disabled = false;
+  btn.textContent = 'Run tool';
+}
+
+// ========== RICH RESULT RENDERERS ==========
+function renderResult(toolName, data) {
+  if (data == null) return '<div class="error-box">No result returned</div>';
+  const renderer = RENDERERS[toolName];
+  if (renderer) return renderer(data);
+  return renderGeneric(data);
+}
+
+const RENDERERS = {
+  getCustomerStatus(d) {
+    const statusCls = {
+      ACTIVE: 'status-active', SUSPENDED: 'status-suspended', NOT_FOUND: 'status-notfound'
+    }[d.status] || 'status-notfound';
+    const statusIcon = d.status === 'ACTIVE' ? '&#10003;' : d.status === 'SUSPENDED' ? '&#9888;' : '&#8212;';
+    return `
+      <div class="result-header"><span class="result-label">Customer record</span></div>
+      <div class="detail-grid">
+        <div class="detail-field">
+          <div class="field-label">Customer ID</div>
+          <div class="field-value mono">${esc(d.customerId)}</div>
+        </div>
+        <div class="detail-field">
+          <div class="field-label">Status</div>
+          <div class="field-value"><span class="status-pill ${statusCls}">${statusIcon} ${esc(d.status)}</span></div>
+        </div>
+        <div class="detail-field">
+          <div class="field-label">Service tier</div>
+          <div class="field-value">${esc(formatTier(d.tier))}</div>
+        </div>
+        <div class="detail-field">
+          <div class="field-label">Primary region</div>
+          <div class="field-value mono">${esc(d.primaryRegion)}</div>
+        </div>
+      </div>`;
+  },
+
+  getOrderStatus(d) {
+    const statusCls = {
+      SHIPPED: 'status-shipped', PROCESSING: 'status-processing',
+      DELIVERED: 'status-delivered', NOT_FOUND: 'status-notfound'
+    }[d.status] || 'status-notfound';
+    const icons = { SHIPPED: '&#128666;', PROCESSING: '&#9881;', DELIVERED: '&#10003;', NOT_FOUND: '&#8212;' };
+    return `
+      <div class="result-header"><span class="result-label">Order record</span></div>
+      <div class="detail-grid">
+        <div class="detail-field">
+          <div class="field-label">Order ID</div>
+          <div class="field-value mono">${esc(d.orderId)}</div>
+        </div>
+        <div class="detail-field">
+          <div class="field-label">Status</div>
+          <div class="field-value"><span class="status-pill ${statusCls}">${icons[d.status] || ''} ${esc(d.status)}</span></div>
+        </div>
+        <div class="detail-field">
+          <div class="field-label">Items</div>
+          <div class="field-value">${d.itemCount}</div>
+        </div>
+        <div class="detail-field">
+          <div class="field-label">Total amount</div>
+          <div class="field-value" style="font-weight:600">${esc(d.totalAmount)}</div>
+        </div>
+        <div class="detail-field">
+          <div class="field-label">Est. delivery</div>
+          <div class="field-value">${esc(d.estimatedDelivery)}</div>
+        </div>
+        <div class="detail-field">
+          <div class="field-label">Warehouse</div>
+          <div class="field-value mono">${esc(d.warehouse)}</div>
+        </div>
+      </div>`;
+  },
+
+  getSLACompliance(d) {
+    let fc = 'var(--status-good)';
+    if (d.compliancePct < 99.0) fc = 'var(--status-serious)';
+    else if (d.compliancePct < 99.9) fc = 'var(--status-warn)';
+    const violColor = d.violationCount > 5 ? 'var(--status-critical)' : d.violationCount > 0 ? 'var(--status-warn)' : 'var(--status-good-text)';
+    return `
+      <div class="result-header"><span class="result-label">SLA report &middot; ${esc(d.period)}</span></div>
+      <div class="sla-result-meter">
+        <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:2px">${esc(d.serviceId)}</div>
+        <div class="sla-big">${d.compliancePct}%</div>
+        <div class="sla-result-track"><div class="sla-result-fill" style="width:${d.compliancePct}%;background:${fc}"></div></div>
+        <div class="sla-detail-row">
+          <div class="sla-detail-item"><div class="sla-d-label">Uptime</div><div class="sla-d-value">${d.uptimePct}%</div></div>
+          <div class="sla-detail-item"><div class="sla-d-label">P99 latency</div><div class="sla-d-value">${esc(d.p99Latency)}</div></div>
+          <div class="sla-detail-item"><div class="sla-d-label">Violations</div><div class="sla-d-value" style="color:${violColor}">${d.violationCount}</div></div>
+          <div class="sla-detail-item"><div class="sla-d-label">Period</div><div class="sla-d-value">${esc(d.period)}</div></div>
+        </div>
+      </div>`;
+  },
+
+  getZoneHealthLogs(data) {
+    const lines = Array.isArray(data) ? data : [data];
+    let html = '<div class="result-header"><span class="result-label">Health diagnostics</span></div>';
+    for (const line of lines) {
+      const text = typeof line === 'string' ? line : JSON.stringify(line);
+      const parts = text.replace(/^\[.*?\]\s*/, '').split(':');
+      const metric = parts[0]?.trim() || text;
+      const rest = parts.slice(1).join(':').trim();
+      let statusClass = 'log-normal';
+      if (/healthy/i.test(rest)) statusClass = 'log-healthy';
+      else if (/within|normal/i.test(rest)) statusClass = 'log-within';
+      const statusMatch = rest.match(/\((.*?)\)/);
+      const statusText = statusMatch ? statusMatch[1] : '';
+      const valueText = rest.replace(/\s*\(.*?\)\s*$/, '').trim();
+      html += `<div class="health-log-item">
+        <span class="log-metric">${esc(metric)}</span>
+        <span class="log-val">${esc(valueText)}</span>
+        ${statusText ? `<span class="log-status ${statusClass}">${esc(statusText)}</span>` : ''}
+      </div>`;
+    }
+    return html;
+  },
+
+  getAuditTrail(data) {
+    const events = Array.isArray(data) ? data : [data];
+    let html = `<div class="result-header"><span class="result-label">Audit events</span></div>
+      <table class="audit-table"><thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Resource</th><th>Outcome</th></tr></thead><tbody>`;
+    for (const e of events) {
+      const cls = e.outcome === 'SUCCESS' ? 'outcome-success' : 'outcome-denied';
+      const icon = e.outcome === 'SUCCESS' ? '&#10003;' : '&#10007;';
+      html += `<tr>
+        <td>${esc(formatTs(e.timestamp))}</td><td>${esc(e.actor)}</td>
+        <td>${esc(e.action)}</td><td>${esc(e.resource)}</td>
+        <td><span class="outcome-badge ${cls}">${icon} ${esc(e.outcome)}</span></td>
+      </tr>`;
+    }
+    return html + '</tbody></table>';
+  }
+};
+
+function renderGeneric(data) {
+  if (typeof data === 'string') return `<div style="padding:8px;font-size:0.85rem;color:var(--text-secondary)">${esc(data)}</div>`;
+  const json = JSON.stringify(data, null, 2);
+  return `<pre style="padding:12px;border-radius:6px;background:var(--surface-page);border:1px solid var(--gridline);font-size:0.8rem;color:var(--text-secondary);white-space:pre-wrap;word-break:break-word;max-height:300px;overflow-y:auto">${esc(json)}</pre>`;
+}
+
+function formatTier(t) {
+  if (!t || t === 'UNKNOWN') return t;
+  return t.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()).replace(/\bTier\b/, 'Tier');
+}
+
+init();
+</script>
+</body>
+</html>
