@@ -313,7 +313,7 @@ header .badge {
 
   <div class="grid-2" style="margin-top:0">
     <div class="card card-full">
-      <h2>Audit trail: CUST-4091</h2>
+      <h2 id="audit-heading">Audit trail: CUST-4091</h2>
       <table class="audit-table">
         <thead><tr><th>Timestamp</th><th>Actor</th><th>Action</th><th>Resource</th><th>Outcome</th></tr></thead>
         <tbody id="audit-body"></tbody>
@@ -423,8 +423,9 @@ async function loadSLA() {
   delta.className = 'delta ' + (avg >= 99.5 ? 'delta-up' : 'delta-down');
 }
 
-async function loadAudit() {
-  const res = await mcpCall('tools/call', { name: 'getAuditTrail', arguments: { customerId: 'CUST-4091' } });
+async function loadAudit(customerId = 'CUST-4091') {
+  document.getElementById('audit-heading').textContent = 'Audit trail: ' + customerId;
+  const res = await mcpCall('tools/call', { name: 'getAuditTrail', arguments: { customerId } });
   const events = parseContent(res);
   if (!Array.isArray(events)) return;
   document.getElementById('audit-body').innerHTML = events.map(e => {
@@ -510,6 +511,8 @@ async function runTool(name) {
   box.classList.add('visible');
   btn.disabled = false;
   btn.textContent = 'Run tool';
+
+  if (args.customerId) loadAudit(args.customerId);
 }
 
 // ========== RICH RESULT RENDERERS ==========
