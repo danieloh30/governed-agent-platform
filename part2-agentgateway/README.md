@@ -20,7 +20,6 @@ This directory contains the companion demo for Part 2 of the series. It deploys 
 
 - Everything from Part 1 (Java 25+, Maven 3.9+, Goose CLI)
 - **agentgateway** binary: `curl -sL https://agentgateway.dev/install | bash`
-- **Docker** (for the ExtMCP guardrail server)
 
 ## Quick Start
 
@@ -52,7 +51,7 @@ The extension URI is `http://localhost:3000/mcp` (agentgateway) instead of `http
 | `agentgateway/config.yaml` | Full config with JWT auth, RBAC, and guardrails |
 | `agentgateway/config-dev.yaml` | Dev config without JWT (for local testing) |
 | `goose-extension-config.yaml` | Goose extension pointing to agentgateway |
-| `extmcp-guardrail/` | Custom ExtMCP guardrail server source |
+| `extmcp-guardrail/` | Quarkus gRPC ExtMCP guardrail server |
 | `start-all.sh` | Launches all services |
 
 ## Verifying the Security Stack

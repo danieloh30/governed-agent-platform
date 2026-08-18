@@ -23,11 +23,16 @@ until curl -sf http://localhost:8080/mcp \
 done
 echo "      Quarkus MCP server is ready."
 
-# ── 2. Start the ExtMCP guardrail server ──
+# ── 2. Start the Quarkus gRPC ExtMCP guardrail server ──
 echo "[2/3] Starting ExtMCP guardrail server on :9001 ..."
-docker run --rm -d --name extmcp-guardrail \
-  -p 9001:9001 \
-  gcr.io/solo-public/docs/testbox:latest
+cd "$SCRIPT_DIR/extmcp-guardrail"
+mvn quarkus:dev -Dquarkus.http.host=0.0.0.0 &
+GUARDRAIL_PID=$!
+
+echo "      Waiting for ExtMCP guardrail server..."
+until curl -sf http://localhost:9001/q/health/ready > /dev/null 2>&1; do
+  sleep 2
+done
 echo "      ExtMCP guardrail server is ready."
 
 # ── 3. Start agentgateway ──
@@ -42,7 +47,7 @@ echo "=== All services running ==="
 echo "  Quarkus MCP backend : http://localhost:8080/mcp"
 echo "  agentgateway proxy  : http://localhost:3000/mcp"
 echo "  agentgateway UI     : http://localhost:15000/ui"
-echo "  ExtMCP guardrail    : localhost:9001"
+echo "  ExtMCP guardrail    : localhost:9001 (Quarkus gRPC)"
 echo ""
 echo "  Goose config: copy part2-agentgateway/goose-extension-config.yaml"
 echo "  to ~/.config/goose/config.yaml"
@@ -53,8 +58,8 @@ cleanup() {
   echo ""
   echo "Shutting down..."
   kill $GATEWAY_PID 2>/dev/null || true
+  kill $GUARDRAIL_PID 2>/dev/null || true
   kill $QUARKUS_PID 2>/dev/null || true
-  docker stop extmcp-guardrail 2>/dev/null || true
   echo "Done."
 }
 trap cleanup EXIT INT TERM

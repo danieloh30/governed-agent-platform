@@ -51,8 +51,6 @@ You'll need everything from Part 1, plus:
 curl -sL https://agentgateway.dev/install | bash
 ```
 
-- **Docker** (for the ExtMCP guardrail server)
-
 Verify your Part 1 Quarkus MCP server still works:
 
 ```bash
@@ -230,17 +228,103 @@ JWT and RBAC protect the *identity* layer. Guardrails protect the *content* laye
 
 agentgateway's ExtMCP guardrails intercept MCP method calls *before* they reach the backend, passing them through an external gRPC policy server that can inspect, mutate, or deny each call.
 
-### Starting the Guardrail Server
+### Building the Guardrail Server With Quarkus gRPC
 
-For this demo, use the sample ExtMCP server from agentgateway:
+Instead of relying on a third-party Docker image, we'll build our own ExtMCP guardrail server using Quarkus gRPC — keeping the entire stack in Java. The guardrail server lives in `part2-agentgateway/extmcp-guardrail/` and implements the agentgateway ExtMCP protocol.
 
-```bash
-docker run --rm -d --name extmcp-guardrail \
-  -p 9001:9001 \
-  gcr.io/solo-public/docs/testbox:latest
+First, the protobuf service definition (`src/main/proto/extmcp.proto`):
+
+```protobuf
+syntax = "proto3";
+package agentgateway.dev.ext_mcp;
+option java_package = "com.example.guardrail.grpc";
+
+import "google/protobuf/struct.proto";
+
+service ExtMcp {
+  rpc CheckRequest (McpRequest) returns (McpRequestResult);
+  rpc CheckResponse (McpResponse) returns (McpResponseResult);
+}
+
+message McpRequest {
+  repeated string service_names = 1;
+  string method = 2;
+  google.protobuf.Struct metadata_context = 3;
+  optional bytes mcp_request = 4;
+  repeated McpHeader headers = 5;
+}
+
+message McpRequestResult {
+  oneof result {
+    Pass pass = 1;
+    bytes mutated = 2;
+    AuthorizationError error = 3;
+  }
+  HeaderMutation header_mutation = 4;
+}
+
+message AuthorizationError {
+  enum Code { UNKNOWN = 0; PERMISSION_DENIED = 1; RESOURCE_EXHAUSTED = 2; INVALID = 3; }
+  Code code = 1;
+  string reason = 2;
+  optional bytes mcp_error = 3;
+}
 ```
 
-This sample server demonstrates the pattern: it denies tool calls whose names contain `forbidden` and appends `[extmcp]` markers to tool descriptions in `tools/list` responses.
+The Quarkus service implementation performs header sanitization and tool-poisoning detection:
+
+```java
+@GrpcService
+public class ExtMcpGuardrailService implements ExtMcp {
+
+    private static final Pattern DANGEROUS_HEADER = Pattern.compile(
+            "(?i)^(x-mcp-|x-forwarded-|x-real-ip)");
+    private static final List<String> BLOCKED_PATTERNS = List.of(
+            "__proto__", "constructor", "../", "eval(", "exec(", "<script");
+
+    @Override
+    public Uni<McpRequestResult> checkRequest(McpRequest request) {
+        if (!"tools/call".equals(request.getMethod())) {
+            return passRequest();
+        }
+        // 1. Sanitize x-mcp-* headers for CRLF injection
+        String headerError = sanitizeHeaders(request.getHeadersList());
+        if (headerError != null) {
+            return denyRequest("header sanitization failed: " + headerError);
+        }
+        // 2. Check tool name and arguments for poisoning patterns
+        if (request.hasMcpRequest()) {
+            String poisonError = checkToolPoisoning(
+                    request.getMcpRequest().toStringUtf8());
+            if (poisonError != null) {
+                return denyRequest("tool poisoning detected: " + poisonError);
+            }
+        }
+        return passRequest();
+    }
+
+    @Override
+    public Uni<McpResponseResult> checkResponse(McpResponse response) {
+        if (!"tools/list".equals(response.getMethod())) {
+            return passResponse();
+        }
+        // Append [guardrail-verified] marker to every tool description
+        String original = response.getMcpResponse().toStringUtf8();
+        String mutated = original.replace("\"description\":\"",
+                "\"description\":\"[guardrail-verified] ");
+        return Uni.createFrom().item(McpResponseResult.newBuilder()
+                .setMutated(ByteString.copyFrom(mutated, StandardCharsets.UTF_8))
+                .build());
+    }
+}
+```
+
+Start the guardrail server on port 9001:
+
+```bash
+cd part2-agentgateway/extmcp-guardrail
+mvn quarkus:dev
+```
 
 ### Configuring the Guardrail Policy
 
@@ -292,10 +376,10 @@ The `x-mcp-*` headers carry protocol metadata between MCP clients and servers. A
 
 For production, implement the ExtMCP gRPC protocol with two methods:
 
-- **`CheckRequest`** — Called before the tool call reaches the backend. Inspect the tool name, arguments, and headers. Return `Pass`, `Mutate` (rewrite params), or `Deny`.
+- **`CheckRequest`** — Called before the tool call reaches the backend. Inspect the tool name, arguments, and headers. Return `Pass`, `Mutate` (rewrite params), or `Deny` with an `AuthorizationError`.
 - **`CheckResponse`** — Called after the backend responds. Inspect the result. Return `Pass`, `Mutate` (redact sensitive data), or `Deny`.
 
-The `part2-agentgateway/extmcp-guardrail/` directory contains a reference implementation in Go that shows the sanitization logic.
+The `part2-agentgateway/extmcp-guardrail/` directory contains the complete Quarkus gRPC implementation with the proto definition, the guardrail service, and the Maven build.
 
 ### Verifying the Guardrail
 
@@ -440,7 +524,7 @@ mcp:
 
 ## What We Achieved
 
-Starting from the unprotected Quarkus MCP server in Part 1, we added four security layers without changing a single line of Java code:
+Starting from the unprotected Quarkus MCP server in Part 1, we added four security layers without changing a single line of the backend Java code:
 
 | Layer | What It Does | agentgateway Feature |
 |-------|-------------|---------------------|
@@ -449,7 +533,7 @@ Starting from the unprotected Quarkus MCP server in Part 1, we added four securi
 | **Input sanitization** | Blocks tool poisoning and header injection | `mcpGuardrails` (ExtMCP) |
 | **Observability** | Traces every tool call through the proxy | OpenTelemetry integration |
 
-The Quarkus backend remains a clean, focused MCP tool server. All governance concerns live in the gateway configuration and the guardrail server — exactly where platform engineers expect to find them.
+The Quarkus MCP backend remains a clean, focused tool server. All governance concerns live in the agentgateway configuration and the Quarkus gRPC guardrail service — keeping the entire stack in Java, exactly where platform engineers expect to find them.
 
 ## What's Next: Part 3
 

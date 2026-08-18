@@ -1,0 +1,71 @@
+syntax = "proto3";
+
+package agentgateway.dev.ext_mcp;
+
+option java_multiple_files = true;
+option java_package = "com.example.guardrail.grpc";
+
+import "google/protobuf/struct.proto";
+
+service ExtMcp {
+  rpc CheckRequest (McpRequest) returns (McpRequestResult);
+  rpc CheckResponse (McpResponse) returns (McpResponseResult);
+}
+
+message McpRequest {
+  repeated string service_names = 1;
+  string method = 2;
+  google.protobuf.Struct metadata_context = 3;
+  optional bytes mcp_request = 4;
+  repeated McpHeader headers = 5;
+}
+
+message McpResponse {
+  repeated string service_names = 1;
+  string method = 2;
+  google.protobuf.Struct metadata_context = 3;
+  bytes mcp_response = 4;
+}
+
+message McpRequestResult {
+  oneof result {
+    Pass pass = 1;
+    bytes mutated = 2;
+    AuthorizationError error = 3;
+  }
+  HeaderMutation header_mutation = 4;
+  google.protobuf.Struct metadata = 5;
+}
+
+message McpResponseResult {
+  oneof result {
+    Pass pass = 1;
+    bytes mutated = 2;
+    AuthorizationError error = 3;
+  }
+}
+
+message Pass {}
+
+message AuthorizationError {
+  Code code = 1;
+  string reason = 2;
+  optional bytes mcp_error = 3;
+
+  enum Code {
+    UNKNOWN = 0;
+    PERMISSION_DENIED = 1;
+    RESOURCE_EXHAUSTED = 2;
+    INVALID = 3;
+  }
+}
+
+message HeaderMutation {
+  repeated McpHeader set = 1;
+  repeated string remove = 2;
+}
+
+message McpHeader {
+  string key = 1;
+  bytes value = 2;
+}
