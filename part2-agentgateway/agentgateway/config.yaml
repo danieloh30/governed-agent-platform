@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://agentgateway.dev/schema/config
+#
+# agentgateway config – Part 2: Securing Goose-to-Java Agent Traffic
+#
+# Places agentgateway between Goose clients and the Quarkus MCP
+# tool server from Part 1, adding JWT auth, tool-level RBAC,
+# and ExtMCP guardrails against tool poisoning.
+
+config:
+  tracing:
+    endpoint: http://localhost:4317
+    protocol: grpc
+    sampling:
+      parent: true
+      default: 1.0
+
+mcp:
+  port: 3000
+  policies:
+    cors:
+      allowOrigins:
+        - "*"
+      allowHeaders:
+        - mcp-protocol-version
+        - content-type
+        - mcp-session-id
+        - authorization
+      exposeHeaders:
+        - Mcp-Session-Id
+
+    # ── JWT Authentication ──
+    # Validates bearer tokens on every MCP request.
+    # Replace issuer/jwks with your OIDC provider in production.
+    mcpAuthentication:
+      issuer: http://localhost:9000
+      audiences:
+        - "http://localhost:3000/mcp"
+      jwks:
+        url: http://localhost:9000/.well-known/jwks.json
+      resourceMetadata:
+        resource: http://localhost:3000/mcp
+        scopesSupported:
+          - "mcp:tools:read"
+          - "mcp:tools:execute"
+        bearerMethodsSupported:
+          - header
+
+    # ── MCP Authorization (Tool-Level RBAC) ──
+    # CEL expressions gate which tools each role can invoke.
+    # Unauthorized tools are auto-filtered from tools/list responses.
+    mcpAuthorization:
+      rules:
+        # Operators can call any tool
+        - 'has(jwt.roles) && "operator" in jwt.roles'
+        # Viewers can only read status and health
+        - >
+          has(jwt.roles) && "viewer" in jwt.roles &&
+          mcp.tool.name in ["getCustomerStatus", "getZoneHealthLogs", "getSLACompliance"]
+        # Auditors can access audit trail and SLA compliance
+        - >
+          has(jwt.roles) && "auditor" in jwt.roles &&
+          mcp.tool.name in ["getAuditTrail", "getSLACompliance"]
+
+    # ── ExtMCP Guardrails ──
+    # Routes tools/call through the guardrail server to sanitize
+    # x-mcp-* headers and block tool-poisoning attempts.
+    mcpGuardrails:
+      processors:
+        - kind: remote
+          host: "localhost:9001"
+          failureMode: failClosed
+          methods:
+            tools/call: request
+            tools/list: response
+
+  targets:
+    - name: customer-tools
+      mcp:
+        host: http://localhost:8080/mcp

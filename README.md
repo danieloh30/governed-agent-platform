@@ -148,6 +148,7 @@ mvn clean package
 java -jar target/quarkus-app/quarkus-run.jar
 ```
 
-## What's Next (Part 2)
+## What's Next
 
-Part 2 of this series adds governance controls: rate limiting, input sanitization policies, audit logging, and role-based tool access using Quarkus security.
+- **[Part 2: Securing and Scaling Goose-to-Java Agent Traffic with agentgateway](part2-agentgateway/)** — Adds JWT authentication, tool-level RBAC, and ExtMCP guardrails against tool poisoning using the Linux Foundation's agentgateway proxy.
+- **Part 3: End-to-End Tracing and Observability Across Goose, agentgateway, and Quarkus** — Coming soon.
