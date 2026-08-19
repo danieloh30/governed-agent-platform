@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Part 2: Securing Goose-to-Java Agent Traffic</title>
+<style>
+:root {
+  color-scheme: light;
+  --surface-page:     #f9f9f7;
+  --surface-card:     #fcfcfb;
+  --text-primary:     #0b0b0b;
+  --text-secondary:   #52514e;
+  --text-muted:       #898781;
+  --gridline:         #e1e0d9;
+  --baseline:         #c3c2b7;
+  --border:           rgba(11,11,11,0.10);
+  --cat-1: #2a78d6;
+  --cat-2: #eb6834;
+  --cat-3: #1baf7a;
+  --cat-4: #eda100;
+  --cat-5: #e87ba4;
+  --status-good:     #0ca30c;
+  --status-warn:     #fab219;
+  --status-serious:  #ec835a;
+  --status-critical: #d03b3b;
+  --status-good-text: #006300;
+  --seq-100: #cde2fb;
+  --seq-300: #6da7ec;
+  --seq-500: #256abf;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --surface-page: #0d0d0d; --surface-card: #1a1a19;
+    --text-primary: #ffffff; --text-secondary: #c3c2b7; --text-muted: #898781;
+    --gridline: #2c2c2a; --baseline: #383835; --border: rgba(255,255,255,0.10);
+    --cat-1: #3987e5; --cat-2: #d95926; --cat-3: #199e70;
+    --cat-4: #c98500; --cat-5: #d55181;
+    --status-good: #0ca30c; --status-warn: #fab219;
+    --status-serious: #ec835a; --status-critical: #d03b3b;
+    --status-good-text: #0ca30c;
+    --seq-100: #184f95; --seq-300: #3987e5; --seq-500: #86b6ef;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --surface-page: #0d0d0d; --surface-card: #1a1a19;
+  --text-primary: #ffffff; --text-secondary: #c3c2b7; --text-muted: #898781;
+  --gridline: #2c2c2a; --baseline: #383835; --border: rgba(255,255,255,0.10);
+  --cat-1: #3987e5; --cat-2: #d95926; --cat-3: #199e70;
+  --cat-4: #c98500; --cat-5: #d55181;
+  --status-good: #0ca30c; --status-warn: #fab219;
+  --status-serious: #ec835a; --status-critical: #d03b3b;
+  --status-good-text: #0ca30c;
+  --seq-100: #184f95; --seq-300: #3987e5; --seq-500: #86b6ef;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: var(--surface-page); color: var(--text-primary);
+  line-height: 1.5; min-height: 100vh;
+}
+.shell { max-width: 1200px; margin: 0 auto; padding: 32px 24px; }
+header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 8px; flex-wrap: wrap; }
+header h1 { font-size: 1.25rem; font-weight: 600; }
+header .badge {
+  font-size: 0.7rem; font-weight: 500; padding: 2px 8px;
+  border-radius: 10px; background: var(--cat-1); color: #fff;
+}
+.subtitle { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 32px; }
+.theme-toggle {
+  margin-left: auto; background: none; border: 1px solid var(--baseline);
+  border-radius: 6px; padding: 4px 10px; color: var(--text-secondary);
+  cursor: pointer; font-size: 0.8rem;
+}
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace; }
+
+/* ── Architecture diagram ── */
+.arch { margin-bottom: 32px; }
+.arch-row {
+  display: flex; align-items: stretch; gap: 0; justify-content: center;
+  flex-wrap: wrap;
+}
+.arch-node {
+  background: var(--surface-card); border: 2px solid var(--baseline);
+  border-radius: 10px; padding: 16px 20px; min-width: 180px;
+  text-align: center; position: relative; transition: border-color 0.3s, box-shadow 0.3s;
+}
+.arch-node.active {
+  border-color: var(--cat-1);
+  box-shadow: 0 0 0 3px rgba(42,120,214,0.15);
+}
+.arch-node.pass { border-color: var(--status-good); box-shadow: 0 0 0 3px rgba(12,163,12,0.12); }
+.arch-node.deny { border-color: var(--status-critical); box-shadow: 0 0 0 3px rgba(208,59,59,0.12); }
+.arch-node .node-icon { font-size: 1.5rem; margin-bottom: 4px; }
+.arch-node .node-title { font-size: 0.85rem; font-weight: 600; }
+.arch-node .node-port { font-size: 0.7rem; color: var(--text-muted); }
+.arch-arrow {
+  display: flex; align-items: center; padding: 0 8px;
+  color: var(--baseline); font-size: 1.2rem; min-width: 40px; justify-content: center;
+  transition: color 0.3s;
+}
+.arch-arrow.active { color: var(--cat-1); }
+.arch-arrow.pass { color: var(--status-good); }
+
+/* Security layers inside gateway node */
+.security-layers { margin-top: 10px; display: flex; flex-direction: column; gap: 4px; }
+.sec-layer {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 0.7rem; padding: 3px 8px; border-radius: 6px;
+  background: var(--gridline); color: var(--text-secondary);
+  transition: all 0.3s;
+}
+.sec-layer.checking { background: rgba(42,120,214,0.12); color: var(--cat-1); }
+.sec-layer.passed { background: rgba(12,163,12,0.10); color: var(--status-good-text); }
+.sec-layer.denied { background: rgba(208,59,59,0.10); color: var(--status-critical); }
+.sec-layer.skipped { opacity: 0.4; }
+.sec-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--baseline); flex-shrink: 0;
+  transition: background 0.3s;
+}
+.sec-layer.checking .sec-dot { background: var(--cat-1); }
+.sec-layer.passed .sec-dot { background: var(--status-good); }
+.sec-layer.denied .sec-dot { background: var(--status-critical); }
+
+/* ── Step controls ── */
+.controls {
+  display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; align-items: center;
+}
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 16px; border: none; border-radius: 6px;
+  font-size: 0.85rem; font-weight: 500; cursor: pointer; transition: opacity 0.15s;
+}
+.btn:hover { opacity: 0.85; }
+.btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.btn-primary { background: var(--cat-1); color: #fff; }
+.btn-secondary { background: var(--gridline); color: var(--text-primary); }
+.btn-danger { background: var(--status-critical); color: #fff; }
+.btn-success { background: var(--status-good); color: #fff; }
+.step-label {
+  font-size: 0.8rem; color: var(--text-muted);
+  margin-left: 8px; font-weight: 500;
+}
+.status-msg {
+  font-size: 0.8rem; padding: 6px 12px; border-radius: 6px;
+  margin-left: auto;
+}
+.status-msg.connected { background: rgba(12,163,12,0.10); color: var(--status-good-text); }
+.status-msg.disconnected { background: rgba(208,59,59,0.08); color: var(--status-critical); }
+.status-msg.pending { background: rgba(237,161,0,0.10); color: var(--cat-4); }
+
+/* ── Flow log ── */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+@media (max-width: 800px) { .grid-2 { grid-template-columns: 1fr; } }
+.card {
+  background: var(--surface-card); border: 1px solid var(--border);
+  border-radius: 8px; padding: 20px;
+}
+.card h2 { font-size: 0.9rem; font-weight: 600; margin-bottom: 12px; }
+.card-full { grid-column: 1 / -1; }
+
+/* Flow timeline */
+.flow-log { display: flex; flex-direction: column; gap: 0; }
+.flow-entry {
+  display: grid; grid-template-columns: 80px 1fr;
+  gap: 12px; padding: 10px 0;
+  border-bottom: 1px solid var(--gridline);
+  font-size: 0.8rem;
+  animation: fadeIn 0.3s ease;
+}
+.flow-entry:last-child { border-bottom: none; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.flow-tag {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 2px 8px; border-radius: 10px;
+  font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em;
+  height: 22px;
+}
+.flow-tag.request { background: rgba(42,120,214,0.12); color: var(--cat-1); }
+.flow-tag.response { background: rgba(27,175,122,0.12); color: var(--cat-3); }
+.flow-tag.auth { background: rgba(237,161,0,0.12); color: var(--cat-4); }
+.flow-tag.guard { background: rgba(232,123,164,0.12); color: var(--cat-5); }
+.flow-tag.error { background: rgba(208,59,59,0.08); color: var(--status-critical); }
+.flow-msg { color: var(--text-secondary); word-break: break-word; }
+.flow-msg strong { color: var(--text-primary); font-weight: 500; }
+
+/* JSON viewer */
+.json-view {
+  background: var(--surface-page); border: 1px solid var(--gridline);
+  border-radius: 6px; padding: 12px; font-size: 0.75rem;
+  white-space: pre-wrap; word-break: break-word;
+  max-height: 320px; overflow-y: auto;
+  color: var(--text-secondary); line-height: 1.6;
+}
+.json-view .jk { color: var(--cat-1); }
+.json-view .js { color: var(--cat-3); }
+.json-view .jn { color: var(--cat-2); }
+.json-view .jb { color: var(--cat-5); }
+
+/* Tool selector */
+.tool-grid { display: flex; flex-direction: column; gap: 2px; }
+.tool-opt {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px; border-radius: 6px; cursor: pointer;
+  transition: background 0.15s; font-size: 0.8rem;
+}
+.tool-opt:hover { background: var(--gridline); }
+.tool-opt.selected { background: var(--seq-100); }
+.tool-opt .tool-name { font-weight: 500; }
+.tool-opt .tool-desc { color: var(--text-muted); font-size: 0.75rem; }
+
+/* Param input */
+.param-row {
+  display: flex; align-items: center; gap: 8px; margin-top: 8px;
+}
+.param-row label { font-size: 0.8rem; color: var(--text-secondary); min-width: 80px; }
+.param-row input {
+  flex: 1; padding: 6px 10px; border: 1px solid var(--baseline); border-radius: 6px;
+  font-size: 0.8rem; background: var(--surface-page); color: var(--text-primary);
+}
+
+/* Spinner */
+.spinner {
+  display: inline-block; width: 14px; height: 14px;
+  border: 2px solid var(--gridline); border-top-color: var(--cat-1);
+  border-radius: 50%; animation: spin 0.6s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Packet animation */
+.arch-arrow .packet {
+  display: inline-block; width: 8px; height: 8px;
+  border-radius: 50%; background: var(--cat-1);
+  animation: moveRight 0.6s ease forwards;
+}
+.arch-arrow .packet.reverse {
+  animation: moveLeft 0.6s ease forwards;
+  background: var(--cat-3);
+}
+@keyframes moveRight {
+  0% { transform: translateX(-12px); opacity: 0; }
+  30% { opacity: 1; }
+  100% { transform: translateX(12px); opacity: 0; }
+}
+@keyframes moveLeft {
+  0% { transform: translateX(12px); opacity: 0; }
+  30% { opacity: 1; }
+  100% { transform: translateX(-12px); opacity: 0; }
+}
+</style>
+</head>
+<body>
+<div class="shell">
+  <header>
+    <h1>Securing Goose-to-Java Agent Traffic</h1>
+    <span class="badge">Part 2</span>
+    <button class="theme-toggle" onclick="toggleTheme()">Toggle theme</button>
+  </header>
+  <p class="subtitle">Interactive demo: watch MCP requests flow through agentgateway's security stack</p>
+
+  <!-- ── Architecture ── -->
+  <div class="arch">
+    <div class="arch-row">
+      <div class="arch-node" id="node-goose">
+        <div class="node-title">Goose / Client</div>
+        <div class="node-port mono">caller</div>
+      </div>
+      <div class="arch-arrow" id="arrow-1">&rarr;</div>
+      <div class="arch-node" id="node-gateway" style="min-width:220px">
+        <div class="node-title">agentgateway</div>
+        <div class="node-port mono">:3000</div>
+        <div class="security-layers">
+          <div class="sec-layer" id="sec-jwt"><span class="sec-dot"></span> JWT Authentication</div>
+          <div class="sec-layer" id="sec-rbac"><span class="sec-dot"></span> RBAC Authorization</div>
+          <div class="sec-layer" id="sec-guard"><span class="sec-dot"></span> ExtMCP Guardrails</div>
+        </div>
+      </div>
+      <div class="arch-arrow" id="arrow-2">&rarr;</div>
+      <div class="arch-node" id="node-quarkus">
+        <div class="node-title">Quarkus MCP Server</div>
+        <div class="node-port mono">:8080</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Controls ── -->
+  <div class="controls" id="controls">
+    <button class="btn btn-primary" id="btn-init" onclick="stepInit()">1. Initialize Session</button>
+    <button class="btn btn-secondary" id="btn-list" onclick="stepListTools()" disabled>2. List Tools</button>
+    <button class="btn btn-success" id="btn-call" onclick="stepCallTool()" disabled>3. Call Tool</button>
+    <button class="btn btn-danger" id="btn-poison" onclick="stepPoisonTest()" disabled>4. Poison Test</button>
+    <button class="btn btn-secondary" id="btn-reset" onclick="resetAll()">Reset</button>
+    <span class="status-msg disconnected" id="status-msg">No session</span>
+  </div>
+
+  <div class="grid-2">
+    <!-- ── Flow log ── -->
+    <div class="card">
+      <h2>Request Flow</h2>
+      <div class="flow-log" id="flow-log">
+        <div style="font-size:0.8rem;color:var(--text-muted)">Click "Initialize Session" to begin.</div>
+      </div>
+    </div>
+
+    <!-- ── Response viewer ── -->
+    <div class="card">
+      <h2>Response</h2>
+      <div class="json-view mono" id="json-view">Waiting for first request...</div>
+    </div>
+  </div>
+
+  <!-- ── Tool selector (shown after listing) ── -->
+  <div class="grid-2" id="tool-section" style="display:none">
+    <div class="card">
+      <h2>Select a Tool</h2>
+      <div class="tool-grid" id="tool-grid"></div>
+    </div>
+    <div class="card">
+      <h2>Tool Parameters</h2>
+      <div id="tool-params">
+        <p style="font-size:0.8rem;color:var(--text-muted)">Select a tool to configure parameters.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const GATEWAY = 'http://localhost:3000';
+const HEADERS = {
+  'Content-Type': 'application/json',
+  'Accept': 'application/json, text/event-stream',
+  'MCP-Protocol-Version': '2025-03-26'
+};
+
+let sessionId = null;
+let rpcId = 0;
+let tools = [];
+let selectedTool = null;
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+
+function toggleTheme() {
+  const cur = document.documentElement.getAttribute('data-theme');
+  document.documentElement.setAttribute('data-theme', cur === 'dark' ? 'light' : 'dark');
+}
+
+async function mcpCall(method, params = {}) {
+  const headers = { ...HEADERS };
+  if (sessionId) headers['mcp-session-id'] = sessionId;
+
+  const res = await fetch(GATEWAY + '/mcp', {
+    method: 'POST', headers,
+    body: JSON.stringify({ jsonrpc: '2.0', id: ++rpcId, method, params })
+  });
+
+  const sid = res.headers.get('mcp-session-id');
+  if (sid) sessionId = sid;
+
+  const text = await res.text();
+  const dataLine = text.split('\n').find(l => l.startsWith('data: '));
+  if (dataLine) {
+    return JSON.parse(dataLine.slice(6));
+  }
+  try { return JSON.parse(text); } catch { return { raw: text }; }
+}
+
+function addLog(tag, tagClass, msg) {
+  const log = document.getElementById('flow-log');
+  if (log.querySelector('[style]')) log.innerHTML = '';
+  const entry = document.createElement('div');
+  entry.className = 'flow-entry';
+  entry.innerHTML = `<span class="flow-tag ${tagClass}">${tag}</span><span class="flow-msg">${msg}</span>`;
+  log.prepend(entry);
+}
+
+function showJson(obj) {
+  const view = document.getElementById('json-view');
+  const json = JSON.stringify(obj, null, 2);
+  view.innerHTML = json
+    .replace(/("(?:[^"\\]|\\.)*")(\s*:)/g, '<span class="jk">$1</span>$2')
+    .replace(/:\s*("(?:[^"\\]|\\.)*")/g, ': <span class="js">$1</span>')
+    .replace(/:\s*(\d+(?:\.\d+)?)/g, ': <span class="jn">$1</span>')
+    .replace(/:\s*(true|false|null)/g, ': <span class="jb">$1</span>');
+}
+
+function setStatus(text, cls) {
+  const el = document.getElementById('status-msg');
+  el.textContent = text;
+  el.className = 'status-msg ' + cls;
+}
+
+function animateArrow(id, reverse) {
+  const arrow = document.getElementById(id);
+  arrow.classList.add(reverse ? 'pass' : 'active');
+  const pkt = document.createElement('span');
+  pkt.className = 'packet' + (reverse ? ' reverse' : '');
+  arrow.appendChild(pkt);
+  setTimeout(() => { pkt.remove(); arrow.classList.remove('active', 'pass'); }, 700);
+}
+
+function setNodeState(id, state) {
+  const el = document.getElementById(id);
+  el.classList.remove('active', 'pass', 'deny');
+  if (state) el.classList.add(state);
+}
+
+function setSecLayer(id, state) {
+  const el = document.getElementById(id);
+  el.classList.remove('checking', 'passed', 'denied', 'skipped');
+  if (state) el.classList.add(state);
+}
+
+function resetArch() {
+  ['node-goose', 'node-gateway', 'node-quarkus'].forEach(id => setNodeState(id, null));
+  ['sec-jwt', 'sec-rbac', 'sec-guard'].forEach(id => setSecLayer(id, null));
+}
+
+async function animateSecurityStack(hasJwt, toolName) {
+  setNodeState('node-goose', 'active');
+  addLog('request', 'request', `<strong>${toolName || 'MCP call'}</strong> sent from client`);
+  await delay(300);
+
+  animateArrow('arrow-1', false);
+  await delay(400);
+  setNodeState('node-gateway', 'active');
+
+  if (hasJwt) {
+    setSecLayer('sec-jwt', 'checking');
+    addLog('auth', 'auth', 'JWT authentication: verifying bearer token...');
+    await delay(500);
+    setSecLayer('sec-jwt', 'passed');
+    addLog('auth', 'auth', 'JWT authentication: <strong>passed</strong>');
+  } else {
+    setSecLayer('sec-jwt', 'skipped');
+  }
+
+  setSecLayer('sec-rbac', 'checking');
+  addLog('auth', 'auth', 'RBAC authorization: checking CEL rules...');
+  await delay(400);
+  setSecLayer('sec-rbac', 'passed');
+  addLog('auth', 'auth', 'RBAC authorization: <strong>passed</strong>');
+
+  setSecLayer('sec-guard', 'checking');
+  addLog('guard', 'guard', 'ExtMCP guardrail: sanitizing headers and params...');
+  await delay(400);
+
+  return true;
+}
+
+async function stepInit() {
+  resetAll(true);
+  setStatus('Connecting...', 'pending');
+  document.getElementById('btn-init').disabled = true;
+  document.getElementById('btn-init').innerHTML = '<span class="spinner"></span> Initializing...';
+
+  try {
+    setNodeState('node-goose', 'active');
+    addLog('request', 'request', '<strong>initialize</strong> &rarr; agentgateway :3000');
+    await delay(300);
+    animateArrow('arrow-1', false);
+    await delay(400);
+    setNodeState('node-gateway', 'active');
+    await delay(200);
+    animateArrow('arrow-2', false);
+    await delay(400);
+    setNodeState('node-quarkus', 'active');
+
+    const res = await mcpCall('initialize', {
+      protocolVersion: '2025-03-26',
+      capabilities: {},
+      clientInfo: { name: 'demo-spa', version: '1.0' }
+    });
+
+    showJson(res);
+    const serverName = res.result?.serverInfo?.name || 'unknown';
+
+    animateArrow('arrow-2', true);
+    await delay(300);
+    animateArrow('arrow-1', true);
+    await delay(300);
+
+    setNodeState('node-quarkus', 'pass');
+    setNodeState('node-gateway', 'pass');
+    setNodeState('node-goose', 'pass');
+
+    addLog('response', 'response', `Session established with <strong>${esc(serverName)}</strong>`);
+    addLog('response', 'response', `Session ID: <strong class="mono">${esc(sessionId?.slice(0, 24))}...</strong>`);
+
+    await mcpCall('notifications/initialized', {});
+
+    setStatus('Session active', 'connected');
+    document.getElementById('btn-list').disabled = false;
+    document.getElementById('btn-poison').disabled = false;
+  } catch (err) {
+    addLog('error', 'error', `Connection failed: ${esc(err.message)}`);
+    setStatus('Connection failed', 'disconnected');
+    showJson({ error: err.message });
+  }
+
+  document.getElementById('btn-init').disabled = false;
+  document.getElementById('btn-init').textContent = '1. Initialize Session';
+}
+
+async function stepListTools() {
+  document.getElementById('btn-list').disabled = true;
+  document.getElementById('btn-list').innerHTML = '<span class="spinner"></span> Listing...';
+  resetArch();
+
+  try {
+    setNodeState('node-goose', 'active');
+    addLog('request', 'request', '<strong>tools/list</strong> &rarr; agentgateway');
+    await delay(300);
+    animateArrow('arrow-1', false);
+    await delay(400);
+    setNodeState('node-gateway', 'active');
+
+    setSecLayer('sec-rbac', 'checking');
+    addLog('auth', 'auth', 'RBAC: checking tools/list permission...');
+    await delay(400);
+    setSecLayer('sec-rbac', 'passed');
+    addLog('auth', 'auth', 'RBAC: <strong>allowed</strong> (tools/list is open)');
+
+    animateArrow('arrow-2', false);
+    await delay(400);
+    setNodeState('node-quarkus', 'active');
+
+    const res = await mcpCall('tools/list');
+    tools = res.result?.tools || [];
+
+    animateArrow('arrow-2', true);
+    await delay(200);
+
+    setSecLayer('sec-guard', 'checking');
+    addLog('guard', 'guard', 'ExtMCP guardrail: processing tools/list response...');
+    await delay(400);
+    setSecLayer('sec-guard', 'passed');
+    addLog('guard', 'guard', 'ExtMCP guardrail: <strong>descriptions annotated</strong>');
+
+    animateArrow('arrow-1', true);
+    await delay(300);
+
+    ['node-goose', 'node-gateway', 'node-quarkus'].forEach(id => setNodeState(id, 'pass'));
+
+    addLog('response', 'response', `Found <strong>${tools.length} tools</strong>`);
+    showJson(res);
+    renderToolGrid();
+
+    document.getElementById('tool-section').style.display = '';
+    document.getElementById('btn-call').disabled = false;
+  } catch (err) {
+    addLog('error', 'error', `tools/list failed: ${esc(err.message)}`);
+    showJson({ error: err.message });
+  }
+
+  document.getElementById('btn-list').disabled = false;
+  document.getElementById('btn-list').textContent = '2. List Tools';
+}
+
+function renderToolGrid() {
+  const grid = document.getElementById('tool-grid');
+  const defaults = {
+    getCustomerStatus: { customerId: 'CUST-4091' },
+    getZoneHealthLogs: { zoneId: 'US-EAST-1' },
+    getOrderStatus: { orderId: 'ORD-20240815' },
+    getSLACompliance: { serviceId: 'api-gateway' },
+    getAuditTrail: { customerId: 'CUST-4091' }
+  };
+
+  grid.innerHTML = tools.map((t, i) => `
+    <div class="tool-opt${i === 0 ? ' selected' : ''}" data-idx="${i}" onclick="selectTool(${i})">
+      <span class="tool-name mono">${esc(t.name)}</span>
+    </div>`).join('');
+
+  selectedTool = 0;
+  renderToolParams(0);
+}
+
+function selectTool(idx) {
+  selectedTool = idx;
+  document.querySelectorAll('.tool-opt').forEach((el, i) => {
+    el.classList.toggle('selected', i === idx);
+  });
+  renderToolParams(idx);
+}
+
+function renderToolParams(idx) {
+  const tool = tools[idx];
+  const params = tool.inputSchema?.properties || {};
+  const defaults = {
+    customerId: 'CUST-4091', zoneId: 'US-EAST-1',
+    orderId: 'ORD-20240815', serviceId: 'api-gateway'
+  };
+
+  const container = document.getElementById('tool-params');
+  container.innerHTML = `<div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:8px">${esc(tool.description)}</div>`;
+  for (const [name, schema] of Object.entries(params)) {
+    container.innerHTML += `<div class="param-row">
+      <label>${esc(name)}</label>
+      <input type="text" class="mono" id="tp-${esc(name)}" value="${esc(defaults[name] || '')}" placeholder="${esc(schema.description || '')}">
+    </div>`;
+  }
+}
+
+async function stepCallTool() {
+  if (selectedTool === null || !tools[selectedTool]) return;
+  const tool = tools[selectedTool];
+
+  document.getElementById('btn-call').disabled = true;
+  document.getElementById('btn-call').innerHTML = '<span class="spinner"></span> Calling...';
+  resetArch();
+
+  const args = {};
+  document.querySelectorAll('#tool-params input').forEach(inp => {
+    const key = inp.id.replace('tp-', '');
+    if (inp.value) args[key] = inp.value;
+  });
+
+  try {
+    setNodeState('node-goose', 'active');
+    addLog('request', 'request', `<strong>tools/call</strong> &rarr; ${esc(tool.name)}(${esc(JSON.stringify(args))})`);
+    await delay(300);
+    animateArrow('arrow-1', false);
+    await delay(400);
+    setNodeState('node-gateway', 'active');
+
+    setSecLayer('sec-rbac', 'checking');
+    addLog('auth', 'auth', `RBAC: checking permission for <strong>${esc(tool.name)}</strong>...`);
+    await delay(400);
+    setSecLayer('sec-rbac', 'passed');
+    addLog('auth', 'auth', 'RBAC: <strong>allowed</strong>');
+
+    setSecLayer('sec-guard', 'checking');
+    addLog('guard', 'guard', 'ExtMCP guardrail: scanning tool name and arguments...');
+    await delay(400);
+    setSecLayer('sec-guard', 'passed');
+    addLog('guard', 'guard', 'ExtMCP guardrail: <strong>clean, forwarding</strong>');
+
+    animateArrow('arrow-2', false);
+    await delay(400);
+    setNodeState('node-quarkus', 'active');
+
+    const res = await mcpCall('tools/call', { name: tool.name, arguments: args });
+
+    animateArrow('arrow-2', true);
+    await delay(300);
+    animateArrow('arrow-1', true);
+    await delay(300);
+
+    ['node-goose', 'node-gateway', 'node-quarkus'].forEach(id => setNodeState(id, 'pass'));
+
+    addLog('response', 'response', `<strong>${esc(tool.name)}</strong> returned successfully`);
+    showJson(res);
+  } catch (err) {
+    addLog('error', 'error', `tools/call failed: ${esc(err.message)}`);
+    showJson({ error: err.message });
+  }
+
+  document.getElementById('btn-call').disabled = false;
+  document.getElementById('btn-call').textContent = '3. Call Tool';
+}
+
+async function stepPoisonTest() {
+  document.getElementById('btn-poison').disabled = true;
+  document.getElementById('btn-poison').innerHTML = '<span class="spinner"></span> Testing...';
+  resetArch();
+
+  try {
+    setNodeState('node-goose', 'active');
+    addLog('request', 'request', '<strong>tools/call</strong> &rarr; <span style="color:var(--status-critical)">__proto__/../evil</span> (poisoned tool name)');
+    await delay(300);
+    animateArrow('arrow-1', false);
+    await delay(400);
+    setNodeState('node-gateway', 'active');
+
+    setSecLayer('sec-guard', 'checking');
+    addLog('guard', 'guard', 'ExtMCP guardrail: scanning tool name...');
+    await delay(600);
+
+    const res = await mcpCall('tools/call', {
+      name: '__proto__/../evil',
+      arguments: { payload: '<scr' + 'ipt>alert(1)<\/scr' + 'ipt>' }
+    });
+
+    if (res.error) {
+      setSecLayer('sec-guard', 'denied');
+      setNodeState('node-gateway', 'deny');
+      addLog('guard', 'guard', `ExtMCP guardrail: <strong style="color:var(--status-critical)">DENIED</strong> &mdash; ${esc(res.error.message || 'blocked')}`);
+      addLog('error', 'error', 'Poisoned request blocked before reaching backend');
+    } else {
+      setSecLayer('sec-guard', 'passed');
+      addLog('guard', 'guard', 'Guardrail passed (backend may still reject)');
+    }
+
+    showJson(res);
+  } catch (err) {
+    setSecLayer('sec-guard', 'denied');
+    setNodeState('node-gateway', 'deny');
+    addLog('error', 'error', `Request rejected: ${esc(err.message)}`);
+  }
+
+  document.getElementById('btn-poison').disabled = false;
+  document.getElementById('btn-poison').textContent = '4. Poison Test';
+}
+
+function resetAll(keepLog) {
+  sessionId = null;
+  rpcId = 0;
+  tools = [];
+  selectedTool = null;
+
+  resetArch();
+  setStatus('No session', 'disconnected');
+
+  document.getElementById('btn-list').disabled = true;
+  document.getElementById('btn-call').disabled = true;
+  document.getElementById('btn-poison').disabled = true;
+  document.getElementById('tool-section').style.display = 'none';
+
+  if (!keepLog) {
+    document.getElementById('flow-log').innerHTML =
+      '<div style="font-size:0.8rem;color:var(--text-muted)">Click "Initialize Session" to begin.</div>';
+    document.getElementById('json-view').textContent = 'Waiting for first request...';
+  }
+}
+
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+</script>
+</body>
+</html>

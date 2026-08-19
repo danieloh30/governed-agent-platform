@@ -58,7 +58,26 @@ The extension URI is `http://localhost:3000/mcp` (agentgateway) instead of `http
 | `agentgateway/config.yaml` | Full config with JWT auth, RBAC, and guardrails |
 | `goose-extension-config.yaml` | Goose extension pointing to agentgateway |
 | `extmcp-guardrail/` | Quarkus gRPC ExtMCP guardrail server |
+| `index.html` | Interactive SPA to visualize the demo flow |
 | `start-all.sh` | Launches all services |
+
+## Interactive Demo SPA
+
+Open `index.html` in a browser (serve via any HTTP server to avoid CORS issues):
+
+```bash
+cd part2-agentgateway
+python3 -m http.server 8888
+# Open http://localhost:8888/index.html
+```
+
+The SPA provides a 4-step interactive walkthrough:
+1. **Initialize Session** — establishes an MCP session through agentgateway
+2. **List Tools** — discovers available tools, shows guardrail annotations
+3. **Call Tool** — invokes a selected tool with configurable parameters
+4. **Poison Test** — sends a malicious payload to demonstrate ExtMCP guardrail blocking
+
+Each step animates the architecture diagram to show traffic flowing through each security layer.
 
 ## Verifying the Security Stack
 
