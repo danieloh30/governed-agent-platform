@@ -63,7 +63,7 @@ The extension URI is `http://localhost:3000/mcp` (agentgateway) instead of `http
 
 ## Interactive Demo SPA
 
-Open `index.html` in a browser (serve via any HTTP server to avoid CORS issues):
+The `start-all.sh` script automatically serves the SPA on `:8888`. Or serve it manually:
 
 ```bash
 cd part2-agentgateway
@@ -71,13 +71,27 @@ python3 -m http.server 8888
 # Open http://localhost:8888/index.html
 ```
 
-The SPA provides a 4-step interactive walkthrough:
-1. **Initialize Session** — establishes an MCP session through agentgateway
-2. **List Tools** — discovers available tools, shows guardrail annotations
-3. **Call Tool** — invokes a selected tool with configurable parameters
-4. **Poison Test** — sends a malicious payload to demonstrate ExtMCP guardrail blocking
+The SPA is an enterprise-style security console with:
 
-Each step animates the architecture diagram to show traffic flowing through each security layer.
+- **Stat tiles** — live counters for session status, requests, tools discovered, and security checks (passed/denied)
+- **Config selector** — switch between `config-dev.yaml`, `config-guardrails.yaml`, and `config.yaml` to see how each config affects the security stack
+- **Traffic flow architecture** — animated diagram showing requests flowing through Goose → agentgateway → Quarkus MCP Server
+- **Config-aware security layers** — JWT, RBAC, and ExtMCP layers animate as "checking/passed" when enabled or show as "skipped" with a badge when not in the selected config
+
+### Demo Steps
+
+1. **Initialize** — establishes an MCP session through agentgateway
+2. **List Tools** — discovers available tools; guardrail annotates descriptions when active
+3. **Call Tool** — invokes a selected tool with configurable parameters
+4. **Poison Test** — sends `__proto__/../evil` with `<script>` payload; blocked when guardrails are active, passes through when disabled
+
+### Config Tiers
+
+| Config | JWT | RBAC | Guardrails | What It Shows |
+|--------|-----|------|------------|---------------|
+| `config-dev.yaml` | -- | -- | -- | Pure proxy pass-through, no security |
+| `config-guardrails.yaml` | -- | -- | Active | ExtMCP blocks tool poisoning |
+| `config.yaml` | Active | Active | Active | Full stack: identity → permissions → input sanitization |
 
 ## Verifying the Security Stack
 

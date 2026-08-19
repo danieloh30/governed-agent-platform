@@ -524,6 +524,19 @@ mcp:
         host: http://localhost:8080/mcp
 ```
 
+## Bonus: Interactive Security Console
+
+The demo includes a browser-based SPA (`index.html`) that lets you visualize the entire security flow without touching the command line. The `start-all.sh` script serves it automatically on port 8888.
+
+Open `http://localhost:8888/index.html` and you'll see an enterprise-style console with:
+
+- **Config selector** — switch between `config-dev.yaml` (proxy only), `config-guardrails.yaml` (proxy + ExtMCP), and `config.yaml` (full security) to see how each tier affects the traffic flow
+- **Live stat tiles** — session status, request count, tools discovered, and security checks passed/denied
+- **Animated architecture diagram** — watch MCP requests flow from Goose through agentgateway's security layers to the Quarkus backend in real time
+- **Config-aware security layers** — JWT, RBAC, and ExtMCP layers animate as "checking → passed" when enabled in the selected config, or appear as "skipped" with a badge when not configured
+
+The four demo steps — Initialize, List Tools, Call Tool, and Poison Test — make real MCP requests through agentgateway and display the JSON-RPC responses. Switching configs lets you demonstrate the difference: with `config-dev.yaml`, the poison test passes through unblocked; with `config-guardrails.yaml`, the ExtMCP guardrail catches and denies it.
+
 ## What We Achieved
 
 Starting from the unprotected Quarkus MCP server in Part 1, we added four security layers without changing a single line of the backend Java code:
