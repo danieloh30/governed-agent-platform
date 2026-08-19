@@ -42,12 +42,12 @@ The fix is standard distributed tracing, applied to the MCP transport layer:
 
 Everything from Parts 1 and 2, plus:
 
-- **Docker** — for running Jaeger (`docker compose`)
+- **Podman** — for running Jaeger (`podman compose`)
 
-Verify Docker is available:
+Verify Podman is available:
 
 ```bash
-docker --version
+podman --version
 ```
 
 ## Step 1: Launching the Observability Backend
@@ -56,7 +56,7 @@ We use Jaeger all-in-one as both the OTLP collector and the trace UI. A single c
 
 ```bash
 cd part3-observability
-docker compose up -d
+podman compose up -d
 ```
 
 This starts Jaeger with OTLP collection enabled. Verify it's running:
@@ -272,7 +272,7 @@ Starting from the secured architecture in Part 2, we added full observability wi
 |-------|--------------|---------------|
 | Quarkus | `quarkus-opentelemetry` dependency | `pom.xml` + `application.properties` |
 | agentgateway | `tracing` block in config YAML | `config-traced.yaml` |
-| Observability backend | Jaeger all-in-one via Docker Compose | `docker-compose.yml` |
+| Observability backend | Jaeger all-in-one via Podman Compose | `docker-compose.yml` |
 
 The entire stack runs locally with a single `./start-all.sh` command and produces end-to-end trace waterfalls in Jaeger.
 

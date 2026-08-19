@@ -31,7 +31,7 @@ A multi-part tutorial series for platform engineers building governed AI agent i
 - **Maven 3.9+** -- verify with `mvn --version`
 - **Goose CLI** -- install from [block.github.io/goose](https://block.github.io/goose/)
 - **agentgateway** (Part 2+) -- `curl -sL https://agentgateway.dev/install | bash`
-- **Docker** (Part 3+) -- for running Jaeger via Docker Compose
+- **Podman** (Part 3+) -- for running Jaeger via Podman Compose
 
 ## Quick Start
 

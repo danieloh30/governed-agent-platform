@@ -20,7 +20,7 @@ This directory contains the companion demo for Part 3 of the series. It adds dis
 ## Prerequisites
 
 - Everything from Parts 1 and 2 (Java 25+, Maven 3.9+, Goose CLI, agentgateway)
-- **Docker** with Docker Compose
+- **Podman** with Podman Compose
 
 ## Quick Start
 
@@ -68,7 +68,7 @@ Then open [http://localhost:16686](http://localhost:16686), select service `cust
 
 | File | Purpose |
 |------|---------|
-| `docker-compose.yml` | Jaeger all-in-one with OTLP collection on :4317 |
+| `docker-compose.yml` | Jaeger all-in-one with OTLP collection on :4317 (Podman Compose compatible) |
 | `agentgateway/config-traced.yaml` | Proxy + tracing — OTLP export, no security layers |
 | `agentgateway/config-traced-guardrails.yaml` | Proxy + tracing + ExtMCP guardrails |
 | `start-all.sh` | Launches Jaeger, Quarkus, agentgateway, and generates sample traces |
@@ -93,5 +93,5 @@ agentgateway.mcp.proxy                         [12ms]
 ```bash
 # Stop all services (Ctrl+C in the start-all.sh terminal)
 # Then remove the Jaeger container:
-docker compose down
+podman compose down
 ```
