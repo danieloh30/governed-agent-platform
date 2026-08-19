@@ -65,7 +65,7 @@ echo "━━━ Step 1/4: Quarkus MCP Server (:8080) ━━━━━━━━━
 echo "[quarkus] Starting Quarkus MCP server..."
 java -jar "$ROOT_DIR/target/quarkus-app/quarkus-run.jar" &
 PIDS+=($!)
-echo "[quarkus] PID: ${PIDS[-1]}"
+echo "[quarkus] PID: $!"
 
 echo "[quarkus] Waiting for MCP endpoint on :8080..."
 until curl -sf http://localhost:8080/mcp \
@@ -84,7 +84,7 @@ if grep -q "mcpGuardrails" "$CONFIG" 2>/dev/null; then
   echo "[guardrail] Starting ExtMCP guardrail server..."
   java -jar "$SCRIPT_DIR/extmcp-guardrail/target/quarkus-app/quarkus-run.jar" &
   PIDS+=($!)
-  echo "[guardrail] PID: ${PIDS[-1]}"
+  echo "[guardrail] PID: $!"
 
   echo "[guardrail] Waiting for gRPC endpoint on :9001..."
   until (echo > /dev/tcp/localhost/9001) 2>/dev/null; do
@@ -102,7 +102,7 @@ echo "━━━ Step 3/4: agentgateway (:3000) ━━━━━━━━━━━
 echo "[gateway] Starting agentgateway..."
 agentgateway -f "$CONFIG" &
 PIDS+=($!)
-echo "[gateway] PID: ${PIDS[-1]}"
+echo "[gateway] PID: $!"
 
 echo "[gateway] Waiting for admin UI on :15000..."
 until curl -sf http://localhost:15000/ > /dev/null 2>&1; do
@@ -116,7 +116,7 @@ echo "━━━ Step 4/4: Demo SPA (:$SPA_PORT) ━━━━━━━━━━�
 echo "[spa] Starting HTTP server for interactive demo..."
 python3 -m http.server "$SPA_PORT" --directory "$SCRIPT_DIR" > /dev/null 2>&1 &
 PIDS+=($!)
-echo "[spa] PID: ${PIDS[-1]}"
+echo "[spa] PID: $!"
 
 until curl -sf "http://localhost:$SPA_PORT/index.html" > /dev/null 2>&1; do
   sleep 1
