@@ -8,7 +8,7 @@ A multi-part tutorial series for platform engineers building governed AI agent i
 |------|-------|-----------|---------------|
 | 1 | [Building Governed MCP Tool Services with Quarkus and Goose](part1-quarkus-mcp/) | `part1-quarkus-mcp/` | Quarkus MCP server exposing enterprise tools over Streamable HTTP, connected to Goose AI agent |
 | 2 | [Securing and Scaling Goose-to-Java Agent Traffic with agentgateway](part2-agentgateway/) | `part2-agentgateway/` | agentgateway as a security proxy with JWT auth, RBAC via CEL, and ExtMCP guardrails against tool poisoning |
-| 3 | End-to-End Tracing and Observability | _Coming soon_ | Distributed tracing across Goose, agentgateway, and Quarkus with OpenTelemetry and Grafana |
+| 3 | [End-to-End Tracing and Observability](part3-observability/) | `part3-observability/` | W3C Trace Context propagation across all layers with Quarkus OpenTelemetry, agentgateway tracing, and Jaeger |
 
 ## Architecture
 
@@ -31,6 +31,7 @@ A multi-part tutorial series for platform engineers building governed AI agent i
 - **Maven 3.9+** -- verify with `mvn --version`
 - **Goose CLI** -- install from [block.github.io/goose](https://block.github.io/goose/)
 - **agentgateway** (Part 2+) -- `curl -sL https://agentgateway.dev/install | bash`
+- **Docker** (Part 3+) -- for running Jaeger via Docker Compose
 
 ## Quick Start
 
@@ -54,6 +55,14 @@ cd part2-agentgateway
 ./start-all.sh
 ```
 
+Run Part 3 (starts Jaeger + all services with tracing):
+
+```bash
+cd part3-observability
+./start-all.sh
+# Open http://localhost:16686 for Jaeger trace UI
+```
+
 ## Project Structure
 
 ```
@@ -64,10 +73,15 @@ governed-mcp-tools/
 │   ├── src/main/java/               # MCP tools and models
 │   ├── src/main/resources/          # Config + dashboard SPA
 │   └── goose-extension-config.yaml
-└── part2-agentgateway/              # agentgateway security proxy
-    ├── agentgateway/                # Config files (dev/guardrails/full)
-    ├── extmcp-guardrail/            # Quarkus gRPC guardrail server
-    ├── index.html                   # Interactive security console SPA
-    ├── start-all.sh                 # Launches all services
+├── part2-agentgateway/              # agentgateway security proxy
+│   ├── agentgateway/                # Config files (dev/guardrails/full)
+│   ├── extmcp-guardrail/            # Quarkus gRPC guardrail server
+│   ├── index.html                   # Interactive security console SPA
+│   ├── start-all.sh                 # Launches all services
+│   └── tutorial.md                  # DZone tutorial
+└── part3-observability/             # Distributed tracing
+    ├── agentgateway/                # Config files with tracing enabled
+    ├── docker-compose.yml           # Jaeger all-in-one
+    ├── start-all.sh                 # Launches Jaeger + all services
     └── tutorial.md                  # DZone tutorial
 ```

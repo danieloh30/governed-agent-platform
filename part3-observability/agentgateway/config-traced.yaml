@@ -1,0 +1,32 @@
+# yaml-language-server: $schema=https://agentgateway.dev/schema/config
+#
+# Observability configuration – tracing enabled, no auth.
+# Exports spans to Jaeger via OTLP gRPC on :4317.
+# Propagates W3C traceparent headers to the Quarkus backend.
+
+config:
+  adminAddr: localhost:15000
+  tracing:
+    endpoint: http://localhost:4317
+    protocol: grpc
+    sampling:
+      parent: true
+      default: 1.0
+
+mcp:
+  port: 3000
+  policies:
+    cors:
+      allowOrigins:
+        - "*"
+      allowHeaders:
+        - mcp-protocol-version
+        - content-type
+        - mcp-session-id
+      exposeHeaders:
+        - Mcp-Session-Id
+
+  targets:
+    - name: customer-tools
+      mcp:
+        host: http://localhost:8080/mcp

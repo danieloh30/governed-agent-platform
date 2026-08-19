@@ -1,0 +1,41 @@
+# yaml-language-server: $schema=https://agentgateway.dev/schema/config
+#
+# Observability + guardrails configuration – tracing enabled, ExtMCP guardrails active.
+# Exports spans to Jaeger via OTLP gRPC on :4317.
+# Requires the ExtMCP guardrail server running on :9001.
+
+config:
+  adminAddr: localhost:15000
+  tracing:
+    endpoint: http://localhost:4317
+    protocol: grpc
+    sampling:
+      parent: true
+      default: 1.0
+
+mcp:
+  port: 3000
+  policies:
+    cors:
+      allowOrigins:
+        - "*"
+      allowHeaders:
+        - mcp-protocol-version
+        - content-type
+        - mcp-session-id
+      exposeHeaders:
+        - Mcp-Session-Id
+
+    mcpGuardrails:
+      processors:
+        - kind: remote
+          host: "localhost:9001"
+          failureMode: failClosed
+          methods:
+            tools/call: request
+            tools/list: response
+
+  targets:
+    - name: customer-tools
+      mcp:
+        host: http://localhost:8080/mcp
