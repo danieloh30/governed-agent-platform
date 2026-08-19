@@ -26,7 +26,7 @@ The fix is standard distributed tracing, applied to the MCP transport layer:
 │  Goose   │──MCP──▶  agentgateway     │──MCP──▶  Quarkus MCP Server │
 │  Client  │       │  (trace export)   │       │  (quarkus-otel)     │
 └──────────┘       └────────┬──────────┘       └──────────┬──────────┘
-                            │ OTLP gRPC                   │ OTLP gRPC
+                            │ OTLP gRPC                   │ OTLP HTTP
                             ▼                             ▼
                    ┌──────────────────────────────────────────────────┐
                    │              Jaeger (OTLP Collector)             │
@@ -52,7 +52,7 @@ podman --version
 
 ## Step 1: Launching the Observability Backend
 
-We use Jaeger v2 as both the OTLP collector and the trace UI. A single container accepts traces from agentgateway and Quarkus on port 4317 (OTLP gRPC) and serves the query UI on port 16686.
+We use Jaeger v2 as both the OTLP collector and the trace UI. A single container accepts traces from agentgateway on port 4317 (OTLP gRPC) and from Quarkus on port 4318 (OTLP HTTP), and serves the query UI on port 16686.
 
 ```bash
 cd part3-observability
@@ -87,8 +87,19 @@ Configure the exporter in `application.properties`:
 ```properties
 # OpenTelemetry
 quarkus.otel.service.name=customer-tools
-quarkus.otel.exporter.otlp.traces.endpoint=http://localhost:4317
+quarkus.otel.exporter.otlp.traces.endpoint=http://localhost:4318
+quarkus.otel.exporter.otlp.traces.protocol=http/protobuf
+quarkus.otel.traces.sampler=always_on
+quarkus.otel.traces.suppress-non-application-uris=false
 ```
+
+| Property | Purpose |
+|----------|---------|
+| `service.name` | Identifies this service in Jaeger's service dropdown |
+| `traces.endpoint` | OTLP HTTP receiver — Jaeger's port 4318 (base URL only; Quarkus appends `/v1/traces`) |
+| `traces.protocol` | `http/protobuf` — Quarkus uses its Vert.x-based HTTP exporter |
+| `traces.sampler` | `always_on` — sample every span (reduce in production) |
+| `suppress-non-application-uris` | `false` — include MCP endpoint spans (they'd be filtered otherwise) |
 
 When no OTLP collector is running (Parts 1 and 2 without Jaeger), Quarkus logs a connection warning but the MCP server works normally. When the collector IS running (Part 3), traces flow automatically. Zero code changes to the MCP tools.
 

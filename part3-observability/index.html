@@ -489,14 +489,14 @@ body {
       </div>
       <div class="otlp-arrow" id="otlp-q">
         <div class="otlp-line"></div>
-        <div class="otlp-label">OTLP gRPC</div>
+        <div class="otlp-label">OTLP HTTP</div>
       </div>
     </div>
     <div class="jaeger-node">
       <div class="jaeger-box" id="node-jaeger">
         <div class="node-label">Trace Backend</div>
         <div class="node-title">Jaeger</div>
-        <div class="node-port mono">:16686 (UI) / :4317 (OTLP)</div>
+        <div class="node-port mono">:16686 (UI) / :4317 :4318 (OTLP)</div>
       </div>
     </div>
   </div>
@@ -731,7 +731,7 @@ async function animateTracing(method, elapsed) {
   setTraceLayer('tl-export-q', 'active');
   setOtlp('otlp-gw', 'active');
   setOtlp('otlp-q', 'active');
-  addLog('trace', 'trace', 'Both services: <strong>exporting spans via OTLP gRPC</strong> to Jaeger :4317');
+  addLog('trace', 'trace', 'Both services: <strong>exporting spans via OTLP</strong> to Jaeger (gRPC :4317 + HTTP :4318)');
   await delay(500);
 
   setTraceLayer('tl-export-gw', 'exported');
@@ -888,7 +888,7 @@ async function stepWorkflow() {
 }
 
 function openJaeger() {
-  window.open('http://localhost:16686/search?service=customer-tools', '_blank');
+  window.open('http://localhost:16686/search', '_blank');
 }
 
 function resetAll(keepLog) {
@@ -925,11 +925,9 @@ function resetAll(keepLog) {
 
 async function checkJaeger() {
   try {
-    const res = await fetch('http://localhost:16686/api/services', { mode: 'cors' });
-    if (res.ok) {
-      document.getElementById('stat-jaeger').textContent = 'Online';
-      document.getElementById('stat-jaeger').className = 'stat-value good';
-    }
+    await fetch('http://localhost:16686/', { mode: 'no-cors' });
+    document.getElementById('stat-jaeger').textContent = 'Online';
+    document.getElementById('stat-jaeger').className = 'stat-value good';
   } catch {
     document.getElementById('stat-jaeger').textContent = 'Offline';
     document.getElementById('stat-jaeger').className = 'stat-value crit';

@@ -9,7 +9,7 @@ This directory contains the companion demo for Part 3 of the series. It adds dis
 │  Goose   │──MCP──▶  agentgateway     │──MCP──▶  Quarkus MCP Server │
 │  Client  │ :3000 │  (trace export)   │ :8080 │  (quarkus-otel)     │
 └──────────┘       └────────┬──────────┘       └──────────┬──────────┘
-                            │ OTLP gRPC                   │ OTLP gRPC
+                            │ OTLP gRPC                   │ OTLP HTTP
                             ▼                             ▼
                    ┌──────────────────────────────────────────────────┐
                    │              Jaeger (OTLP Collector)             │

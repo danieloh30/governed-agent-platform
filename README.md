@@ -17,12 +17,20 @@ A multi-part tutorial series for platform engineers building governed AI agent i
 ┌──────────┐       ┌───────────────────┐       ┌─────────────────────┐
 │  Goose   │──MCP──▶  agentgateway     │──MCP──▶  Quarkus MCP Server │
 │  Client  │ :3000 │  ┌─────────────┐  │ :8080 │  (customer-tools)   │
-└──────────┘       │  │ JWT AuthN   │  │       └─────────────────────┘
-                   │  │ RBAC AuthZ  │  │
-                   │  │ ExtMCP      │  │       ┌─────────────────────┐
+└──────────┘       │  │ JWT AuthN   │  │       └──────────┬──────────┘
+                   │  │ RBAC AuthZ  │  │                  │
+                   │  │ ExtMCP      │  │       ┌──────────┴──────────┐
                    │  │ Guardrails  │  │──gRPC─▶  ExtMCP Guardrail   │
                    │  └─────────────┘  │ :9001 │  (Quarkus gRPC)     │
-                   └───────────────────┘       └─────────────────────┘
+                   └────────┬──────────┘       └─────────────────────┘
+                            │                             │
+                            │ Part 3                      │
+                            │ OTLP gRPC                   │ OTLP HTTP
+                            ▼                             ▼
+                   ┌──────────────────────────────────────────────────┐
+                   │              Jaeger (OTLP Collector)             │
+                   │           :16686 (UI) / :4317 / :4318           │
+                   └──────────────────────────────────────────────────┘
 ```
 
 ## Prerequisites
