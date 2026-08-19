@@ -4,6 +4,7 @@ package agentgateway.dev.ext_mcp;
 
 option java_multiple_files = true;
 option java_package = "com.example.guardrail.grpc";
+option java_outer_classname = "ExtMcpProto";
 
 import "google/protobuf/struct.proto";
 
