@@ -64,6 +64,8 @@ The extension URI is `http://localhost:3000/mcp` (agentgateway) instead of `http
 
 ### Test through agentgateway
 
+agentgateway returns SSE format (`event: message\ndata: {...}`), so pipe through `grep` to extract the JSON:
+
 ```bash
 # Initialize MCP session via agentgateway
 export MCP_SESSION_ID=$(curl -s -D - http://localhost:3000/mcp \
@@ -73,13 +75,14 @@ export MCP_SESSION_ID=$(curl -s -D - http://localhost:3000/mcp \
   -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"curl","version":"1.0"}}}' \
   | grep -i "mcp-session-id:" | sed 's/.*: //' | tr -d '\r')
 
-# List tools (should show [guardrail-verified] markers)
+# List tools
 curl -s http://localhost:3000/mcp \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
   -H "MCP-Protocol-Version: 2025-03-26" \
   -H "mcp-session-id: $MCP_SESSION_ID" \
-  -d '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' | jq .
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' \
+  | grep '^data: ' | sed 's/^data: //' | jq .
 
 # Call a tool through the gateway
 curl -s http://localhost:3000/mcp \
@@ -87,7 +90,8 @@ curl -s http://localhost:3000/mcp \
   -H "Accept: application/json, text/event-stream" \
   -H "MCP-Protocol-Version: 2025-03-26" \
   -H "mcp-session-id: $MCP_SESSION_ID" \
-  -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"getCustomerStatus","arguments":{"customerId":"CUST-4091"}}}' | jq .
+  -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"getCustomerStatus","arguments":{"customerId":"CUST-4091"}}}' \
+  | grep '^data: ' | sed 's/^data: //' | jq .
 ```
 
 ## Switching to Production Config

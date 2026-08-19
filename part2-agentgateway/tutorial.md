@@ -98,14 +98,15 @@ Start agentgateway:
 agentgateway -f part2-agentgateway/agentgateway/config-dev.yaml
 ```
 
-Now test the proxied MCP endpoint:
+Now test the proxied MCP endpoint. Note that agentgateway returns SSE format (`event: message\ndata: {...}`), so we extract the JSON from the `data:` line:
 
 ```bash
 curl -s http://localhost:3000/mcp \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
   -H "MCP-Protocol-Version: 2025-03-26" \
-  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"curl","version":"1.0"}}}' | jq .
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"curl","version":"1.0"}}}' \
+  | grep '^data: ' | sed 's/^data: //' | jq .
 ```
 
 You should see the same `customer-tools` server info as Part 1, but the traffic now flows through agentgateway. Open `http://localhost:15000/ui` to see the agentgateway admin UI with your MCP target listed.
@@ -408,10 +409,11 @@ curl -s http://localhost:3000/mcp \
   -H "Accept: application/json, text/event-stream" \
   -H "MCP-Protocol-Version: 2025-03-26" \
   -H "mcp-session-id: $MCP_SESSION_ID" \
-  -d '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' | jq '.result.tools[].description'
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' \
+  | grep '^data: ' | sed 's/^data: //' | jq '.result.tools[].description'
 ```
 
-Each tool description should end with the guardrail marker (e.g., `[extmcp]`), confirming that every `tools/list` response passes through the ExtMCP guardrail before reaching the client.
+Each tool description should start with the `[guardrail-verified]` marker, confirming that every `tools/list` response passes through the ExtMCP guardrail before reaching the client.
 
 ## Step 5: Configure Goose to Use agentgateway
 
