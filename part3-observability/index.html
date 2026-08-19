@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MCP Observability Console</title>
+<style>
+:root {
+  color-scheme: light;
+  --surface-page:     #f5f5f3;
+  --surface-card:     #ffffff;
+  --surface-inset:    #f9f9f7;
+  --text-primary:     #0b0b0b;
+  --text-secondary:   #52514e;
+  --text-muted:       #898781;
+  --gridline:         #e8e7e2;
+  --baseline:         #d0cfca;
+  --border:           rgba(11,11,11,0.08);
+  --shadow-sm:        0 1px 2px rgba(0,0,0,0.05);
+  --shadow-md:        0 2px 8px rgba(0,0,0,0.08);
+  --shadow-lg:        0 4px 16px rgba(0,0,0,0.10);
+  --cat-1: #2a78d6;
+  --cat-2: #eb6834;
+  --cat-3: #1baf7a;
+  --cat-4: #eda100;
+  --cat-5: #e87ba4;
+  --status-good:      #0ca30c;
+  --status-warn:      #fab219;
+  --status-serious:   #ec835a;
+  --status-critical:  #d03b3b;
+  --status-good-bg:   rgba(12,163,12,0.08);
+  --status-good-text: #006300;
+  --status-crit-bg:   rgba(208,59,59,0.08);
+  --seq-100: #cde2fb;
+  --seq-200: #9dc5f3;
+  --seq-300: #6da7ec;
+  --seq-500: #256abf;
+  --radius: 10px;
+  --radius-sm: 6px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --surface-page: #0a0a0a; --surface-card: #161615; --surface-inset: #1e1e1c;
+    --text-primary: #f0f0ee; --text-secondary: #b0afa8; --text-muted: #7a7972;
+    --gridline: #262624; --baseline: #333331; --border: rgba(255,255,255,0.07);
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.3); --shadow-md: 0 2px 8px rgba(0,0,0,0.4);
+    --shadow-lg: 0 4px 16px rgba(0,0,0,0.5);
+    --cat-1: #4d9aee; --cat-2: #d95926; --cat-3: #24c98e;
+    --cat-4: #e5a617; --cat-5: #d55181;
+    --status-good: #2ecc40; --status-good-bg: rgba(46,204,64,0.10);
+    --status-good-text: #2ecc40; --status-crit-bg: rgba(208,59,59,0.12);
+    --seq-100: #1a4d8a; --seq-200: #2668b5; --seq-300: #4d9aee; --seq-500: #a3cdf7;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --surface-page: #0a0a0a; --surface-card: #161615; --surface-inset: #1e1e1c;
+  --text-primary: #f0f0ee; --text-secondary: #b0afa8; --text-muted: #7a7972;
+  --gridline: #262624; --baseline: #333331; --border: rgba(255,255,255,0.07);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.3); --shadow-md: 0 2px 8px rgba(0,0,0,0.4);
+  --shadow-lg: 0 4px 16px rgba(0,0,0,0.5);
+  --cat-1: #4d9aee; --cat-2: #d95926; --cat-3: #24c98e;
+  --cat-4: #e5a617; --cat-5: #d55181;
+  --status-good: #2ecc40; --status-good-bg: rgba(46,204,64,0.10);
+  --status-good-text: #2ecc40; --status-crit-bg: rgba(208,59,59,0.12);
+  --seq-100: #1a4d8a; --seq-200: #2668b5; --seq-300: #4d9aee; --seq-500: #a3cdf7;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: var(--surface-page); color: var(--text-primary);
+  line-height: 1.5; min-height: 100vh;
+}
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace; }
+
+/* ── Top bar ── */
+.topbar {
+  background: var(--surface-card); border-bottom: 1px solid var(--border);
+  padding: 0 32px; height: 56px;
+  display: flex; align-items: center; gap: 16px;
+  box-shadow: var(--shadow-sm); position: sticky; top: 0; z-index: 10;
+}
+.topbar-logo {
+  width: 28px; height: 28px; border-radius: 6px;
+  background: linear-gradient(135deg, var(--cat-2), var(--cat-4));
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-weight: 700; font-size: 0.75rem;
+}
+.topbar h1 { font-size: 0.95rem; font-weight: 600; }
+.topbar .badge {
+  font-size: 0.65rem; font-weight: 600; padding: 2px 8px;
+  border-radius: 10px; background: var(--cat-2); color: #fff;
+  text-transform: uppercase; letter-spacing: 0.05em;
+}
+.topbar-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+.topbar-status {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 0.78rem; color: var(--text-muted);
+}
+.topbar-status .dot {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--baseline);
+  transition: background 0.3s;
+}
+.topbar-status .dot.on { background: var(--status-good); box-shadow: 0 0 6px rgba(12,163,12,0.4); }
+.topbar-status .dot.off { background: var(--status-critical); }
+.theme-btn {
+  background: none; border: 1px solid var(--baseline); border-radius: var(--radius-sm);
+  padding: 4px 10px; color: var(--text-secondary); cursor: pointer; font-size: 0.78rem;
+}
+
+/* ── Shell ── */
+.shell { max-width: 1400px; margin: 0 auto; padding: 28px 32px; }
+
+/* ── Stat tiles ── */
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+@media (max-width: 900px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+.stat {
+  background: var(--surface-card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px 24px;
+  box-shadow: var(--shadow-sm); transition: box-shadow 0.2s;
+}
+.stat:hover { box-shadow: var(--shadow-md); }
+.stat-label { font-size: 0.72rem; font-weight: 500; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+.stat-value { font-size: 1.6rem; font-weight: 700; line-height: 1.2; }
+.stat-sub { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; }
+.stat-value.good { color: var(--status-good); }
+.stat-value.crit { color: var(--status-critical); }
+.stat-value.blue { color: var(--cat-1); }
+.stat-value.orange { color: var(--cat-2); }
+
+/* ── Architecture ── */
+.arch-card {
+  background: var(--surface-card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 32px; margin-bottom: 28px;
+  box-shadow: var(--shadow-sm);
+}
+.arch-card h2 { font-size: 0.82rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 24px; }
+.arch-row {
+  display: flex; align-items: stretch; gap: 0; justify-content: center;
+}
+.arch-node {
+  background: var(--surface-inset); border: 2px solid var(--baseline);
+  border-radius: var(--radius); padding: 24px 28px; min-width: 220px;
+  text-align: center; position: relative; transition: all 0.35s;
+}
+.arch-node.active {
+  border-color: var(--cat-1);
+  box-shadow: 0 0 0 4px rgba(42,120,214,0.12), var(--shadow-md);
+}
+.arch-node.pass { border-color: var(--status-good); box-shadow: 0 0 0 4px rgba(12,163,12,0.10), var(--shadow-md); }
+.arch-node .node-label {
+  font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--text-muted); margin-bottom: 4px;
+}
+.arch-node .node-title { font-size: 1rem; font-weight: 600; margin-bottom: 2px; }
+.arch-node .node-port { font-size: 0.78rem; color: var(--text-muted); }
+.arch-arrow {
+  display: flex; align-items: center; padding: 0 12px;
+  color: var(--baseline); font-size: 1.4rem; min-width: 56px; justify-content: center;
+  position: relative; transition: color 0.3s;
+}
+.arch-arrow.active { color: var(--cat-1); }
+.arch-arrow.pass { color: var(--status-good); }
+.arrow-label {
+  position: absolute; top: -18px; font-size: 0.65rem; font-weight: 500;
+  color: var(--text-muted); white-space: nowrap;
+}
+
+/* Tracing layers */
+.trace-layers { margin-top: 16px; display: flex; flex-direction: column; gap: 6px; }
+.trace-layer {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 0.78rem; padding: 6px 12px; border-radius: var(--radius-sm);
+  background: var(--gridline); color: var(--text-secondary);
+  transition: all 0.3s; font-weight: 500;
+}
+.trace-layer.active { background: rgba(235,104,52,0.12); color: var(--cat-2); }
+.trace-layer.exported { background: var(--status-good-bg); color: var(--status-good-text); }
+.trace-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--baseline); flex-shrink: 0; transition: background 0.3s;
+}
+.trace-layer.active .trace-dot { background: var(--cat-2); animation: pulse 1s infinite; }
+.trace-layer.exported .trace-dot { background: var(--status-good); }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+/* OTLP export arrows */
+.otlp-section { margin-top: 24px; display: flex; justify-content: center; gap: 120px; }
+.otlp-arrow {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  color: var(--baseline); transition: color 0.3s;
+}
+.otlp-arrow.active { color: var(--cat-2); }
+.otlp-arrow.exported { color: var(--status-good); }
+.otlp-arrow .otlp-line {
+  width: 2px; height: 28px; background: currentColor;
+  position: relative;
+}
+.otlp-arrow .otlp-label {
+  font-size: 0.65rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.jaeger-node {
+  margin-top: 8px; display: flex; justify-content: center;
+}
+.jaeger-box {
+  background: var(--surface-inset); border: 2px solid var(--baseline);
+  border-radius: var(--radius); padding: 16px 48px;
+  text-align: center; transition: all 0.35s;
+}
+.jaeger-box.active {
+  border-color: var(--cat-2);
+  box-shadow: 0 0 0 4px rgba(235,104,52,0.12), var(--shadow-md);
+}
+.jaeger-box.pass {
+  border-color: var(--status-good);
+  box-shadow: 0 0 0 4px rgba(12,163,12,0.10), var(--shadow-md);
+}
+
+/* ── Controls ── */
+.controls-bar {
+  background: var(--surface-card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px 24px; margin-bottom: 28px;
+  box-shadow: var(--shadow-sm);
+  display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+}
+.controls-bar .section-label {
+  font-size: 0.72rem; font-weight: 600; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.06em; margin-right: 8px;
+}
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 10px 20px; border: none; border-radius: var(--radius-sm);
+  font-size: 0.82rem; font-weight: 600; cursor: pointer;
+  transition: all 0.15s; letter-spacing: 0.01em;
+}
+.btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
+.btn:active { transform: translateY(0); }
+.btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none; box-shadow: none; }
+.btn-primary { background: var(--cat-1); color: #fff; }
+.btn-secondary { background: var(--gridline); color: var(--text-primary); }
+.btn-trace { background: var(--cat-2); color: #fff; }
+.btn-success { background: var(--status-good); color: #fff; }
+.btn-outline { background: none; border: 1px solid var(--baseline); color: var(--text-secondary); }
+.btn .step-num {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: rgba(255,255,255,0.2); font-size: 0.7rem; font-weight: 700;
+}
+.btn-secondary .step-num { background: var(--baseline); }
+
+/* ── Main grid ── */
+.main-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 28px;
+}
+@media (max-width: 900px) { .main-grid { grid-template-columns: 1fr; } }
+
+.card {
+  background: var(--surface-card); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow-sm);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.card-header {
+  padding: 18px 24px 14px;
+  border-bottom: 1px solid var(--gridline);
+  display: flex; align-items: center; gap: 10px;
+}
+.card-header h2 { font-size: 0.88rem; font-weight: 600; }
+.card-header .card-badge {
+  font-size: 0.65rem; font-weight: 600; padding: 2px 8px;
+  border-radius: 10px; background: var(--gridline); color: var(--text-muted);
+}
+.card-body { padding: 20px 24px; flex: 1; overflow-y: auto; }
+
+/* ── Flow log ── */
+.flow-log { display: flex; flex-direction: column; gap: 0; min-height: 400px; }
+.flow-empty {
+  display: flex; align-items: center; justify-content: center;
+  height: 400px; color: var(--text-muted); font-size: 0.85rem;
+  flex-direction: column; gap: 8px;
+}
+.flow-empty-icon { font-size: 2rem; opacity: 0.3; }
+.flow-entry {
+  display: grid; grid-template-columns: 24px 90px 1fr;
+  gap: 10px; padding: 12px 0; align-items: start;
+  border-bottom: 1px solid var(--gridline);
+  font-size: 0.82rem;
+  animation: fadeSlideIn 0.35s ease;
+}
+.flow-entry:last-child { border-bottom: none; }
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: none; }
+}
+.flow-num {
+  width: 24px; height: 24px; border-radius: 50%;
+  background: var(--gridline); color: var(--text-muted);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.65rem; font-weight: 700; flex-shrink: 0;
+}
+.flow-tag {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 3px 10px; border-radius: 12px;
+  font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+  height: 24px;
+}
+.flow-tag.request { background: rgba(42,120,214,0.10); color: var(--cat-1); }
+.flow-tag.response { background: rgba(27,175,122,0.10); color: var(--cat-3); }
+.flow-tag.trace { background: rgba(235,104,52,0.10); color: var(--cat-2); }
+.flow-tag.error { background: var(--status-crit-bg); color: var(--status-critical); }
+.flow-msg { color: var(--text-secondary); word-break: break-word; line-height: 1.5; }
+.flow-msg strong { color: var(--text-primary); font-weight: 600; }
+
+/* ── JSON viewer ── */
+.json-view {
+  background: var(--surface-inset); border: 1px solid var(--gridline);
+  border-radius: var(--radius-sm); padding: 16px 20px; font-size: 0.78rem;
+  white-space: pre-wrap; word-break: break-word;
+  min-height: 400px; max-height: 500px; overflow-y: auto;
+  color: var(--text-secondary); line-height: 1.7;
+}
+.json-view .jk { color: var(--cat-1); }
+.json-view .js { color: var(--cat-3); }
+.json-view .jn { color: var(--cat-2); }
+.json-view .jb { color: var(--cat-5); }
+
+/* ── Trace waterfall ── */
+.waterfall-card { margin-bottom: 28px; }
+.waterfall { display: flex; flex-direction: column; gap: 0; }
+.wf-empty { color: var(--text-muted); font-size: 0.85rem; padding: 32px; text-align: center; }
+.wf-row {
+  display: grid; grid-template-columns: 180px 1fr 70px;
+  gap: 12px; padding: 8px 0; align-items: center;
+  border-bottom: 1px solid var(--gridline);
+  font-size: 0.78rem;
+  animation: fadeSlideIn 0.35s ease;
+}
+.wf-row:last-child { border-bottom: none; }
+.wf-service {
+  font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.wf-service.gw { color: var(--cat-1); }
+.wf-service.quarkus { color: var(--cat-3); }
+.wf-bar-track {
+  height: 20px; background: var(--gridline); border-radius: 3px;
+  position: relative; overflow: hidden;
+}
+.wf-bar {
+  position: absolute; top: 2px; bottom: 2px; border-radius: 2px;
+  min-width: 4px; transition: width 0.3s ease;
+}
+.wf-bar.gw { background: var(--cat-1); }
+.wf-bar.quarkus { background: var(--cat-3); }
+.wf-bar.tool { background: var(--cat-2); }
+.wf-dur { color: var(--text-muted); text-align: right; }
+
+/* Packet animation */
+.arch-arrow .packet {
+  display: inline-block; width: 10px; height: 10px;
+  border-radius: 50%; background: var(--cat-1);
+  animation: moveRight 0.6s ease forwards;
+  box-shadow: 0 0 8px rgba(42,120,214,0.4);
+}
+.arch-arrow .packet.reverse {
+  animation: moveLeft 0.6s ease forwards;
+  background: var(--cat-3);
+  box-shadow: 0 0 8px rgba(27,175,122,0.4);
+}
+@keyframes moveRight {
+  0% { transform: translateX(-16px); opacity: 0; }
+  30% { opacity: 1; }
+  100% { transform: translateX(16px); opacity: 0; }
+}
+@keyframes moveLeft {
+  0% { transform: translateX(16px); opacity: 0; }
+  30% { opacity: 1; }
+  100% { transform: translateX(-16px); opacity: 0; }
+}
+
+/* Spinner */
+.spinner {
+  display: inline-block; width: 16px; height: 16px;
+  border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff;
+  border-radius: 50%; animation: spin 0.6s linear infinite;
+}
+.btn-secondary .spinner { border-color: var(--baseline); border-top-color: var(--text-primary); }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+  .shell { padding: 16px; }
+  .topbar { padding: 0 16px; }
+  .stats { grid-template-columns: 1fr 1fr; }
+  .arch-row { flex-direction: column; align-items: center; }
+  .arch-arrow { transform: rotate(90deg); min-width: auto; min-height: 40px; }
+  .otlp-section { gap: 40px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── Top bar ── -->
+<div class="topbar">
+  <div class="topbar-logo">OT</div>
+  <h1>MCP Observability Console</h1>
+  <span class="badge">Part 3</span>
+  <div class="topbar-right">
+    <div class="topbar-status" id="topbar-status">
+      <span class="dot" id="status-dot"></span>
+      <span id="status-text">Disconnected</span>
+    </div>
+    <button class="theme-btn" onclick="toggleTheme()">Theme</button>
+  </div>
+</div>
+
+<div class="shell">
+
+  <!-- ── Stat tiles ── -->
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-label">Traces Generated</div>
+      <div class="stat-value orange" id="stat-traces">0</div>
+      <div class="stat-sub" id="stat-traces-sub">MCP requests with trace context</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Spans Collected</div>
+      <div class="stat-value blue" id="stat-spans">0</div>
+      <div class="stat-sub">Across agentgateway + Quarkus</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Services Reporting</div>
+      <div class="stat-value" id="stat-services">--</div>
+      <div class="stat-sub" id="stat-services-sub">Waiting for traces</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Jaeger Status</div>
+      <div class="stat-value" id="stat-jaeger">--</div>
+      <div class="stat-sub" id="stat-jaeger-sub"><a href="http://localhost:16686" target="_blank" style="color:var(--cat-2);text-decoration:none">localhost:16686</a></div>
+    </div>
+  </div>
+
+  <!-- ── Architecture ── -->
+  <div class="arch-card">
+    <h2>Trace Propagation Architecture</h2>
+    <div class="arch-row">
+      <div class="arch-node" id="node-goose">
+        <div class="node-label">AI Agent</div>
+        <div class="node-title">Goose / Client</div>
+        <div class="node-port mono">caller</div>
+      </div>
+      <div class="arch-arrow" id="arrow-1">
+        <span class="arrow-label">MCP</span>
+        &rarr;
+      </div>
+      <div class="arch-node" id="node-gateway" style="min-width:260px">
+        <div class="node-label">Tracing Proxy</div>
+        <div class="node-title">agentgateway</div>
+        <div class="node-port mono">:3000</div>
+        <div class="trace-layers">
+          <div class="trace-layer" id="tl-span"><span class="trace-dot"></span> Create root span</div>
+          <div class="trace-layer" id="tl-inject"><span class="trace-dot"></span> Inject traceparent header</div>
+          <div class="trace-layer" id="tl-export-gw"><span class="trace-dot"></span> Export span via OTLP</div>
+        </div>
+      </div>
+      <div class="arch-arrow" id="arrow-2">
+        <span class="arrow-label">MCP + traceparent</span>
+        &rarr;
+      </div>
+      <div class="arch-node" id="node-quarkus">
+        <div class="node-label">Backend</div>
+        <div class="node-title">Quarkus MCP Server</div>
+        <div class="node-port mono">:8080</div>
+        <div class="trace-layers">
+          <div class="trace-layer" id="tl-read"><span class="trace-dot"></span> Read traceparent</div>
+          <div class="trace-layer" id="tl-child"><span class="trace-dot"></span> Create child span</div>
+          <div class="trace-layer" id="tl-export-q"><span class="trace-dot"></span> Export span via OTLP</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- OTLP export arrows down to Jaeger -->
+    <div class="otlp-section">
+      <div class="otlp-arrow" id="otlp-gw">
+        <div class="otlp-line"></div>
+        <div class="otlp-label">OTLP gRPC</div>
+      </div>
+      <div class="otlp-arrow" id="otlp-q">
+        <div class="otlp-line"></div>
+        <div class="otlp-label">OTLP gRPC</div>
+      </div>
+    </div>
+    <div class="jaeger-node">
+      <div class="jaeger-box" id="node-jaeger">
+        <div class="node-label">Trace Backend</div>
+        <div class="node-title">Jaeger</div>
+        <div class="node-port mono">:16686 (UI) / :4317 (OTLP)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Controls ── -->
+  <div class="controls-bar">
+    <span class="section-label">Demo Steps</span>
+    <button class="btn btn-primary" id="btn-init" onclick="stepInit()">
+      <span class="step-num">1</span> Initialize
+    </button>
+    <button class="btn btn-secondary" id="btn-list" onclick="stepListTools()" disabled>
+      <span class="step-num">2</span> List Tools
+    </button>
+    <button class="btn btn-trace" id="btn-workflow" onclick="stepWorkflow()" disabled>
+      <span class="step-num">3</span> Multi-Tool Workflow
+    </button>
+    <button class="btn btn-success" id="btn-jaeger" onclick="openJaeger()">
+      Open Jaeger
+    </button>
+    <button class="btn btn-outline" id="btn-reset" onclick="resetAll()">Reset</button>
+  </div>
+
+  <!-- ── Trace waterfall ── -->
+  <div class="card waterfall-card">
+    <div class="card-header">
+      <h2>Trace Waterfall</h2>
+      <span class="card-badge" id="wf-count">0 spans</span>
+    </div>
+    <div class="card-body">
+      <div class="waterfall" id="waterfall">
+        <div class="wf-empty">Run demo steps to see span waterfalls here.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Main panels ── -->
+  <div class="main-grid">
+    <div class="card">
+      <div class="card-header">
+        <h2>Request Flow</h2>
+        <span class="card-badge" id="flow-count">0 events</span>
+      </div>
+      <div class="card-body">
+        <div class="flow-log" id="flow-log">
+          <div class="flow-empty">
+            <div class="flow-empty-icon">&#9678;</div>
+            Click <strong>Initialize</strong> to start the traced demo flow.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h2>Response Inspector</h2>
+        <span class="card-badge mono" id="resp-method">--</span>
+      </div>
+      <div class="card-body">
+        <div class="json-view mono" id="json-view">Waiting for first request...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const GATEWAY = 'http://localhost:3000';
+const HEADERS = {
+  'Content-Type': 'application/json',
+  'Accept': 'application/json, text/event-stream',
+  'MCP-Protocol-Version': '2025-03-26'
+};
+
+let sessionId = null;
+let rpcId = 0;
+let traceCount = 0;
+let spanCount = 0;
+let flowEventCount = 0;
+let waterfallSpans = [];
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+
+function toggleTheme() {
+  const cur = document.documentElement.getAttribute('data-theme');
+  document.documentElement.setAttribute('data-theme', cur === 'dark' ? 'light' : 'dark');
+}
+
+function updateStats() {
+  document.getElementById('stat-traces').textContent = traceCount;
+  document.getElementById('stat-spans').textContent = spanCount;
+  document.getElementById('flow-count').textContent = `${flowEventCount} events`;
+  document.getElementById('wf-count').textContent = `${waterfallSpans.length} spans`;
+}
+
+function setConnected(connected, label) {
+  const dot = document.getElementById('status-dot');
+  const txt = document.getElementById('status-text');
+  dot.className = 'dot ' + (connected ? 'on' : 'off');
+  txt.textContent = label || (connected ? 'Connected' : 'Disconnected');
+}
+
+async function mcpCall(method, params = {}) {
+  const headers = { ...HEADERS };
+  if (sessionId) headers['mcp-session-id'] = sessionId;
+
+  const start = performance.now();
+  const res = await fetch(GATEWAY + '/mcp', {
+    method: 'POST', headers,
+    body: JSON.stringify({ jsonrpc: '2.0', id: ++rpcId, method, params })
+  });
+  const elapsed = Math.round(performance.now() - start);
+
+  const sid = res.headers.get('mcp-session-id');
+  if (sid) sessionId = sid;
+
+  const text = await res.text();
+  const dataLine = text.split('\n').find(l => l.startsWith('data: '));
+  let parsed;
+  if (dataLine) parsed = JSON.parse(dataLine.slice(6));
+  else try { parsed = JSON.parse(text); } catch { parsed = { raw: text }; }
+
+  return { data: parsed, elapsed };
+}
+
+function addLog(tag, tagClass, msg) {
+  const log = document.getElementById('flow-log');
+  const empty = log.querySelector('.flow-empty');
+  if (empty) empty.remove();
+
+  flowEventCount++;
+  const entry = document.createElement('div');
+  entry.className = 'flow-entry';
+  entry.innerHTML = `<span class="flow-num">${flowEventCount}</span><span class="flow-tag ${tagClass}">${tag}</span><span class="flow-msg">${msg}</span>`;
+  log.prepend(entry);
+  updateStats();
+}
+
+function showJson(obj, method) {
+  const view = document.getElementById('json-view');
+  if (method) document.getElementById('resp-method').textContent = method;
+  const json = JSON.stringify(obj, null, 2);
+  view.innerHTML = json
+    .replace(/("(?:[^"\\]|\\.)*")(\s*:)/g, '<span class="jk">$1</span>$2')
+    .replace(/:\s*("(?:[^"\\]|\\.)*")/g, ': <span class="js">$1</span>')
+    .replace(/:\s*(\d+(?:\.\d+)?)/g, ': <span class="jn">$1</span>')
+    .replace(/:\s*(true|false|null)/g, ': <span class="jb">$1</span>');
+}
+
+function animateArrow(id, reverse) {
+  const arrow = document.getElementById(id);
+  arrow.classList.add(reverse ? 'pass' : 'active');
+  const pkt = document.createElement('span');
+  pkt.className = 'packet' + (reverse ? ' reverse' : '');
+  arrow.appendChild(pkt);
+  setTimeout(() => { pkt.remove(); arrow.classList.remove('active', 'pass'); }, 700);
+}
+
+function setNodeState(id, state) {
+  const el = document.getElementById(id);
+  el.classList.remove('active', 'pass');
+  if (state) el.classList.add(state);
+}
+
+function setTraceLayer(id, state) {
+  const el = document.getElementById(id);
+  el.classList.remove('active', 'exported');
+  if (state) el.classList.add(state);
+}
+
+function setOtlp(id, state) {
+  const el = document.getElementById(id);
+  el.classList.remove('active', 'exported');
+  if (state) el.classList.add(state);
+}
+
+function resetArch() {
+  ['node-goose', 'node-gateway', 'node-quarkus', 'node-jaeger'].forEach(id => setNodeState(id, null));
+  ['tl-span', 'tl-inject', 'tl-export-gw', 'tl-read', 'tl-child', 'tl-export-q'].forEach(id => setTraceLayer(id, null));
+  ['otlp-gw', 'otlp-q'].forEach(id => setOtlp(id, null));
+}
+
+function addWaterfallSpan(service, operation, durationMs, offsetPct, widthPct, cls) {
+  const wf = document.getElementById('waterfall');
+  const empty = wf.querySelector('.wf-empty');
+  if (empty) empty.remove();
+
+  waterfallSpans.push({ service, operation, durationMs });
+  spanCount++;
+
+  const row = document.createElement('div');
+  row.className = 'wf-row';
+  row.innerHTML = `
+    <div class="wf-service ${cls} mono">${esc(service)}<br><span style="font-weight:400;font-size:0.72rem;color:var(--text-muted)">${esc(operation)}</span></div>
+    <div class="wf-bar-track"><div class="wf-bar ${cls}" style="left:${offsetPct}%;width:${widthPct}%"></div></div>
+    <div class="wf-dur mono">${durationMs}ms</div>`;
+  wf.appendChild(row);
+  updateStats();
+}
+
+async function animateTracing(method, elapsed) {
+  traceCount++;
+
+  setTraceLayer('tl-span', 'active');
+  addLog('trace', 'trace', `agentgateway: <strong>root span created</strong> for ${esc(method)}`);
+  await delay(300);
+
+  setTraceLayer('tl-inject', 'active');
+  addLog('trace', 'trace', 'agentgateway: <strong>traceparent injected</strong> into forwarded request');
+  await delay(300);
+
+  setTraceLayer('tl-span', 'exported');
+  setTraceLayer('tl-inject', 'exported');
+
+  animateArrow('arrow-2', false);
+  await delay(400);
+  setNodeState('node-quarkus', 'active');
+
+  setTraceLayer('tl-read', 'active');
+  addLog('trace', 'trace', 'Quarkus: <strong>traceparent read</strong> from request header');
+  await delay(300);
+
+  setTraceLayer('tl-child', 'active');
+  addLog('trace', 'trace', 'Quarkus: <strong>child span created</strong> under same trace ID');
+  await delay(200);
+
+  setTraceLayer('tl-read', 'exported');
+  setTraceLayer('tl-child', 'exported');
+
+  animateArrow('arrow-2', true);
+  await delay(300);
+
+  setTraceLayer('tl-export-gw', 'active');
+  setTraceLayer('tl-export-q', 'active');
+  setOtlp('otlp-gw', 'active');
+  setOtlp('otlp-q', 'active');
+  addLog('trace', 'trace', 'Both services: <strong>exporting spans via OTLP gRPC</strong> to Jaeger :4317');
+  await delay(500);
+
+  setTraceLayer('tl-export-gw', 'exported');
+  setTraceLayer('tl-export-q', 'exported');
+  setOtlp('otlp-gw', 'exported');
+  setOtlp('otlp-q', 'exported');
+  setNodeState('node-jaeger', 'active');
+  await delay(300);
+  setNodeState('node-jaeger', 'pass');
+
+  const gwDur = elapsed;
+  const qDur = Math.round(elapsed * 0.6);
+  const toolDur = Math.round(elapsed * 0.25);
+  addWaterfallSpan('agentgateway', method, gwDur, 0, 95, 'gw');
+  addWaterfallSpan('customer-tools', 'POST /mcp', qDur, 20, 60, 'quarkus');
+  if (method.includes('tools/call')) {
+    addWaterfallSpan('customer-tools', method.split(' ')[0] || 'tool', toolDur, 35, 25, 'tool');
+  }
+
+  updateStats();
+}
+
+async function stepInit() {
+  resetAll(true);
+  setConnected(false, 'Connecting...');
+  document.getElementById('btn-init').disabled = true;
+  document.getElementById('btn-init').innerHTML = '<span class="spinner"></span> Connecting...';
+
+  try {
+    setNodeState('node-goose', 'active');
+    addLog('request', 'request', '<strong>initialize</strong> &#8594; agentgateway :3000');
+    await delay(300);
+    animateArrow('arrow-1', false);
+    await delay(400);
+    setNodeState('node-gateway', 'active');
+
+    const { data: res, elapsed } = await mcpCall('initialize', {
+      protocolVersion: '2025-03-26',
+      capabilities: {},
+      clientInfo: { name: 'observability-demo', version: '1.0' }
+    });
+
+    await animateTracing('initialize', elapsed);
+
+    showJson(res, 'initialize');
+    const serverName = res.result?.serverInfo?.name || 'unknown';
+
+    animateArrow('arrow-1', true);
+    await delay(300);
+
+    setNodeState('node-quarkus', 'pass');
+    setNodeState('node-gateway', 'pass');
+    setNodeState('node-goose', 'pass');
+
+    addLog('response', 'response', `Session established with <strong>${esc(serverName)}</strong> (${elapsed}ms)`);
+
+    await mcpCall('notifications/initialized', {});
+
+    setConnected(true, 'Session Active');
+    document.getElementById('stat-services').textContent = '2';
+    document.getElementById('stat-services').className = 'stat-value good';
+    document.getElementById('stat-services-sub').textContent = 'agentgateway + customer-tools';
+
+    document.getElementById('btn-list').disabled = false;
+  } catch (err) {
+    addLog('error', 'error', `Connection failed: ${esc(err.message)}`);
+    setConnected(false, 'Failed');
+    showJson({ error: err.message }, 'initialize');
+  }
+
+  document.getElementById('btn-init').disabled = false;
+  document.getElementById('btn-init').innerHTML = '<span class="step-num">1</span> Initialize';
+}
+
+async function stepListTools() {
+  document.getElementById('btn-list').disabled = true;
+  document.getElementById('btn-list').innerHTML = '<span class="spinner"></span> Listing...';
+  resetArch();
+
+  try {
+    setNodeState('node-goose', 'active');
+    addLog('request', 'request', '<strong>tools/list</strong> &#8594; agentgateway');
+    await delay(300);
+    animateArrow('arrow-1', false);
+    await delay(400);
+    setNodeState('node-gateway', 'active');
+
+    const { data: res, elapsed } = await mcpCall('tools/list');
+    const tools = res.result?.tools || [];
+
+    await animateTracing('tools/list', elapsed);
+
+    animateArrow('arrow-1', true);
+    await delay(300);
+
+    ['node-goose', 'node-gateway', 'node-quarkus'].forEach(id => setNodeState(id, 'pass'));
+
+    addLog('response', 'response', `Discovered <strong>${tools.length} tools</strong> (${elapsed}ms)`);
+    showJson(res, 'tools/list');
+
+    document.getElementById('btn-workflow').disabled = false;
+  } catch (err) {
+    addLog('error', 'error', `tools/list failed: ${esc(err.message)}`);
+    showJson({ error: err.message }, 'tools/list');
+  }
+
+  document.getElementById('btn-list').disabled = false;
+  document.getElementById('btn-list').innerHTML = '<span class="step-num">2</span> List Tools';
+}
+
+async function stepWorkflow() {
+  document.getElementById('btn-workflow').disabled = true;
+  document.getElementById('btn-workflow').innerHTML = '<span class="spinner"></span> Running...';
+
+  const steps = [
+    { tool: 'getCustomerStatus', args: { customerId: 'CUST-4091' }, reason: 'Agent asks: "debug customer CUST-4091"' },
+    { tool: 'getZoneHealthLogs', args: { zoneId: 'US-EAST-1' }, reason: 'Agent chains: region US-EAST-1 from previous result' },
+    { tool: 'getSLACompliance', args: { serviceId: 'api-gateway' }, reason: 'Agent correlates: SLA compliance for api-gateway' }
+  ];
+
+  for (let i = 0; i < steps.length; i++) {
+    const step = steps[i];
+    resetArch();
+
+    addLog('trace', 'trace', `<strong>Step ${i + 1}/3:</strong> ${esc(step.reason)}`);
+    await delay(400);
+
+    setNodeState('node-goose', 'active');
+    addLog('request', 'request', `<strong>tools/call</strong> &#8594; ${esc(step.tool)}(${esc(JSON.stringify(step.args))})`);
+    await delay(300);
+    animateArrow('arrow-1', false);
+    await delay(400);
+    setNodeState('node-gateway', 'active');
+
+    const { data: res, elapsed } = await mcpCall('tools/call', { name: step.tool, arguments: step.args });
+
+    await animateTracing(`tools/call ${step.tool}`, elapsed);
+
+    animateArrow('arrow-1', true);
+    await delay(300);
+
+    ['node-goose', 'node-gateway', 'node-quarkus'].forEach(id => setNodeState(id, 'pass'));
+
+    addLog('response', 'response', `<strong>${esc(step.tool)}</strong> returned (${elapsed}ms)`);
+    showJson(res, `tools/call (${step.tool})`);
+
+    if (i < steps.length - 1) await delay(800);
+  }
+
+  addLog('trace', 'trace', '<strong>Workflow complete</strong> &#8212; 3 correlated traces in Jaeger. Click "Open Jaeger" to view waterfalls.');
+
+  document.getElementById('btn-workflow').disabled = false;
+  document.getElementById('btn-workflow').innerHTML = '<span class="step-num">3</span> Multi-Tool Workflow';
+}
+
+function openJaeger() {
+  window.open('http://localhost:16686/search?service=customer-tools', '_blank');
+}
+
+function resetAll(keepLog) {
+  sessionId = null;
+  rpcId = 0;
+  traceCount = 0;
+  spanCount = 0;
+  flowEventCount = 0;
+  waterfallSpans = [];
+
+  resetArch();
+  setConnected(false);
+
+  document.getElementById('stat-traces').textContent = '0';
+  document.getElementById('stat-spans').textContent = '0';
+  document.getElementById('stat-services').textContent = '--';
+  document.getElementById('stat-services').className = 'stat-value';
+  document.getElementById('stat-services-sub').textContent = 'Waiting for traces';
+  document.getElementById('resp-method').textContent = '--';
+
+  document.getElementById('btn-list').disabled = true;
+  document.getElementById('btn-workflow').disabled = true;
+
+  document.getElementById('waterfall').innerHTML = '<div class="wf-empty">Run demo steps to see span waterfalls here.</div>';
+
+  updateStats();
+
+  if (!keepLog) {
+    document.getElementById('flow-log').innerHTML =
+      '<div class="flow-empty"><div class="flow-empty-icon">&#9678;</div>Click <strong>Initialize</strong> to start the traced demo flow.</div>';
+    document.getElementById('json-view').textContent = 'Waiting for first request...';
+  }
+}
+
+async function checkJaeger() {
+  try {
+    const res = await fetch('http://localhost:16686/api/services', { mode: 'cors' });
+    if (res.ok) {
+      document.getElementById('stat-jaeger').textContent = 'Online';
+      document.getElementById('stat-jaeger').className = 'stat-value good';
+    }
+  } catch {
+    document.getElementById('stat-jaeger').textContent = 'Offline';
+    document.getElementById('stat-jaeger').className = 'stat-value crit';
+  }
+}
+
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+checkJaeger();
+setInterval(checkJaeger, 10000);
+</script>
+</body>
+</html>

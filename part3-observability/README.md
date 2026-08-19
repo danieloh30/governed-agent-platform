@@ -68,7 +68,7 @@ Then open [http://localhost:16686](http://localhost:16686), select service `cust
 
 | File | Purpose |
 |------|---------|
-| `docker-compose.yml` | Jaeger all-in-one with OTLP collection on :4317 (Podman Compose compatible) |
+| `docker-compose.yml` | Jaeger v2 with OTLP collection on :4317 (Podman Compose compatible) |
 | `agentgateway/config-traced.yaml` | Proxy + tracing — OTLP export, no security layers |
 | `agentgateway/config-traced-guardrails.yaml` | Proxy + tracing + ExtMCP guardrails |
 | `start-all.sh` | Launches Jaeger, Quarkus, agentgateway, and generates sample traces |

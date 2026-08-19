@@ -52,14 +52,14 @@ podman --version
 
 ## Step 1: Launching the Observability Backend
 
-We use Jaeger all-in-one as both the OTLP collector and the trace UI. A single container accepts traces from agentgateway and Quarkus on port 4317 (OTLP gRPC) and serves the query UI on port 16686.
+We use Jaeger v2 as both the OTLP collector and the trace UI. A single container accepts traces from agentgateway and Quarkus on port 4317 (OTLP gRPC) and serves the query UI on port 16686.
 
 ```bash
 cd part3-observability
 podman compose up -d
 ```
 
-This starts Jaeger with OTLP collection enabled. Verify it's running:
+This starts Jaeger v2 with OTLP collection enabled by default. Verify it's running:
 
 ```bash
 curl -sf http://localhost:16686/ > /dev/null && echo "Jaeger UI is ready"
@@ -85,13 +85,12 @@ Add the `quarkus-opentelemetry` extension to Part 1's `pom.xml`:
 Configure the exporter in `application.properties`:
 
 ```properties
-# OpenTelemetry -- disabled by default, enabled in Part 3
-quarkus.otel.sdk.disabled=true
+# OpenTelemetry
 quarkus.otel.service.name=customer-tools
 quarkus.otel.exporter.otlp.traces.endpoint=http://localhost:4317
 ```
 
-The key design choice: `quarkus.otel.sdk.disabled=true` keeps OpenTelemetry off for Parts 1 and 2. Part 3's `start-all.sh` overrides this with the environment variable `QUARKUS_OTEL_SDK_DISABLED=false` at launch time. Zero code changes to the MCP tools.
+When no OTLP collector is running (Parts 1 and 2 without Jaeger), Quarkus logs a connection warning but the MCP server works normally. When the collector IS running (Part 3), traces flow automatically. Zero code changes to the MCP tools.
 
 Rebuild Part 1:
 

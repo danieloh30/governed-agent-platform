@@ -4,6 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 CONFIG="${1:-$SCRIPT_DIR/agentgateway/config-traced.yaml}"
+SPA_PORT="${2:-8888}"
 
 PIDS=()
 cleanup() {
@@ -28,6 +29,7 @@ printf "| %-$(( HW - 2 ))s |\n" "Part 3: End-to-End Tracing and Observability"
 echo "+${hborder}+"
 echo ""
 echo "  Config : $CONFIG"
+echo "  SPA    : http://localhost:$SPA_PORT/index.html"
 echo ""
 
 # ── Tracing features ──
@@ -60,7 +62,7 @@ fi
 echo ""
 
 # ── Step 1: Jaeger ──
-echo "--- Step 1/4: Jaeger Tracing Backend ------------------------------------"
+echo "--- Step 1/5: Jaeger Tracing Backend ------------------------------------"
 echo "[jaeger] Starting Jaeger via Docker Compose..."
 podman compose -f "$SCRIPT_DIR/docker-compose.yml" up -d
 
@@ -72,11 +74,9 @@ echo "[jaeger] Jaeger is ready on http://localhost:16686"
 echo ""
 
 # ── Step 2: Quarkus MCP Server with OpenTelemetry ──
-echo "--- Step 2/4: Quarkus MCP Server + OpenTelemetry (:8080) ----------------"
+echo "--- Step 2/5: Quarkus MCP Server + OpenTelemetry (:8080) ----------------"
 echo "[quarkus] Starting Quarkus MCP server with tracing enabled..."
-QUARKUS_OTEL_SDK_DISABLED=false \
-QUARKUS_OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://localhost:4317 \
-  java -jar "$ROOT_DIR/part1-quarkus-mcp/target/quarkus-app/quarkus-run.jar" &
+java -jar "$ROOT_DIR/part1-quarkus-mcp/target/quarkus-app/quarkus-run.jar" &
 PIDS+=($!)
 echo "[quarkus] PID: $!"
 
@@ -92,7 +92,7 @@ echo "[quarkus] MCP server is ready on http://localhost:8080/mcp"
 echo ""
 
 # ── Step 3: ExtMCP Guardrail Server (conditional) ──
-echo "--- Step 3/4: ExtMCP Guardrail Server (:9001) ---------------------------"
+echo "--- Step 3/5: ExtMCP Guardrail Server (:9001) ---------------------------"
 if grep -q "mcpGuardrails" "$CONFIG" 2>/dev/null; then
   echo "[guardrail] Starting ExtMCP guardrail server..."
   java -jar "$ROOT_DIR/part2-agentgateway/extmcp-guardrail/target/quarkus-app/quarkus-run.jar" &
@@ -110,7 +110,7 @@ fi
 echo ""
 
 # ── Step 4: agentgateway with tracing ──
-echo "--- Step 4/4: agentgateway + tracing (:3000) ----------------------------"
+echo "--- Step 4/5: agentgateway + tracing (:3000) ----------------------------"
 echo "[gateway] Starting agentgateway with trace export..."
 agentgateway -f "$CONFIG" &
 PIDS+=($!)
@@ -121,6 +121,19 @@ until curl -sf http://localhost:15000/ > /dev/null 2>&1; do
   sleep 2
 done
 echo "[gateway] agentgateway is ready on http://localhost:3000/mcp"
+echo ""
+
+# ── Step 5: Demo SPA ──
+echo "--- Step 5/5: Observability Console SPA (:$SPA_PORT) --------------------"
+echo "[spa] Starting HTTP server for interactive demo..."
+python3 -m http.server "$SPA_PORT" --directory "$SCRIPT_DIR" > /dev/null 2>&1 &
+PIDS+=($!)
+echo "[spa] PID: $!"
+
+until curl -sf "http://localhost:$SPA_PORT/index.html" > /dev/null 2>&1; do
+  sleep 1
+done
+echo "[spa] Observability Console is ready on http://localhost:$SPA_PORT/index.html"
 echo ""
 
 # ── Generate sample traces ──
@@ -180,6 +193,8 @@ printf "| %-$(( W - 2 ))s |\n" "Quarkus MCP backend : http://localhost:8080/mcp"
 printf "| %-$(( W - 2 ))s |\n" "agentgateway proxy  : http://localhost:3000/mcp"
 printf "| %-$(( W - 2 ))s |\n" "agentgateway UI     : http://localhost:15000/ui"
 printf "| %-$(( W - 2 ))s |\n" "Jaeger UI           : http://localhost:16686"
+SPA_URL="http://localhost:${SPA_PORT}/index.html"
+printf "| %-$(( W - 2 ))s |\n" "Observability SPA   : $SPA_URL"
 if grep -q "mcpGuardrails" "$CONFIG" 2>/dev/null; then
 printf "| %-$(( W - 2 ))s |\n" "ExtMCP guardrail    : localhost:9001 (gRPC)"
 fi
