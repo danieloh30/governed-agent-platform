@@ -3,57 +3,68 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Part 2: Securing Goose-to-Java Agent Traffic</title>
+<title>agentgateway Security Console</title>
 <style>
 :root {
   color-scheme: light;
-  --surface-page:     #f9f9f7;
-  --surface-card:     #fcfcfb;
+  --surface-page:     #f5f5f3;
+  --surface-card:     #ffffff;
+  --surface-inset:    #f9f9f7;
   --text-primary:     #0b0b0b;
   --text-secondary:   #52514e;
   --text-muted:       #898781;
-  --gridline:         #e1e0d9;
-  --baseline:         #c3c2b7;
-  --border:           rgba(11,11,11,0.10);
+  --gridline:         #e8e7e2;
+  --baseline:         #d0cfca;
+  --border:           rgba(11,11,11,0.08);
+  --shadow-sm:        0 1px 2px rgba(0,0,0,0.05);
+  --shadow-md:        0 2px 8px rgba(0,0,0,0.08);
+  --shadow-lg:        0 4px 16px rgba(0,0,0,0.10);
   --cat-1: #2a78d6;
   --cat-2: #eb6834;
   --cat-3: #1baf7a;
   --cat-4: #eda100;
   --cat-5: #e87ba4;
-  --status-good:     #0ca30c;
-  --status-warn:     #fab219;
-  --status-serious:  #ec835a;
-  --status-critical: #d03b3b;
+  --status-good:      #0ca30c;
+  --status-warn:      #fab219;
+  --status-serious:   #ec835a;
+  --status-critical:  #d03b3b;
+  --status-good-bg:   rgba(12,163,12,0.08);
   --status-good-text: #006300;
+  --status-crit-bg:   rgba(208,59,59,0.08);
   --seq-100: #cde2fb;
+  --seq-200: #9dc5f3;
   --seq-300: #6da7ec;
   --seq-500: #256abf;
+  --radius: 10px;
+  --radius-sm: 6px;
 }
 @media (prefers-color-scheme: dark) {
   :root:where(:not([data-theme="light"])) {
     color-scheme: dark;
-    --surface-page: #0d0d0d; --surface-card: #1a1a19;
-    --text-primary: #ffffff; --text-secondary: #c3c2b7; --text-muted: #898781;
-    --gridline: #2c2c2a; --baseline: #383835; --border: rgba(255,255,255,0.10);
-    --cat-1: #3987e5; --cat-2: #d95926; --cat-3: #199e70;
-    --cat-4: #c98500; --cat-5: #d55181;
-    --status-good: #0ca30c; --status-warn: #fab219;
-    --status-serious: #ec835a; --status-critical: #d03b3b;
-    --status-good-text: #0ca30c;
-    --seq-100: #184f95; --seq-300: #3987e5; --seq-500: #86b6ef;
+    --surface-page: #0a0a0a; --surface-card: #161615; --surface-inset: #1e1e1c;
+    --text-primary: #f0f0ee; --text-secondary: #b0afa8; --text-muted: #7a7972;
+    --gridline: #262624; --baseline: #333331; --border: rgba(255,255,255,0.07);
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.3); --shadow-md: 0 2px 8px rgba(0,0,0,0.4);
+    --shadow-lg: 0 4px 16px rgba(0,0,0,0.5);
+    --cat-1: #4d9aee; --cat-2: #d95926; --cat-3: #24c98e;
+    --cat-4: #e5a617; --cat-5: #d55181;
+    --status-good: #2ecc40; --status-good-bg: rgba(46,204,64,0.10);
+    --status-good-text: #2ecc40; --status-crit-bg: rgba(208,59,59,0.12);
+    --seq-100: #1a4d8a; --seq-200: #2668b5; --seq-300: #4d9aee; --seq-500: #a3cdf7;
   }
 }
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --surface-page: #0d0d0d; --surface-card: #1a1a19;
-  --text-primary: #ffffff; --text-secondary: #c3c2b7; --text-muted: #898781;
-  --gridline: #2c2c2a; --baseline: #383835; --border: rgba(255,255,255,0.10);
-  --cat-1: #3987e5; --cat-2: #d95926; --cat-3: #199e70;
-  --cat-4: #c98500; --cat-5: #d55181;
-  --status-good: #0ca30c; --status-warn: #fab219;
-  --status-serious: #ec835a; --status-critical: #d03b3b;
-  --status-good-text: #0ca30c;
-  --seq-100: #184f95; --seq-300: #3987e5; --seq-500: #86b6ef;
+  --surface-page: #0a0a0a; --surface-card: #161615; --surface-inset: #1e1e1c;
+  --text-primary: #f0f0ee; --text-secondary: #b0afa8; --text-muted: #7a7972;
+  --gridline: #262624; --baseline: #333331; --border: rgba(255,255,255,0.07);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.3); --shadow-md: 0 2px 8px rgba(0,0,0,0.4);
+  --shadow-lg: 0 4px 16px rgba(0,0,0,0.5);
+  --cat-1: #4d9aee; --cat-2: #d95926; --cat-3: #24c98e;
+  --cat-4: #e5a617; --cat-5: #d55181;
+  --status-good: #2ecc40; --status-good-bg: rgba(46,204,64,0.10);
+  --status-good-text: #2ecc40; --status-crit-bg: rgba(208,59,59,0.12);
+  --seq-100: #1a4d8a; --seq-200: #2668b5; --seq-300: #4d9aee; --seq-500: #a3cdf7;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -62,215 +73,364 @@ body {
   background: var(--surface-page); color: var(--text-primary);
   line-height: 1.5; min-height: 100vh;
 }
-.shell { max-width: 1200px; margin: 0 auto; padding: 32px 24px; }
-header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 8px; flex-wrap: wrap; }
-header h1 { font-size: 1.25rem; font-weight: 600; }
-header .badge {
-  font-size: 0.7rem; font-weight: 500; padding: 2px 8px;
-  border-radius: 10px; background: var(--cat-1); color: #fff;
-}
-.subtitle { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 32px; }
-.theme-toggle {
-  margin-left: auto; background: none; border: 1px solid var(--baseline);
-  border-radius: 6px; padding: 4px 10px; color: var(--text-secondary);
-  cursor: pointer; font-size: 0.8rem;
-}
 .mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace; }
 
-/* ── Architecture diagram ── */
-.arch { margin-bottom: 32px; }
+/* ── Top bar ── */
+.topbar {
+  background: var(--surface-card); border-bottom: 1px solid var(--border);
+  padding: 0 32px; height: 56px;
+  display: flex; align-items: center; gap: 16px;
+  box-shadow: var(--shadow-sm); position: sticky; top: 0; z-index: 10;
+}
+.topbar-logo {
+  width: 28px; height: 28px; border-radius: 6px;
+  background: linear-gradient(135deg, var(--cat-1), var(--seq-500));
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-weight: 700; font-size: 0.75rem;
+}
+.topbar h1 { font-size: 0.95rem; font-weight: 600; }
+.topbar .badge {
+  font-size: 0.65rem; font-weight: 600; padding: 2px 8px;
+  border-radius: 10px; background: var(--cat-1); color: #fff;
+  text-transform: uppercase; letter-spacing: 0.05em;
+}
+.topbar-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+.topbar-status {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 0.78rem; color: var(--text-muted);
+}
+.topbar-status .dot {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--baseline);
+  transition: background 0.3s;
+}
+.topbar-status .dot.on { background: var(--status-good); box-shadow: 0 0 6px rgba(12,163,12,0.4); }
+.topbar-status .dot.off { background: var(--status-critical); }
+.theme-btn {
+  background: none; border: 1px solid var(--baseline); border-radius: var(--radius-sm);
+  padding: 4px 10px; color: var(--text-secondary); cursor: pointer; font-size: 0.78rem;
+}
+
+/* ── Shell ── */
+.shell { max-width: 1400px; margin: 0 auto; padding: 28px 32px; }
+
+/* ── Stat tiles ── */
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+@media (max-width: 900px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+.stat {
+  background: var(--surface-card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px 24px;
+  box-shadow: var(--shadow-sm); transition: box-shadow 0.2s;
+}
+.stat:hover { box-shadow: var(--shadow-md); }
+.stat-label { font-size: 0.72rem; font-weight: 500; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+.stat-value { font-size: 1.6rem; font-weight: 700; line-height: 1.2; }
+.stat-sub { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; }
+.stat-value.good { color: var(--status-good); }
+.stat-value.crit { color: var(--status-critical); }
+.stat-value.blue { color: var(--cat-1); }
+
+/* ── Architecture ── */
+.arch-card {
+  background: var(--surface-card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 32px; margin-bottom: 28px;
+  box-shadow: var(--shadow-sm);
+}
+.arch-card h2 { font-size: 0.82rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 24px; }
 .arch-row {
   display: flex; align-items: stretch; gap: 0; justify-content: center;
-  flex-wrap: wrap;
 }
 .arch-node {
-  background: var(--surface-card); border: 2px solid var(--baseline);
-  border-radius: 10px; padding: 16px 20px; min-width: 180px;
-  text-align: center; position: relative; transition: border-color 0.3s, box-shadow 0.3s;
+  background: var(--surface-inset); border: 2px solid var(--baseline);
+  border-radius: var(--radius); padding: 24px 28px; min-width: 220px;
+  text-align: center; position: relative; transition: all 0.35s;
 }
 .arch-node.active {
   border-color: var(--cat-1);
-  box-shadow: 0 0 0 3px rgba(42,120,214,0.15);
+  box-shadow: 0 0 0 4px rgba(42,120,214,0.12), var(--shadow-md);
 }
-.arch-node.pass { border-color: var(--status-good); box-shadow: 0 0 0 3px rgba(12,163,12,0.12); }
-.arch-node.deny { border-color: var(--status-critical); box-shadow: 0 0 0 3px rgba(208,59,59,0.12); }
-.arch-node .node-icon { font-size: 1.5rem; margin-bottom: 4px; }
-.arch-node .node-title { font-size: 0.85rem; font-weight: 600; }
-.arch-node .node-port { font-size: 0.7rem; color: var(--text-muted); }
+.arch-node.pass { border-color: var(--status-good); box-shadow: 0 0 0 4px rgba(12,163,12,0.10), var(--shadow-md); }
+.arch-node.deny { border-color: var(--status-critical); box-shadow: 0 0 0 4px rgba(208,59,59,0.10), var(--shadow-md); }
+.arch-node .node-label {
+  font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--text-muted); margin-bottom: 4px;
+}
+.arch-node .node-title { font-size: 1rem; font-weight: 600; margin-bottom: 2px; }
+.arch-node .node-port { font-size: 0.78rem; color: var(--text-muted); }
 .arch-arrow {
-  display: flex; align-items: center; padding: 0 8px;
-  color: var(--baseline); font-size: 1.2rem; min-width: 40px; justify-content: center;
-  transition: color 0.3s;
+  display: flex; align-items: center; padding: 0 12px;
+  color: var(--baseline); font-size: 1.4rem; min-width: 56px; justify-content: center;
+  position: relative; transition: color 0.3s;
 }
 .arch-arrow.active { color: var(--cat-1); }
 .arch-arrow.pass { color: var(--status-good); }
+.arrow-label {
+  position: absolute; top: -18px; font-size: 0.65rem; font-weight: 500;
+  color: var(--text-muted); white-space: nowrap;
+}
 
-/* Security layers inside gateway node */
-.security-layers { margin-top: 10px; display: flex; flex-direction: column; gap: 4px; }
+/* Security layers */
+.security-layers { margin-top: 16px; display: flex; flex-direction: column; gap: 6px; }
 .sec-layer {
-  display: flex; align-items: center; gap: 6px;
-  font-size: 0.7rem; padding: 3px 8px; border-radius: 6px;
+  display: flex; align-items: center; gap: 8px;
+  font-size: 0.78rem; padding: 6px 12px; border-radius: var(--radius-sm);
   background: var(--gridline); color: var(--text-secondary);
-  transition: all 0.3s;
+  transition: all 0.3s; font-weight: 500;
 }
 .sec-layer.checking { background: rgba(42,120,214,0.12); color: var(--cat-1); }
-.sec-layer.passed { background: rgba(12,163,12,0.10); color: var(--status-good-text); }
-.sec-layer.denied { background: rgba(208,59,59,0.10); color: var(--status-critical); }
-.sec-layer.skipped { opacity: 0.4; }
+.sec-layer.passed { background: var(--status-good-bg); color: var(--status-good-text); }
+.sec-layer.denied { background: var(--status-crit-bg); color: var(--status-critical); }
+.sec-layer.skipped { opacity: 0.35; }
 .sec-dot {
-  width: 8px; height: 8px; border-radius: 50%;
-  background: var(--baseline); flex-shrink: 0;
-  transition: background 0.3s;
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--baseline); flex-shrink: 0; transition: background 0.3s;
 }
-.sec-layer.checking .sec-dot { background: var(--cat-1); }
+.sec-layer.checking .sec-dot { background: var(--cat-1); animation: pulse 1s infinite; }
 .sec-layer.passed .sec-dot { background: var(--status-good); }
 .sec-layer.denied .sec-dot { background: var(--status-critical); }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
 
-/* ── Step controls ── */
-.controls {
-  display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; align-items: center;
+/* ── Controls ── */
+.controls-bar {
+  background: var(--surface-card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px 24px; margin-bottom: 28px;
+  box-shadow: var(--shadow-sm);
+  display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+}
+.controls-bar .section-label {
+  font-size: 0.72rem; font-weight: 600; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.06em; margin-right: 8px;
 }
 .btn {
   display: inline-flex; align-items: center; gap: 6px;
-  padding: 8px 16px; border: none; border-radius: 6px;
-  font-size: 0.85rem; font-weight: 500; cursor: pointer; transition: opacity 0.15s;
+  padding: 10px 20px; border: none; border-radius: var(--radius-sm);
+  font-size: 0.82rem; font-weight: 600; cursor: pointer;
+  transition: all 0.15s; letter-spacing: 0.01em;
 }
-.btn:hover { opacity: 0.85; }
-.btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
+.btn:active { transform: translateY(0); }
+.btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none; box-shadow: none; }
 .btn-primary { background: var(--cat-1); color: #fff; }
 .btn-secondary { background: var(--gridline); color: var(--text-primary); }
 .btn-danger { background: var(--status-critical); color: #fff; }
 .btn-success { background: var(--status-good); color: #fff; }
-.step-label {
-  font-size: 0.8rem; color: var(--text-muted);
-  margin-left: 8px; font-weight: 500;
+.btn-outline { background: none; border: 1px solid var(--baseline); color: var(--text-secondary); }
+.btn .step-num {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: rgba(255,255,255,0.2); font-size: 0.7rem; font-weight: 700;
 }
-.status-msg {
-  font-size: 0.8rem; padding: 6px 12px; border-radius: 6px;
-  margin-left: auto;
-}
-.status-msg.connected { background: rgba(12,163,12,0.10); color: var(--status-good-text); }
-.status-msg.disconnected { background: rgba(208,59,59,0.08); color: var(--status-critical); }
-.status-msg.pending { background: rgba(237,161,0,0.10); color: var(--cat-4); }
+.btn-secondary .step-num { background: var(--baseline); }
 
-/* ── Flow log ── */
-.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
-@media (max-width: 800px) { .grid-2 { grid-template-columns: 1fr; } }
+/* ── Main grid ── */
+.main-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 28px;
+}
+@media (max-width: 900px) { .main-grid { grid-template-columns: 1fr; } }
+
 .card {
   background: var(--surface-card); border: 1px solid var(--border);
-  border-radius: 8px; padding: 20px;
+  border-radius: var(--radius); box-shadow: var(--shadow-sm);
+  display: flex; flex-direction: column; overflow: hidden;
 }
-.card h2 { font-size: 0.9rem; font-weight: 600; margin-bottom: 12px; }
-.card-full { grid-column: 1 / -1; }
-
-/* Flow timeline */
-.flow-log { display: flex; flex-direction: column; gap: 0; }
-.flow-entry {
-  display: grid; grid-template-columns: 80px 1fr;
-  gap: 12px; padding: 10px 0;
+.card-header {
+  padding: 18px 24px 14px;
   border-bottom: 1px solid var(--gridline);
-  font-size: 0.8rem;
-  animation: fadeIn 0.3s ease;
+  display: flex; align-items: center; gap: 10px;
+}
+.card-header h2 { font-size: 0.88rem; font-weight: 600; }
+.card-header .card-badge {
+  font-size: 0.65rem; font-weight: 600; padding: 2px 8px;
+  border-radius: 10px; background: var(--gridline); color: var(--text-muted);
+}
+.card-body { padding: 20px 24px; flex: 1; overflow-y: auto; }
+
+/* ── Flow log ── */
+.flow-log { display: flex; flex-direction: column; gap: 0; min-height: 400px; }
+.flow-empty {
+  display: flex; align-items: center; justify-content: center;
+  height: 400px; color: var(--text-muted); font-size: 0.85rem;
+  flex-direction: column; gap: 8px;
+}
+.flow-empty-icon { font-size: 2rem; opacity: 0.3; }
+.flow-entry {
+  display: grid; grid-template-columns: 24px 90px 1fr;
+  gap: 10px; padding: 12px 0; align-items: start;
+  border-bottom: 1px solid var(--gridline);
+  font-size: 0.82rem;
+  animation: fadeSlideIn 0.35s ease;
 }
 .flow-entry:last-child { border-bottom: none; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: none; }
+}
+.flow-num {
+  width: 24px; height: 24px; border-radius: 50%;
+  background: var(--gridline); color: var(--text-muted);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.65rem; font-weight: 700; flex-shrink: 0;
+}
 .flow-tag {
   display: inline-flex; align-items: center; justify-content: center;
-  padding: 2px 8px; border-radius: 10px;
-  font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em;
-  height: 22px;
+  padding: 3px 10px; border-radius: 12px;
+  font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+  height: 24px;
 }
-.flow-tag.request { background: rgba(42,120,214,0.12); color: var(--cat-1); }
-.flow-tag.response { background: rgba(27,175,122,0.12); color: var(--cat-3); }
-.flow-tag.auth { background: rgba(237,161,0,0.12); color: var(--cat-4); }
-.flow-tag.guard { background: rgba(232,123,164,0.12); color: var(--cat-5); }
-.flow-tag.error { background: rgba(208,59,59,0.08); color: var(--status-critical); }
-.flow-msg { color: var(--text-secondary); word-break: break-word; }
-.flow-msg strong { color: var(--text-primary); font-weight: 500; }
+.flow-tag.request { background: rgba(42,120,214,0.10); color: var(--cat-1); }
+.flow-tag.response { background: rgba(27,175,122,0.10); color: var(--cat-3); }
+.flow-tag.auth { background: rgba(237,161,0,0.10); color: var(--cat-4); }
+.flow-tag.guard { background: rgba(232,123,164,0.10); color: var(--cat-5); }
+.flow-tag.error { background: var(--status-crit-bg); color: var(--status-critical); }
+.flow-msg { color: var(--text-secondary); word-break: break-word; line-height: 1.5; }
+.flow-msg strong { color: var(--text-primary); font-weight: 600; }
 
-/* JSON viewer */
+/* ── JSON viewer ── */
 .json-view {
-  background: var(--surface-page); border: 1px solid var(--gridline);
-  border-radius: 6px; padding: 12px; font-size: 0.75rem;
+  background: var(--surface-inset); border: 1px solid var(--gridline);
+  border-radius: var(--radius-sm); padding: 16px 20px; font-size: 0.78rem;
   white-space: pre-wrap; word-break: break-word;
-  max-height: 320px; overflow-y: auto;
-  color: var(--text-secondary); line-height: 1.6;
+  min-height: 400px; max-height: 500px; overflow-y: auto;
+  color: var(--text-secondary); line-height: 1.7;
 }
 .json-view .jk { color: var(--cat-1); }
 .json-view .js { color: var(--cat-3); }
 .json-view .jn { color: var(--cat-2); }
 .json-view .jb { color: var(--cat-5); }
 
-/* Tool selector */
-.tool-grid { display: flex; flex-direction: column; gap: 2px; }
+/* ── Tool selector ── */
+.tool-section {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 28px;
+}
+@media (max-width: 900px) { .tool-section { grid-template-columns: 1fr; } }
+.tool-grid { display: flex; flex-direction: column; gap: 4px; }
 .tool-opt {
-  display: flex; align-items: center; gap: 8px;
-  padding: 8px 12px; border-radius: 6px; cursor: pointer;
-  transition: background 0.15s; font-size: 0.8rem;
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 16px; border-radius: var(--radius-sm); cursor: pointer;
+  transition: all 0.15s; font-size: 0.85rem; border: 2px solid transparent;
 }
 .tool-opt:hover { background: var(--gridline); }
-.tool-opt.selected { background: var(--seq-100); }
-.tool-opt .tool-name { font-weight: 500; }
-.tool-opt .tool-desc { color: var(--text-muted); font-size: 0.75rem; }
+.tool-opt.selected { background: rgba(42,120,214,0.06); border-color: var(--cat-1); }
+.tool-opt .tool-icon {
+  width: 32px; height: 32px; border-radius: var(--radius-sm);
+  background: var(--gridline); display: flex; align-items: center; justify-content: center;
+  font-size: 0.75rem; color: var(--text-muted); font-weight: 700;
+}
+.tool-opt.selected .tool-icon { background: var(--cat-1); color: #fff; }
+.tool-opt .tool-name { font-weight: 600; }
 
 /* Param input */
 .param-row {
-  display: flex; align-items: center; gap: 8px; margin-top: 8px;
+  display: flex; align-items: center; gap: 12px; margin-top: 12px;
 }
-.param-row label { font-size: 0.8rem; color: var(--text-secondary); min-width: 80px; }
+.param-row label {
+  font-size: 0.82rem; color: var(--text-secondary); min-width: 100px; font-weight: 500;
+}
 .param-row input {
-  flex: 1; padding: 6px 10px; border: 1px solid var(--baseline); border-radius: 6px;
-  font-size: 0.8rem; background: var(--surface-page); color: var(--text-primary);
+  flex: 1; padding: 10px 14px; border: 1px solid var(--baseline); border-radius: var(--radius-sm);
+  font-size: 0.82rem; background: var(--surface-inset); color: var(--text-primary);
+  transition: border-color 0.2s;
 }
+.param-row input:focus { outline: none; border-color: var(--cat-1); box-shadow: 0 0 0 3px rgba(42,120,214,0.1); }
 
 /* Spinner */
 .spinner {
-  display: inline-block; width: 14px; height: 14px;
-  border: 2px solid var(--gridline); border-top-color: var(--cat-1);
+  display: inline-block; width: 16px; height: 16px;
+  border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff;
   border-radius: 50%; animation: spin 0.6s linear infinite;
 }
+.btn-secondary .spinner { border-color: var(--baseline); border-top-color: var(--text-primary); }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* Packet animation */
 .arch-arrow .packet {
-  display: inline-block; width: 8px; height: 8px;
+  display: inline-block; width: 10px; height: 10px;
   border-radius: 50%; background: var(--cat-1);
   animation: moveRight 0.6s ease forwards;
+  box-shadow: 0 0 8px rgba(42,120,214,0.4);
 }
 .arch-arrow .packet.reverse {
   animation: moveLeft 0.6s ease forwards;
   background: var(--cat-3);
+  box-shadow: 0 0 8px rgba(27,175,122,0.4);
 }
 @keyframes moveRight {
-  0% { transform: translateX(-12px); opacity: 0; }
+  0% { transform: translateX(-16px); opacity: 0; }
   30% { opacity: 1; }
-  100% { transform: translateX(12px); opacity: 0; }
+  100% { transform: translateX(16px); opacity: 0; }
 }
 @keyframes moveLeft {
-  0% { transform: translateX(12px); opacity: 0; }
+  0% { transform: translateX(16px); opacity: 0; }
   30% { opacity: 1; }
-  100% { transform: translateX(-12px); opacity: 0; }
+  100% { transform: translateX(-16px); opacity: 0; }
+}
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+  .shell { padding: 16px; }
+  .topbar { padding: 0 16px; }
+  .stats { grid-template-columns: 1fr 1fr; }
+  .arch-row { flex-direction: column; align-items: center; }
+  .arch-arrow { transform: rotate(90deg); min-width: auto; min-height: 40px; }
 }
 </style>
 </head>
 <body>
+
+<!-- ── Top bar ── -->
+<div class="topbar">
+  <div class="topbar-logo">AG</div>
+  <h1>agentgateway Security Console</h1>
+  <span class="badge">Part 2</span>
+  <div class="topbar-right">
+    <div class="topbar-status" id="topbar-status">
+      <span class="dot" id="status-dot"></span>
+      <span id="status-text">Disconnected</span>
+    </div>
+    <button class="theme-btn" onclick="toggleTheme()">Theme</button>
+  </div>
+</div>
+
 <div class="shell">
-  <header>
-    <h1>Securing Goose-to-Java Agent Traffic</h1>
-    <span class="badge">Part 2</span>
-    <button class="theme-toggle" onclick="toggleTheme()">Toggle theme</button>
-  </header>
-  <p class="subtitle">Interactive demo: watch MCP requests flow through agentgateway's security stack</p>
+
+  <!-- ── Stat tiles ── -->
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-label">Session Status</div>
+      <div class="stat-value" id="stat-session">--</div>
+      <div class="stat-sub" id="stat-session-sub">No active session</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Requests Sent</div>
+      <div class="stat-value blue" id="stat-requests">0</div>
+      <div class="stat-sub">Through agentgateway</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Tools Available</div>
+      <div class="stat-value" id="stat-tools">--</div>
+      <div class="stat-sub" id="stat-tools-sub">Not discovered yet</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Security Checks</div>
+      <div class="stat-value good" id="stat-checks">0</div>
+      <div class="stat-sub" id="stat-checks-sub">Passed: 0 / Denied: 0</div>
+    </div>
+  </div>
 
   <!-- ── Architecture ── -->
-  <div class="arch">
+  <div class="arch-card">
+    <h2>Traffic Flow Architecture</h2>
     <div class="arch-row">
       <div class="arch-node" id="node-goose">
+        <div class="node-label">AI Agent</div>
         <div class="node-title">Goose / Client</div>
         <div class="node-port mono">caller</div>
       </div>
-      <div class="arch-arrow" id="arrow-1">&rarr;</div>
-      <div class="arch-node" id="node-gateway" style="min-width:220px">
+      <div class="arch-arrow" id="arrow-1">
+        <span class="arrow-label">MCP</span>
+        &rarr;
+      </div>
+      <div class="arch-node" id="node-gateway" style="min-width:260px">
+        <div class="node-label">Security Proxy</div>
         <div class="node-title">agentgateway</div>
         <div class="node-port mono">:3000</div>
         <div class="security-layers">
@@ -279,8 +439,12 @@ header .badge {
           <div class="sec-layer" id="sec-guard"><span class="sec-dot"></span> ExtMCP Guardrails</div>
         </div>
       </div>
-      <div class="arch-arrow" id="arrow-2">&rarr;</div>
+      <div class="arch-arrow" id="arrow-2">
+        <span class="arrow-label">MCP</span>
+        &rarr;
+      </div>
       <div class="arch-node" id="node-quarkus">
+        <div class="node-label">Backend</div>
         <div class="node-title">Quarkus MCP Server</div>
         <div class="node-port mono">:8080</div>
       </div>
@@ -288,41 +452,70 @@ header .badge {
   </div>
 
   <!-- ── Controls ── -->
-  <div class="controls" id="controls">
-    <button class="btn btn-primary" id="btn-init" onclick="stepInit()">1. Initialize Session</button>
-    <button class="btn btn-secondary" id="btn-list" onclick="stepListTools()" disabled>2. List Tools</button>
-    <button class="btn btn-success" id="btn-call" onclick="stepCallTool()" disabled>3. Call Tool</button>
-    <button class="btn btn-danger" id="btn-poison" onclick="stepPoisonTest()" disabled>4. Poison Test</button>
-    <button class="btn btn-secondary" id="btn-reset" onclick="resetAll()">Reset</button>
-    <span class="status-msg disconnected" id="status-msg">No session</span>
+  <div class="controls-bar">
+    <span class="section-label">Demo Steps</span>
+    <button class="btn btn-primary" id="btn-init" onclick="stepInit()">
+      <span class="step-num">1</span> Initialize
+    </button>
+    <button class="btn btn-secondary" id="btn-list" onclick="stepListTools()" disabled>
+      <span class="step-num">2</span> List Tools
+    </button>
+    <button class="btn btn-success" id="btn-call" onclick="stepCallTool()" disabled>
+      <span class="step-num">3</span> Call Tool
+    </button>
+    <button class="btn btn-danger" id="btn-poison" onclick="stepPoisonTest()" disabled>
+      <span class="step-num">4</span> Poison Test
+    </button>
+    <button class="btn btn-outline" id="btn-reset" onclick="resetAll()">Reset</button>
   </div>
 
-  <div class="grid-2">
-    <!-- ── Flow log ── -->
+  <!-- ── Main panels ── -->
+  <div class="main-grid">
     <div class="card">
-      <h2>Request Flow</h2>
-      <div class="flow-log" id="flow-log">
-        <div style="font-size:0.8rem;color:var(--text-muted)">Click "Initialize Session" to begin.</div>
+      <div class="card-header">
+        <h2>Request Flow</h2>
+        <span class="card-badge" id="flow-count">0 events</span>
+      </div>
+      <div class="card-body">
+        <div class="flow-log" id="flow-log">
+          <div class="flow-empty">
+            <div class="flow-empty-icon">&#9678;</div>
+            Click <strong>Initialize</strong> to start the demo flow.
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- ── Response viewer ── -->
     <div class="card">
-      <h2>Response</h2>
-      <div class="json-view mono" id="json-view">Waiting for first request...</div>
+      <div class="card-header">
+        <h2>Response Inspector</h2>
+        <span class="card-badge mono" id="resp-method">--</span>
+      </div>
+      <div class="card-body">
+        <div class="json-view mono" id="json-view">Waiting for first request...</div>
+      </div>
     </div>
   </div>
 
-  <!-- ── Tool selector (shown after listing) ── -->
-  <div class="grid-2" id="tool-section" style="display:none">
+  <!-- ── Tool selector ── -->
+  <div class="tool-section" id="tool-section" style="display:none">
     <div class="card">
-      <h2>Select a Tool</h2>
-      <div class="tool-grid" id="tool-grid"></div>
+      <div class="card-header">
+        <h2>Tool Inventory</h2>
+        <span class="card-badge" id="tool-count">0 tools</span>
+      </div>
+      <div class="card-body">
+        <div class="tool-grid" id="tool-grid"></div>
+      </div>
     </div>
     <div class="card">
-      <h2>Tool Parameters</h2>
-      <div id="tool-params">
-        <p style="font-size:0.8rem;color:var(--text-muted)">Select a tool to configure parameters.</p>
+      <div class="card-header">
+        <h2>Parameters</h2>
+      </div>
+      <div class="card-body">
+        <div id="tool-params">
+          <p style="font-size:0.85rem;color:var(--text-muted)">Select a tool to configure parameters.</p>
+        </div>
       </div>
     </div>
   </div>
@@ -340,6 +533,10 @@ let sessionId = null;
 let rpcId = 0;
 let tools = [];
 let selectedTool = null;
+let requestCount = 0;
+let checksPassed = 0;
+let checksDenied = 0;
+let flowEventCount = 0;
 
 function esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
 
@@ -348,9 +545,26 @@ function toggleTheme() {
   document.documentElement.setAttribute('data-theme', cur === 'dark' ? 'light' : 'dark');
 }
 
+function updateStats() {
+  document.getElementById('stat-requests').textContent = requestCount;
+  document.getElementById('stat-checks').textContent = checksPassed + checksDenied;
+  document.getElementById('stat-checks-sub').textContent = `Passed: ${checksPassed} / Denied: ${checksDenied}`;
+  document.getElementById('flow-count').textContent = `${flowEventCount} events`;
+}
+
+function setConnected(connected, label) {
+  const dot = document.getElementById('status-dot');
+  const txt = document.getElementById('status-text');
+  dot.className = 'dot ' + (connected ? 'on' : 'off');
+  txt.textContent = label || (connected ? 'Connected' : 'Disconnected');
+}
+
 async function mcpCall(method, params = {}) {
   const headers = { ...HEADERS };
   if (sessionId) headers['mcp-session-id'] = sessionId;
+
+  requestCount++;
+  updateStats();
 
   const res = await fetch(GATEWAY + '/mcp', {
     method: 'POST', headers,
@@ -362,35 +576,32 @@ async function mcpCall(method, params = {}) {
 
   const text = await res.text();
   const dataLine = text.split('\n').find(l => l.startsWith('data: '));
-  if (dataLine) {
-    return JSON.parse(dataLine.slice(6));
-  }
+  if (dataLine) return JSON.parse(dataLine.slice(6));
   try { return JSON.parse(text); } catch { return { raw: text }; }
 }
 
 function addLog(tag, tagClass, msg) {
   const log = document.getElementById('flow-log');
-  if (log.querySelector('[style]')) log.innerHTML = '';
+  const empty = log.querySelector('.flow-empty');
+  if (empty) empty.remove();
+
+  flowEventCount++;
   const entry = document.createElement('div');
   entry.className = 'flow-entry';
-  entry.innerHTML = `<span class="flow-tag ${tagClass}">${tag}</span><span class="flow-msg">${msg}</span>`;
+  entry.innerHTML = `<span class="flow-num">${flowEventCount}</span><span class="flow-tag ${tagClass}">${tag}</span><span class="flow-msg">${msg}</span>`;
   log.prepend(entry);
+  updateStats();
 }
 
-function showJson(obj) {
+function showJson(obj, method) {
   const view = document.getElementById('json-view');
+  if (method) document.getElementById('resp-method').textContent = method;
   const json = JSON.stringify(obj, null, 2);
   view.innerHTML = json
     .replace(/("(?:[^"\\]|\\.)*")(\s*:)/g, '<span class="jk">$1</span>$2')
     .replace(/:\s*("(?:[^"\\]|\\.)*")/g, ': <span class="js">$1</span>')
     .replace(/:\s*(\d+(?:\.\d+)?)/g, ': <span class="jn">$1</span>')
     .replace(/:\s*(true|false|null)/g, ': <span class="jb">$1</span>');
-}
-
-function setStatus(text, cls) {
-  const el = document.getElementById('status-msg');
-  el.textContent = text;
-  el.className = 'status-msg ' + cls;
 }
 
 function animateArrow(id, reverse) {
@@ -412,6 +623,8 @@ function setSecLayer(id, state) {
   const el = document.getElementById(id);
   el.classList.remove('checking', 'passed', 'denied', 'skipped');
   if (state) el.classList.add(state);
+  if (state === 'passed') { checksPassed++; updateStats(); }
+  if (state === 'denied') { checksDenied++; updateStats(); }
 }
 
 function resetArch() {
@@ -419,47 +632,15 @@ function resetArch() {
   ['sec-jwt', 'sec-rbac', 'sec-guard'].forEach(id => setSecLayer(id, null));
 }
 
-async function animateSecurityStack(hasJwt, toolName) {
-  setNodeState('node-goose', 'active');
-  addLog('request', 'request', `<strong>${toolName || 'MCP call'}</strong> sent from client`);
-  await delay(300);
-
-  animateArrow('arrow-1', false);
-  await delay(400);
-  setNodeState('node-gateway', 'active');
-
-  if (hasJwt) {
-    setSecLayer('sec-jwt', 'checking');
-    addLog('auth', 'auth', 'JWT authentication: verifying bearer token...');
-    await delay(500);
-    setSecLayer('sec-jwt', 'passed');
-    addLog('auth', 'auth', 'JWT authentication: <strong>passed</strong>');
-  } else {
-    setSecLayer('sec-jwt', 'skipped');
-  }
-
-  setSecLayer('sec-rbac', 'checking');
-  addLog('auth', 'auth', 'RBAC authorization: checking CEL rules...');
-  await delay(400);
-  setSecLayer('sec-rbac', 'passed');
-  addLog('auth', 'auth', 'RBAC authorization: <strong>passed</strong>');
-
-  setSecLayer('sec-guard', 'checking');
-  addLog('guard', 'guard', 'ExtMCP guardrail: sanitizing headers and params...');
-  await delay(400);
-
-  return true;
-}
-
 async function stepInit() {
   resetAll(true);
-  setStatus('Connecting...', 'pending');
+  setConnected(false, 'Connecting...');
   document.getElementById('btn-init').disabled = true;
-  document.getElementById('btn-init').innerHTML = '<span class="spinner"></span> Initializing...';
+  document.getElementById('btn-init').innerHTML = '<span class="spinner"></span> Connecting...';
 
   try {
     setNodeState('node-goose', 'active');
-    addLog('request', 'request', '<strong>initialize</strong> &rarr; agentgateway :3000');
+    addLog('request', 'request', '<strong>initialize</strong> &#8594; agentgateway :3000');
     await delay(300);
     animateArrow('arrow-1', false);
     await delay(400);
@@ -475,7 +656,7 @@ async function stepInit() {
       clientInfo: { name: 'demo-spa', version: '1.0' }
     });
 
-    showJson(res);
+    showJson(res, 'initialize');
     const serverName = res.result?.serverInfo?.name || 'unknown';
 
     animateArrow('arrow-2', true);
@@ -488,21 +669,27 @@ async function stepInit() {
     setNodeState('node-goose', 'pass');
 
     addLog('response', 'response', `Session established with <strong>${esc(serverName)}</strong>`);
-    addLog('response', 'response', `Session ID: <strong class="mono">${esc(sessionId?.slice(0, 24))}...</strong>`);
+    addLog('response', 'response', `Session ID: <strong class="mono">${esc(sessionId?.slice(0, 20))}...</strong>`);
 
     await mcpCall('notifications/initialized', {});
 
-    setStatus('Session active', 'connected');
+    setConnected(true, 'Session Active');
+    document.getElementById('stat-session').textContent = 'Active';
+    document.getElementById('stat-session').className = 'stat-value good';
+    document.getElementById('stat-session-sub').textContent = serverName;
+
     document.getElementById('btn-list').disabled = false;
     document.getElementById('btn-poison').disabled = false;
   } catch (err) {
     addLog('error', 'error', `Connection failed: ${esc(err.message)}`);
-    setStatus('Connection failed', 'disconnected');
-    showJson({ error: err.message });
+    setConnected(false, 'Failed');
+    showJson({ error: err.message }, 'initialize');
+    document.getElementById('stat-session').textContent = 'Error';
+    document.getElementById('stat-session').className = 'stat-value crit';
   }
 
   document.getElementById('btn-init').disabled = false;
-  document.getElementById('btn-init').textContent = '1. Initialize Session';
+  document.getElementById('btn-init').innerHTML = '<span class="step-num">1</span> Initialize';
 }
 
 async function stepListTools() {
@@ -512,17 +699,17 @@ async function stepListTools() {
 
   try {
     setNodeState('node-goose', 'active');
-    addLog('request', 'request', '<strong>tools/list</strong> &rarr; agentgateway');
+    addLog('request', 'request', '<strong>tools/list</strong> &#8594; agentgateway');
     await delay(300);
     animateArrow('arrow-1', false);
     await delay(400);
     setNodeState('node-gateway', 'active');
 
     setSecLayer('sec-rbac', 'checking');
-    addLog('auth', 'auth', 'RBAC: checking tools/list permission...');
+    addLog('auth', 'auth', 'RBAC: evaluating CEL rules for <strong>tools/list</strong>...');
     await delay(400);
     setSecLayer('sec-rbac', 'passed');
-    addLog('auth', 'auth', 'RBAC: <strong>allowed</strong> (tools/list is open)');
+    addLog('auth', 'auth', 'RBAC: <strong>allowed</strong> (tools/list is open to all roles)');
 
     animateArrow('arrow-2', false);
     await delay(400);
@@ -535,55 +722,50 @@ async function stepListTools() {
     await delay(200);
 
     setSecLayer('sec-guard', 'checking');
-    addLog('guard', 'guard', 'ExtMCP guardrail: processing tools/list response...');
+    addLog('guard', 'guard', 'ExtMCP guardrail: inspecting tools/list response...');
     await delay(400);
     setSecLayer('sec-guard', 'passed');
-    addLog('guard', 'guard', 'ExtMCP guardrail: <strong>descriptions annotated</strong>');
+    addLog('guard', 'guard', 'ExtMCP guardrail: <strong>descriptions verified and annotated</strong>');
 
     animateArrow('arrow-1', true);
     await delay(300);
 
     ['node-goose', 'node-gateway', 'node-quarkus'].forEach(id => setNodeState(id, 'pass'));
 
-    addLog('response', 'response', `Found <strong>${tools.length} tools</strong>`);
-    showJson(res);
+    addLog('response', 'response', `Discovered <strong>${tools.length} tools</strong> from backend`);
+    showJson(res, 'tools/list');
     renderToolGrid();
 
     document.getElementById('tool-section').style.display = '';
     document.getElementById('btn-call').disabled = false;
+
+    document.getElementById('stat-tools').textContent = tools.length;
+    document.getElementById('stat-tools').className = 'stat-value blue';
+    document.getElementById('stat-tools-sub').textContent = 'Verified by guardrail';
+    document.getElementById('tool-count').textContent = `${tools.length} tools`;
   } catch (err) {
     addLog('error', 'error', `tools/list failed: ${esc(err.message)}`);
-    showJson({ error: err.message });
+    showJson({ error: err.message }, 'tools/list');
   }
 
   document.getElementById('btn-list').disabled = false;
-  document.getElementById('btn-list').textContent = '2. List Tools';
+  document.getElementById('btn-list').innerHTML = '<span class="step-num">2</span> List Tools';
 }
 
 function renderToolGrid() {
   const grid = document.getElementById('tool-grid');
-  const defaults = {
-    getCustomerStatus: { customerId: 'CUST-4091' },
-    getZoneHealthLogs: { zoneId: 'US-EAST-1' },
-    getOrderStatus: { orderId: 'ORD-20240815' },
-    getSLACompliance: { serviceId: 'api-gateway' },
-    getAuditTrail: { customerId: 'CUST-4091' }
-  };
-
   grid.innerHTML = tools.map((t, i) => `
-    <div class="tool-opt${i === 0 ? ' selected' : ''}" data-idx="${i}" onclick="selectTool(${i})">
+    <div class="tool-opt${i === 0 ? ' selected' : ''}" onclick="selectTool(${i})">
+      <div class="tool-icon mono">${esc(t.name.replace(/^get/, '').slice(0, 2).toUpperCase())}</div>
       <span class="tool-name mono">${esc(t.name)}</span>
     </div>`).join('');
-
   selectedTool = 0;
   renderToolParams(0);
 }
 
 function selectTool(idx) {
   selectedTool = idx;
-  document.querySelectorAll('.tool-opt').forEach((el, i) => {
-    el.classList.toggle('selected', i === idx);
-  });
+  document.querySelectorAll('.tool-opt').forEach((el, i) => el.classList.toggle('selected', i === idx));
   renderToolParams(idx);
 }
 
@@ -594,12 +776,11 @@ function renderToolParams(idx) {
     customerId: 'CUST-4091', zoneId: 'US-EAST-1',
     orderId: 'ORD-20240815', serviceId: 'api-gateway'
   };
-
   const container = document.getElementById('tool-params');
-  container.innerHTML = `<div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:8px">${esc(tool.description)}</div>`;
+  container.innerHTML = `<div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:12px">${esc(tool.description)}</div>`;
   for (const [name, schema] of Object.entries(params)) {
     container.innerHTML += `<div class="param-row">
-      <label>${esc(name)}</label>
+      <label class="mono">${esc(name)}</label>
       <input type="text" class="mono" id="tp-${esc(name)}" value="${esc(defaults[name] || '')}" placeholder="${esc(schema.description || '')}">
     </div>`;
   }
@@ -621,14 +802,14 @@ async function stepCallTool() {
 
   try {
     setNodeState('node-goose', 'active');
-    addLog('request', 'request', `<strong>tools/call</strong> &rarr; ${esc(tool.name)}(${esc(JSON.stringify(args))})`);
+    addLog('request', 'request', `<strong>tools/call</strong> &#8594; ${esc(tool.name)}(${esc(JSON.stringify(args))})`);
     await delay(300);
     animateArrow('arrow-1', false);
     await delay(400);
     setNodeState('node-gateway', 'active');
 
     setSecLayer('sec-rbac', 'checking');
-    addLog('auth', 'auth', `RBAC: checking permission for <strong>${esc(tool.name)}</strong>...`);
+    addLog('auth', 'auth', `RBAC: evaluating CEL rules for <strong>${esc(tool.name)}</strong>...`);
     await delay(400);
     setSecLayer('sec-rbac', 'passed');
     addLog('auth', 'auth', 'RBAC: <strong>allowed</strong>');
@@ -637,7 +818,7 @@ async function stepCallTool() {
     addLog('guard', 'guard', 'ExtMCP guardrail: scanning tool name and arguments...');
     await delay(400);
     setSecLayer('sec-guard', 'passed');
-    addLog('guard', 'guard', 'ExtMCP guardrail: <strong>clean, forwarding</strong>');
+    addLog('guard', 'guard', 'ExtMCP guardrail: <strong>clean, forwarding to backend</strong>');
 
     animateArrow('arrow-2', false);
     await delay(400);
@@ -653,14 +834,14 @@ async function stepCallTool() {
     ['node-goose', 'node-gateway', 'node-quarkus'].forEach(id => setNodeState(id, 'pass'));
 
     addLog('response', 'response', `<strong>${esc(tool.name)}</strong> returned successfully`);
-    showJson(res);
+    showJson(res, 'tools/call');
   } catch (err) {
     addLog('error', 'error', `tools/call failed: ${esc(err.message)}`);
-    showJson({ error: err.message });
+    showJson({ error: err.message }, 'tools/call');
   }
 
   document.getElementById('btn-call').disabled = false;
-  document.getElementById('btn-call').textContent = '3. Call Tool';
+  document.getElementById('btn-call').innerHTML = '<span class="step-num">3</span> Call Tool';
 }
 
 async function stepPoisonTest() {
@@ -670,14 +851,14 @@ async function stepPoisonTest() {
 
   try {
     setNodeState('node-goose', 'active');
-    addLog('request', 'request', '<strong>tools/call</strong> &rarr; <span style="color:var(--status-critical)">__proto__/../evil</span> (poisoned tool name)');
+    addLog('request', 'request', '<strong>tools/call</strong> &#8594; <span style="color:var(--status-critical)">__proto__/../evil</span> (poisoned tool name)');
     await delay(300);
     animateArrow('arrow-1', false);
     await delay(400);
     setNodeState('node-gateway', 'active');
 
     setSecLayer('sec-guard', 'checking');
-    addLog('guard', 'guard', 'ExtMCP guardrail: scanning tool name...');
+    addLog('guard', 'guard', 'ExtMCP guardrail: scanning tool name for blocked patterns...');
     await delay(600);
 
     const res = await mcpCall('tools/call', {
@@ -688,14 +869,14 @@ async function stepPoisonTest() {
     if (res.error) {
       setSecLayer('sec-guard', 'denied');
       setNodeState('node-gateway', 'deny');
-      addLog('guard', 'guard', `ExtMCP guardrail: <strong style="color:var(--status-critical)">DENIED</strong> &mdash; ${esc(res.error.message || 'blocked')}`);
+      addLog('guard', 'guard', `ExtMCP guardrail: <strong style="color:var(--status-critical)">DENIED</strong> &#8212; ${esc(res.error.message || 'blocked')}`);
       addLog('error', 'error', 'Poisoned request blocked before reaching backend');
     } else {
       setSecLayer('sec-guard', 'passed');
       addLog('guard', 'guard', 'Guardrail passed (backend may still reject)');
     }
 
-    showJson(res);
+    showJson(res, 'tools/call (poison)');
   } catch (err) {
     setSecLayer('sec-guard', 'denied');
     setNodeState('node-gateway', 'deny');
@@ -703,7 +884,7 @@ async function stepPoisonTest() {
   }
 
   document.getElementById('btn-poison').disabled = false;
-  document.getElementById('btn-poison').textContent = '4. Poison Test';
+  document.getElementById('btn-poison').innerHTML = '<span class="step-num">4</span> Poison Test';
 }
 
 function resetAll(keepLog) {
@@ -711,18 +892,32 @@ function resetAll(keepLog) {
   rpcId = 0;
   tools = [];
   selectedTool = null;
+  requestCount = 0;
+  checksPassed = 0;
+  checksDenied = 0;
+  flowEventCount = 0;
 
   resetArch();
-  setStatus('No session', 'disconnected');
+  setConnected(false);
+
+  document.getElementById('stat-session').textContent = '--';
+  document.getElementById('stat-session').className = 'stat-value';
+  document.getElementById('stat-session-sub').textContent = 'No active session';
+  document.getElementById('stat-tools').textContent = '--';
+  document.getElementById('stat-tools').className = 'stat-value';
+  document.getElementById('stat-tools-sub').textContent = 'Not discovered yet';
+  document.getElementById('resp-method').textContent = '--';
 
   document.getElementById('btn-list').disabled = true;
   document.getElementById('btn-call').disabled = true;
   document.getElementById('btn-poison').disabled = true;
   document.getElementById('tool-section').style.display = 'none';
 
+  updateStats();
+
   if (!keepLog) {
     document.getElementById('flow-log').innerHTML =
-      '<div style="font-size:0.8rem;color:var(--text-muted)">Click "Initialize Session" to begin.</div>';
+      '<div class="flow-empty"><div class="flow-empty-icon">&#9678;</div>Click <strong>Initialize</strong> to start the demo flow.</div>';
     document.getElementById('json-view').textContent = 'Waiting for first request...';
   }
 }
