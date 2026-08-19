@@ -16,7 +16,9 @@ cleanup() {
     kill "$pid" 2>/dev/null || true
   done
   echo "[cleanup] Stopping Jaeger..."
-  podman compose -f "$SCRIPT_DIR/compose.yml" down 2>/dev/null || true
+  podman compose -f "$SCRIPT_DIR/compose.yml" down 2>/dev/null \
+    || podman stop jaeger 2>/dev/null
+  podman rm -f jaeger 2>/dev/null || true
   wait 2>/dev/null || true
   echo "All services stopped."
 }
