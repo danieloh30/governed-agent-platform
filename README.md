@@ -89,7 +89,7 @@ governed-mcp-tools/
 │   └── tutorial.md                  # DZone tutorial
 └── part3-observability/             # Distributed tracing
     ├── agentgateway/                # Config files with tracing enabled
-    ├── compose.yml           # Jaeger all-in-one
+    ├── compose.yml                  # Jaeger all-in-one
     ├── start-all.sh                 # Launches Jaeger + all services
     └── tutorial.md                  # DZone tutorial
 ```
