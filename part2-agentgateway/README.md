@@ -29,10 +29,15 @@ cd part2-agentgateway
 ./start-all.sh
 ```
 
-This starts all three services:
-1. Quarkus MCP server on `:8080`
-2. ExtMCP guardrail server on `:9001`
-3. agentgateway proxy on `:3000`
+This builds and starts the Quarkus MCP server on `:8080` and agentgateway on `:3000`.
+
+To also enable ExtMCP guardrails, pass the guardrails config:
+
+```bash
+./start-all.sh agentgateway/config-guardrails.yaml
+```
+
+This additionally starts the Quarkus gRPC guardrail server on `:9001`.
 
 ## Register with Goose
 
@@ -48,8 +53,9 @@ The extension URI is `http://localhost:3000/mcp` (agentgateway) instead of `http
 
 | File | Purpose |
 |------|---------|
+| `agentgateway/config-dev.yaml` | Proxy only, no auth or guardrails (default) |
+| `agentgateway/config-guardrails.yaml` | Proxy + ExtMCP guardrails, no auth |
 | `agentgateway/config.yaml` | Full config with JWT auth, RBAC, and guardrails |
-| `agentgateway/config-dev.yaml` | Dev config without JWT (for local testing) |
 | `goose-extension-config.yaml` | Goose extension pointing to agentgateway |
 | `extmcp-guardrail/` | Quarkus gRPC ExtMCP guardrail server |
 | `start-all.sh` | Launches all services |

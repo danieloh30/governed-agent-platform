@@ -7,6 +7,7 @@
 # and ExtMCP guardrails against tool poisoning.
 
 config:
+  adminAddr: localhost:15000
   tracing:
     endpoint: http://localhost:4317
     protocol: grpc

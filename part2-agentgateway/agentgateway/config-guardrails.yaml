@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=https://agentgateway.dev/schema/config
 #
-# Development configuration – no JWT, no guardrails.
-# Use this for local testing with Goose before wiring up security.
+# Dev + guardrails configuration – no JWT, but ExtMCP guardrails enabled.
+# Requires the ExtMCP guardrail server running on :9001.
 
 config:
   adminAddr: localhost:15000
@@ -18,6 +18,15 @@ mcp:
         - mcp-session-id
       exposeHeaders:
         - Mcp-Session-Id
+
+    mcpGuardrails:
+      processors:
+        - kind: remote
+          host: "localhost:9001"
+          failureMode: failClosed
+          methods:
+            tools/call: request
+            tools/list: response
 
   targets:
     - name: customer-tools
