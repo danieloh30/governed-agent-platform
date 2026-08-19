@@ -9,9 +9,9 @@ SPA_PORT="${2:-8888}"
 PIDS=()
 cleanup() {
   echo ""
-  echo "┌──────────────────────────────────────┐"
-  echo "│  Shutting down all services...       │"
-  echo "└──────────────────────────────────────┘"
+  echo "+--------------------------------------+"
+  echo "| Shutting down all services...       |"
+  echo "+--------------------------------------+"
   for pid in "${PIDS[@]}"; do
     kill "$pid" 2>/dev/null || true
   done
@@ -20,9 +20,11 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-echo "┌───────────────────────────────────────────────────────────────────┐"
-echo "│  Part 2: Securing Goose-to-Java Agent Traffic with agentgateway │"
-echo "└───────────────────────────────────────────────────────────────────┘"
+HW=67
+hborder=$(printf '%*s' "$HW" '' | tr ' ' '-')
+echo "+${hborder}+"
+printf "| %-$(( HW - 2 ))s |\n" "Part 2: Securing Goose-to-Java Agent Traffic with agentgateway"
+echo "+${hborder}+"
 echo ""
 echo "  Config : $CONFIG"
 echo "  SPA    : http://localhost:$SPA_PORT/index.html"
@@ -143,24 +145,26 @@ fi
 echo ""
 
 # ── Summary ──
-echo "┌────────────────────────────────────────────────────────────────┐"
-echo "│  All services running                                        │"
-echo "├────────────────────────────────────────────────────────────────┤"
-echo "│                                                              │"
-echo "│  Quarkus MCP backend : http://localhost:8080/mcp             │"
-echo "│  agentgateway proxy  : http://localhost:3000/mcp             │"
-echo "│  agentgateway UI     : http://localhost:15000/ui             │"
+W=60
+border=$(printf '%*s' "$W" '' | tr ' ' '-')
+echo "+${border}+"
+printf "| %-$(( W - 2 ))s |\n" "All services running"
+echo "+${border}+"
+printf "| %-$(( W - 2 ))s |\n" ""
+printf "| %-$(( W - 2 ))s |\n" "Quarkus MCP backend : http://localhost:8080/mcp"
+printf "| %-$(( W - 2 ))s |\n" "agentgateway proxy  : http://localhost:3000/mcp"
+printf "| %-$(( W - 2 ))s |\n" "agentgateway UI     : http://localhost:15000/ui"
 SPA_URL="http://localhost:${SPA_PORT}/index.html"
-printf "│  Demo SPA            : %-38s│\n" "$SPA_URL"
+printf "| %-$(( W - 2 ))s |\n" "Demo SPA            : $SPA_URL"
 if grep -q "mcpGuardrails" "$CONFIG" 2>/dev/null; then
-echo "│  ExtMCP guardrail    : localhost:9001 (gRPC)                 │"
+printf "| %-$(( W - 2 ))s |\n" "ExtMCP guardrail    : localhost:9001 (gRPC)"
 fi
-echo "│                                                              │"
-echo "│  Goose config:                                               │"
-echo "│  cp part2-agentgateway/goose-extension-config.yaml \\         │"
-echo "│     ~/.config/goose/config.yaml                              │"
-echo "│                                                              │"
-echo "└────────────────────────────────────────────────────────────────┘"
+printf "| %-$(( W - 2 ))s |\n" ""
+printf "| %-$(( W - 2 ))s |\n" "Goose config:"
+printf "| %-$(( W - 2 ))s |\n" "cp goose-extension-config.yaml \\"
+printf "| %-$(( W - 2 ))s |\n" "   ~/.config/goose/config.yaml"
+printf "| %-$(( W - 2 ))s |\n" ""
+echo "+${border}+"
 echo ""
 echo "Press Ctrl+C to stop all services."
 
