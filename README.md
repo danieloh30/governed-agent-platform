@@ -29,7 +29,7 @@ A multi-part tutorial series for platform engineers building governed AI agent i
                             ▼                             ▼
                    ┌──────────────────────────────────────────────────┐
                    │              Jaeger (OTLP Collector)             │
-                   │           :16686 (UI) / :4317 / :4318           │
+                   │           :16686 (UI) / :4317 / :4318            │
                    └──────────────────────────────────────────────────┘
 ```
 
