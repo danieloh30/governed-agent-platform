@@ -150,8 +150,8 @@ echo "│                                                                │"
 echo "│  Quarkus MCP backend : http://localhost:8080/mcp               │"
 echo "│  agentgateway proxy  : http://localhost:3000/mcp               │"
 echo "│  agentgateway UI     : http://localhost:15000/ui               │"
-printf "│  Demo SPA            : http://localhost:%s/index.html" "$SPA_PORT"
-printf "%*s│\n" $((26 - ${#SPA_PORT})) ""
+SPA_URL="http://localhost:${SPA_PORT}/index.html"
+printf "│  Demo SPA            : %-40s│\n" "$SPA_URL"
 if grep -q "mcpGuardrails" "$CONFIG" 2>/dev/null; then
 echo "│  ExtMCP guardrail    : localhost:9001 (gRPC)                   │"
 fi
