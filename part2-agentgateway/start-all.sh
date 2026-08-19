@@ -52,7 +52,7 @@ echo ""
 # ── Step 0: Build ──
 echo "━━━ Step 0: Build ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "[build] Compiling Quarkus MCP server..."
-mvn -f "$ROOT_DIR/pom.xml" package -DskipTests -q
+mvn -f "$ROOT_DIR/part1-quarkus-mcp/pom.xml" package -DskipTests -q
 echo "[build] Quarkus MCP server built successfully."
 
 if grep -q "mcpGuardrails" "$CONFIG" 2>/dev/null; then
@@ -65,7 +65,7 @@ echo ""
 # ── Step 1: Quarkus MCP Server ──
 echo "━━━ Step 1/4: Quarkus MCP Server (:8080) ━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "[quarkus] Starting Quarkus MCP server..."
-java -jar "$ROOT_DIR/target/quarkus-app/quarkus-run.jar" &
+java -jar "$ROOT_DIR/part1-quarkus-mcp/target/quarkus-app/quarkus-run.jar" &
 PIDS+=($!)
 echo "[quarkus] PID: $!"
 

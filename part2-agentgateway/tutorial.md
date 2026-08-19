@@ -54,7 +54,7 @@ curl -sL https://agentgateway.dev/install | bash
 Verify your Part 1 Quarkus MCP server still works:
 
 ```bash
-# From the repository root
+cd part1-quarkus-mcp
 mvn quarkus:dev
 ```
 
