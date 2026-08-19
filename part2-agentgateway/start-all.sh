@@ -20,9 +20,9 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-echo "┌──────────────────────────────────────────────────────────────────┐"
+echo "┌───────────────────────────────────────────────────────────────────┐"
 echo "│  Part 2: Securing Goose-to-Java Agent Traffic with agentgateway │"
-echo "└──────────────────────────────────────────────────────────────────┘"
+echo "└───────────────────────────────────────────────────────────────────┘"
 echo ""
 echo "  Config : $CONFIG"
 echo "  SPA    : http://localhost:$SPA_PORT/index.html"
@@ -143,24 +143,24 @@ fi
 echo ""
 
 # ── Summary ──
-echo "┌──────────────────────────────────────────────────────────────────┐"
-echo "│  All services running                                          │"
-echo "├──────────────────────────────────────────────────────────────────┤"
-echo "│                                                                │"
-echo "│  Quarkus MCP backend : http://localhost:8080/mcp               │"
-echo "│  agentgateway proxy  : http://localhost:3000/mcp               │"
-echo "│  agentgateway UI     : http://localhost:15000/ui               │"
+echo "┌────────────────────────────────────────────────────────────────┐"
+echo "│  All services running                                        │"
+echo "├────────────────────────────────────────────────────────────────┤"
+echo "│                                                              │"
+echo "│  Quarkus MCP backend : http://localhost:8080/mcp             │"
+echo "│  agentgateway proxy  : http://localhost:3000/mcp             │"
+echo "│  agentgateway UI     : http://localhost:15000/ui             │"
 SPA_URL="http://localhost:${SPA_PORT}/index.html"
-printf "│  Demo SPA            : %-40s│\n" "$SPA_URL"
+printf "│  Demo SPA            : %-38s│\n" "$SPA_URL"
 if grep -q "mcpGuardrails" "$CONFIG" 2>/dev/null; then
-echo "│  ExtMCP guardrail    : localhost:9001 (gRPC)                   │"
+echo "│  ExtMCP guardrail    : localhost:9001 (gRPC)                 │"
 fi
-echo "│                                                                │"
-echo "│  Goose config:                                                 │"
-echo "│  cp part2-agentgateway/goose-extension-config.yaml \\           │"
-echo "│     ~/.config/goose/config.yaml                                │"
-echo "│                                                                │"
-echo "└──────────────────────────────────────────────────────────────────┘"
+echo "│                                                              │"
+echo "│  Goose config:                                               │"
+echo "│  cp part2-agentgateway/goose-extension-config.yaml \\         │"
+echo "│     ~/.config/goose/config.yaml                              │"
+echo "│                                                              │"
+echo "└────────────────────────────────────────────────────────────────┘"
 echo ""
 echo "Press Ctrl+C to stop all services."
 
