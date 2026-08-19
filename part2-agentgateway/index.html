@@ -188,6 +188,45 @@ body {
 .sec-layer.passed .sec-dot { background: var(--status-good); }
 .sec-layer.denied .sec-dot { background: var(--status-critical); }
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+.sec-badge {
+  margin-left: auto; font-size: 0.62rem; font-weight: 500;
+  padding: 1px 6px; border-radius: 8px;
+  background: var(--gridline); color: var(--text-muted);
+  transition: all 0.3s;
+}
+.sec-layer.passed .sec-badge,
+.sec-layer.denied .sec-badge,
+.sec-layer.checking .sec-badge { display: none; }
+.sec-layer.skipped .sec-badge { display: inline; opacity: 0.7; }
+
+/* Config selector */
+.config-bar {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 28px; padding: 14px 20px;
+  background: var(--surface-card); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow-sm);
+}
+.config-bar label {
+  font-size: 0.78rem; font-weight: 600; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+.config-bar select {
+  padding: 6px 12px; border: 1px solid var(--baseline); border-radius: var(--radius-sm);
+  font-size: 0.82rem; background: var(--surface-inset); color: var(--text-primary);
+  cursor: pointer;
+}
+.config-bar .config-desc {
+  font-size: 0.78rem; color: var(--text-muted); margin-left: 8px;
+}
+.config-bar .config-layers {
+  margin-left: auto; display: flex; gap: 8px;
+}
+.config-chip {
+  font-size: 0.68rem; font-weight: 600; padding: 3px 10px;
+  border-radius: 12px; text-transform: uppercase; letter-spacing: 0.04em;
+}
+.config-chip.on { background: var(--status-good-bg); color: var(--status-good-text); }
+.config-chip.off { background: var(--gridline); color: var(--text-muted); }
 
 /* ── Controls ── */
 .controls-bar {
@@ -416,6 +455,22 @@ body {
     </div>
   </div>
 
+  <!-- ── Config selector ── -->
+  <div class="config-bar">
+    <label>Config</label>
+    <select id="config-select" onchange="onConfigChange()">
+      <option value="dev">config-dev.yaml</option>
+      <option value="guardrails">config-guardrails.yaml</option>
+      <option value="full">config.yaml (full security)</option>
+    </select>
+    <span class="config-desc" id="config-desc">Proxy only, no auth or guardrails</span>
+    <div class="config-layers" id="config-layers">
+      <span class="config-chip off" id="chip-jwt">JWT</span>
+      <span class="config-chip off" id="chip-rbac">RBAC</span>
+      <span class="config-chip off" id="chip-guard">Guardrails</span>
+    </div>
+  </div>
+
   <!-- ── Architecture ── -->
   <div class="arch-card">
     <h2>Traffic Flow Architecture</h2>
@@ -434,9 +489,9 @@ body {
         <div class="node-title">agentgateway</div>
         <div class="node-port mono">:3000</div>
         <div class="security-layers">
-          <div class="sec-layer" id="sec-jwt"><span class="sec-dot"></span> JWT Authentication</div>
-          <div class="sec-layer" id="sec-rbac"><span class="sec-dot"></span> RBAC Authorization</div>
-          <div class="sec-layer" id="sec-guard"><span class="sec-dot"></span> ExtMCP Guardrails</div>
+          <div class="sec-layer" id="sec-jwt"><span class="sec-dot"></span> JWT Authentication <span class="sec-badge" id="sec-jwt-badge">requires config.yaml</span></div>
+          <div class="sec-layer" id="sec-rbac"><span class="sec-dot"></span> RBAC Authorization <span class="sec-badge" id="sec-rbac-badge">requires config.yaml</span></div>
+          <div class="sec-layer" id="sec-guard"><span class="sec-dot"></span> ExtMCP Guardrails <span class="sec-badge" id="sec-guard-badge">requires config-guardrails.yaml</span></div>
         </div>
       </div>
       <div class="arch-arrow" id="arrow-2">
@@ -537,6 +592,29 @@ let requestCount = 0;
 let checksPassed = 0;
 let checksDenied = 0;
 let flowEventCount = 0;
+
+const CONFIGS = {
+  dev:        { jwt: false, rbac: false, guard: false, desc: 'Proxy only, no auth or guardrails' },
+  guardrails: { jwt: false, rbac: false, guard: true,  desc: 'Proxy + ExtMCP guardrails, no auth' },
+  full:       { jwt: true,  rbac: true,  guard: true,  desc: 'JWT auth, RBAC with CEL, and guardrails' }
+};
+let activeConfig = CONFIGS.dev;
+
+function onConfigChange() {
+  const sel = document.getElementById('config-select').value;
+  activeConfig = CONFIGS[sel];
+  document.getElementById('config-desc').textContent = activeConfig.desc;
+
+  document.getElementById('chip-jwt').className = 'config-chip ' + (activeConfig.jwt ? 'on' : 'off');
+  document.getElementById('chip-rbac').className = 'config-chip ' + (activeConfig.rbac ? 'on' : 'off');
+  document.getElementById('chip-guard').className = 'config-chip ' + (activeConfig.guard ? 'on' : 'off');
+
+  document.getElementById('sec-jwt-badge').textContent = activeConfig.jwt ? 'active' : 'requires config.yaml';
+  document.getElementById('sec-rbac-badge').textContent = activeConfig.rbac ? 'active' : 'requires config.yaml';
+  document.getElementById('sec-guard-badge').textContent = activeConfig.guard ? 'active' : 'requires config-guardrails.yaml';
+
+  resetAll();
+}
 
 function esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
 
@@ -645,7 +723,19 @@ async function stepInit() {
     animateArrow('arrow-1', false);
     await delay(400);
     setNodeState('node-gateway', 'active');
+
+    if (activeConfig.jwt) {
+      setSecLayer('sec-jwt', 'checking');
+      addLog('auth', 'auth', 'JWT: validating bearer token (signature, expiry, issuer)...');
+      await delay(500);
+      setSecLayer('sec-jwt', 'passed');
+      addLog('auth', 'auth', 'JWT: <strong>identity verified</strong>');
+    } else {
+      setSecLayer('sec-jwt', 'skipped');
+      addLog('auth', 'auth', 'JWT: <strong>skipped</strong> (not enabled in current config)');
+    }
     await delay(200);
+
     animateArrow('arrow-2', false);
     await delay(400);
     setNodeState('node-quarkus', 'active');
@@ -705,11 +795,26 @@ async function stepListTools() {
     await delay(400);
     setNodeState('node-gateway', 'active');
 
-    setSecLayer('sec-rbac', 'checking');
-    addLog('auth', 'auth', 'RBAC: evaluating CEL rules for <strong>tools/list</strong>...');
-    await delay(400);
-    setSecLayer('sec-rbac', 'passed');
-    addLog('auth', 'auth', 'RBAC: <strong>allowed</strong> (tools/list is open to all roles)');
+    if (activeConfig.jwt) {
+      setSecLayer('sec-jwt', 'checking');
+      addLog('auth', 'auth', 'JWT: validating bearer token...');
+      await delay(400);
+      setSecLayer('sec-jwt', 'passed');
+      addLog('auth', 'auth', 'JWT: <strong>identity verified</strong>');
+    } else {
+      setSecLayer('sec-jwt', 'skipped');
+    }
+
+    if (activeConfig.rbac) {
+      setSecLayer('sec-rbac', 'checking');
+      addLog('auth', 'auth', 'RBAC: evaluating CEL rules for <strong>tools/list</strong>...');
+      await delay(400);
+      setSecLayer('sec-rbac', 'passed');
+      addLog('auth', 'auth', 'RBAC: <strong>allowed</strong> (tools/list is open to all roles)');
+    } else {
+      setSecLayer('sec-rbac', 'skipped');
+      addLog('auth', 'auth', 'RBAC: <strong>skipped</strong> (not in config)');
+    }
 
     animateArrow('arrow-2', false);
     await delay(400);
@@ -721,11 +826,16 @@ async function stepListTools() {
     animateArrow('arrow-2', true);
     await delay(200);
 
-    setSecLayer('sec-guard', 'checking');
-    addLog('guard', 'guard', 'ExtMCP guardrail: inspecting tools/list response...');
-    await delay(400);
-    setSecLayer('sec-guard', 'passed');
-    addLog('guard', 'guard', 'ExtMCP guardrail: <strong>descriptions verified and annotated</strong>');
+    if (activeConfig.guard) {
+      setSecLayer('sec-guard', 'checking');
+      addLog('guard', 'guard', 'ExtMCP guardrail: inspecting tools/list response...');
+      await delay(400);
+      setSecLayer('sec-guard', 'passed');
+      addLog('guard', 'guard', 'ExtMCP guardrail: <strong>descriptions verified and annotated</strong>');
+    } else {
+      setSecLayer('sec-guard', 'skipped');
+      addLog('guard', 'guard', 'ExtMCP guardrail: <strong>skipped</strong> (not in config)');
+    }
 
     animateArrow('arrow-1', true);
     await delay(300);
@@ -808,17 +918,35 @@ async function stepCallTool() {
     await delay(400);
     setNodeState('node-gateway', 'active');
 
-    setSecLayer('sec-rbac', 'checking');
-    addLog('auth', 'auth', `RBAC: evaluating CEL rules for <strong>${esc(tool.name)}</strong>...`);
-    await delay(400);
-    setSecLayer('sec-rbac', 'passed');
-    addLog('auth', 'auth', 'RBAC: <strong>allowed</strong>');
+    if (activeConfig.jwt) {
+      setSecLayer('sec-jwt', 'checking');
+      addLog('auth', 'auth', 'JWT: validating bearer token...');
+      await delay(400);
+      setSecLayer('sec-jwt', 'passed');
+      addLog('auth', 'auth', 'JWT: <strong>identity verified</strong>');
+    } else {
+      setSecLayer('sec-jwt', 'skipped');
+    }
 
-    setSecLayer('sec-guard', 'checking');
-    addLog('guard', 'guard', 'ExtMCP guardrail: scanning tool name and arguments...');
-    await delay(400);
-    setSecLayer('sec-guard', 'passed');
-    addLog('guard', 'guard', 'ExtMCP guardrail: <strong>clean, forwarding to backend</strong>');
+    if (activeConfig.rbac) {
+      setSecLayer('sec-rbac', 'checking');
+      addLog('auth', 'auth', `RBAC: evaluating CEL rules for <strong>${esc(tool.name)}</strong>...`);
+      await delay(400);
+      setSecLayer('sec-rbac', 'passed');
+      addLog('auth', 'auth', 'RBAC: <strong>allowed</strong>');
+    } else {
+      setSecLayer('sec-rbac', 'skipped');
+    }
+
+    if (activeConfig.guard) {
+      setSecLayer('sec-guard', 'checking');
+      addLog('guard', 'guard', 'ExtMCP guardrail: scanning tool name and arguments...');
+      await delay(400);
+      setSecLayer('sec-guard', 'passed');
+      addLog('guard', 'guard', 'ExtMCP guardrail: <strong>clean, forwarding to backend</strong>');
+    } else {
+      setSecLayer('sec-guard', 'skipped');
+    }
 
     animateArrow('arrow-2', false);
     await delay(400);
@@ -857,20 +985,36 @@ async function stepPoisonTest() {
     await delay(400);
     setNodeState('node-gateway', 'active');
 
-    setSecLayer('sec-guard', 'checking');
-    addLog('guard', 'guard', 'ExtMCP guardrail: scanning tool name for blocked patterns...');
-    await delay(600);
+    if (activeConfig.jwt) {
+      setSecLayer('sec-jwt', 'skipped');
+    } else {
+      setSecLayer('sec-jwt', 'skipped');
+    }
+    setSecLayer('sec-rbac', 'skipped');
+
+    if (activeConfig.guard) {
+      setSecLayer('sec-guard', 'checking');
+      addLog('guard', 'guard', 'ExtMCP guardrail: scanning tool name for blocked patterns...');
+      await delay(600);
+    } else {
+      setSecLayer('sec-guard', 'skipped');
+      addLog('guard', 'guard', 'ExtMCP guardrail: <strong>skipped</strong> (not in config) &#8212; poisoned request passes through!');
+      await delay(300);
+    }
 
     const res = await mcpCall('tools/call', {
       name: '__proto__/../evil',
       arguments: { payload: '<scr' + 'ipt>alert(1)<\/scr' + 'ipt>' }
     });
 
-    if (res.error) {
+    if (activeConfig.guard && res.error) {
       setSecLayer('sec-guard', 'denied');
       setNodeState('node-gateway', 'deny');
       addLog('guard', 'guard', `ExtMCP guardrail: <strong style="color:var(--status-critical)">DENIED</strong> &#8212; ${esc(res.error.message || 'blocked')}`);
       addLog('error', 'error', 'Poisoned request blocked before reaching backend');
+    } else if (res.error) {
+      setNodeState('node-gateway', 'deny');
+      addLog('error', 'error', `Backend rejected: ${esc(res.error.message || 'unknown error')}`);
     } else {
       setSecLayer('sec-guard', 'passed');
       addLog('guard', 'guard', 'Guardrail passed (backend may still reject)');
