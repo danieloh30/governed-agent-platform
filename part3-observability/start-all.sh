@@ -16,7 +16,7 @@ cleanup() {
     kill "$pid" 2>/dev/null || true
   done
   echo "[cleanup] Stopping Jaeger..."
-  podman compose -f "$SCRIPT_DIR/docker-compose.yml" down 2>/dev/null || true
+  podman compose -f "$SCRIPT_DIR/compose.yml" down 2>/dev/null || true
   wait 2>/dev/null || true
   echo "All services stopped."
 }
@@ -64,7 +64,7 @@ echo ""
 # ── Step 1: Jaeger ──
 echo "--- Step 1/5: Jaeger Tracing Backend ------------------------------------"
 echo "[jaeger] Starting Jaeger via Docker Compose..."
-podman compose -f "$SCRIPT_DIR/docker-compose.yml" up -d
+podman compose -f "$SCRIPT_DIR/compose.yml" up -d
 
 echo "[jaeger] Waiting for Jaeger UI on :16686..."
 until curl -sf http://localhost:16686/ > /dev/null 2>&1; do

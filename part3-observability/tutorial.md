@@ -69,7 +69,7 @@ Open [http://localhost:16686](http://localhost:16686) — you'll see an empty Ja
 
 ### Production Alternative: Grafana Tempo
 
-For production deployments, replace Jaeger with [Grafana Tempo](https://grafana.com/oss/tempo/) backed by object storage (S3/GCS). The OTLP endpoint stays the same — only the `docker-compose.yml` changes. Grafana provides richer dashboards, alerting, and long-term trace retention.
+For production deployments, replace Jaeger with [Grafana Tempo](https://grafana.com/oss/tempo/) backed by object storage (S3/GCS). The OTLP endpoint stays the same — only the `compose.yml` changes. Grafana provides richer dashboards, alerting, and long-term trace retention.
 
 ## Step 2: Enabling OpenTelemetry in Quarkus
 
@@ -268,7 +268,7 @@ Starting from the secured architecture in Part 2, we added full observability wi
 |-------|--------------|---------------|
 | Quarkus | `quarkus-opentelemetry` dependency | `pom.xml` + `application.properties` |
 | agentgateway | `tracing` block in config YAML | `config-traced.yaml` |
-| Observability backend | Jaeger all-in-one via Podman Compose | `docker-compose.yml` |
+| Observability backend | Jaeger all-in-one via Podman Compose | `compose.yml` |
 
 The entire stack runs locally with a single `./start-all.sh` command and produces end-to-end trace waterfalls in Jaeger.
 
