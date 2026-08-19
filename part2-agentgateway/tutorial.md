@@ -530,12 +530,18 @@ The demo includes a browser-based SPA (`index.html`) that lets you visualize the
 
 Open `http://localhost:8888/index.html` and you'll see an enterprise-style console with:
 
-- **Config selector** — switch between `config-dev.yaml` (proxy only), `config-guardrails.yaml` (proxy + ExtMCP), and `config.yaml` (full security) to see how each tier affects the traffic flow
+- **Config selector** — switch between three tiered configs to see how each maps to a real deployment stage:
 - **Live stat tiles** — session status, request count, tools discovered, and security checks passed/denied
 - **Animated architecture diagram** — watch MCP requests flow from Goose through agentgateway's security layers to the Quarkus backend in real time
 - **Config-aware security layers** — JWT, RBAC, and ExtMCP layers animate as "checking → passed" when enabled in the selected config, or appear as "skipped" with a badge when not configured
 
-The four demo steps — Initialize, List Tools, Call Tool, and Poison Test — make real MCP requests through agentgateway and display the JSON-RPC responses. Switching configs lets you demonstrate the difference: with `config-dev.yaml`, the poison test passes through unblocked; with `config-guardrails.yaml`, the ExtMCP guardrail catches and denies it.
+| Config | Use Case | Security Layers |
+|--------|----------|-----------------|
+| `config-dev.yaml` | **Local development** — pure proxy pass-through for rapid iteration without security overhead | None |
+| `config-guardrails.yaml` | **Staging / shared environments** — blocks tool poisoning and header injection before requests reach the backend | ExtMCP |
+| `config.yaml` | **Production deployment** — full security stack with JWT identity verification, role-based tool access via CEL, and input sanitization | JWT + RBAC + ExtMCP |
+
+The four demo steps — Initialize, List Tools, Call Tool, and Poison Test — make real MCP requests through agentgateway and display the JSON-RPC responses. Switching configs lets you demonstrate the difference: with `config-dev.yaml`, the poison test passes through unblocked; with `config-guardrails.yaml`, the ExtMCP guardrail catches and denies it; with `config.yaml`, every request also passes through JWT authentication and RBAC authorization before reaching the guardrail layer.
 
 ## What We Achieved
 

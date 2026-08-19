@@ -53,9 +53,9 @@ The extension URI is `http://localhost:3000/mcp` (agentgateway) instead of `http
 
 | File | Purpose |
 |------|---------|
-| `agentgateway/config-dev.yaml` | Proxy only, no auth or guardrails (default) |
-| `agentgateway/config-guardrails.yaml` | Proxy + ExtMCP guardrails, no auth |
-| `agentgateway/config.yaml` | Full config with JWT auth, RBAC, and guardrails |
+| `agentgateway/config-dev.yaml` | Local dev: proxy only, no auth or guardrails (default) |
+| `agentgateway/config-guardrails.yaml` | Staging: proxy + ExtMCP guardrails for input sanitization |
+| `agentgateway/config.yaml` | Production: JWT auth, RBAC with CEL, and ExtMCP guardrails |
 | `goose-extension-config.yaml` | Goose extension pointing to agentgateway |
 | `extmcp-guardrail/` | Quarkus gRPC ExtMCP guardrail server |
 | `index.html` | Interactive SPA to visualize the demo flow |
@@ -87,11 +87,11 @@ The SPA is an enterprise-style security console with:
 
 ### Config Tiers
 
-| Config | JWT | RBAC | Guardrails | What It Shows |
-|--------|-----|------|------------|---------------|
-| `config-dev.yaml` | -- | -- | -- | Pure proxy pass-through, no security |
-| `config-guardrails.yaml` | -- | -- | Active | ExtMCP blocks tool poisoning |
-| `config.yaml` | Active | Active | Active | Full stack: identity → permissions → input sanitization |
+| Config | Use Case | JWT | RBAC | Guardrails |
+|--------|----------|-----|------|------------|
+| `config-dev.yaml` | **Local development** — pure proxy pass-through for rapid iteration without security overhead | -- | -- | -- |
+| `config-guardrails.yaml` | **Staging / shared environments** — blocks tool poisoning and header injection before requests hit the backend | -- | -- | Active |
+| `config.yaml` | **Production deployment** — full security stack: JWT identity verification, role-based tool access, and input sanitization | Active | Active | Active |
 
 ## Verifying the Security Stack
 

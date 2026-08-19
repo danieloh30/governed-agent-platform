@@ -215,8 +215,16 @@ body {
   font-size: 0.82rem; background: var(--surface-inset); color: var(--text-primary);
   cursor: pointer;
 }
-.config-bar .config-desc {
-  font-size: 0.78rem; color: var(--text-muted); margin-left: 8px;
+.config-left {
+  display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+}
+.config-info { flex: 1; min-width: 0; padding: 0 16px; }
+.config-usecase {
+  font-size: 0.82rem; font-weight: 600; color: var(--text-primary);
+  line-height: 1.3;
+}
+.config-desc {
+  font-size: 0.75rem; color: var(--text-muted); line-height: 1.3;
 }
 .config-bar .config-layers {
   margin-left: auto; display: flex; gap: 8px;
@@ -457,13 +465,18 @@ body {
 
   <!-- ── Config selector ── -->
   <div class="config-bar">
-    <label>Config</label>
-    <select id="config-select" onchange="onConfigChange()">
-      <option value="dev">config-dev.yaml</option>
-      <option value="guardrails">config-guardrails.yaml</option>
-      <option value="full">config.yaml (full security)</option>
-    </select>
-    <span class="config-desc" id="config-desc">Proxy only, no auth or guardrails</span>
+    <div class="config-left">
+      <label>Config</label>
+      <select id="config-select" onchange="onConfigChange()">
+        <option value="dev">config-dev.yaml</option>
+        <option value="guardrails">config-guardrails.yaml</option>
+        <option value="full">config.yaml (full security)</option>
+      </select>
+    </div>
+    <div class="config-info">
+      <div class="config-usecase" id="config-usecase">Local development</div>
+      <div class="config-desc" id="config-desc">Pure proxy pass-through for rapid iteration without security overhead</div>
+    </div>
     <div class="config-layers" id="config-layers">
       <span class="config-chip off" id="chip-jwt">JWT</span>
       <span class="config-chip off" id="chip-rbac">RBAC</span>
@@ -594,15 +607,28 @@ let checksDenied = 0;
 let flowEventCount = 0;
 
 const CONFIGS = {
-  dev:        { jwt: false, rbac: false, guard: false, desc: 'Proxy only, no auth or guardrails' },
-  guardrails: { jwt: false, rbac: false, guard: true,  desc: 'Proxy + ExtMCP guardrails, no auth' },
-  full:       { jwt: true,  rbac: true,  guard: true,  desc: 'JWT auth, RBAC with CEL, and guardrails' }
+  dev: {
+    jwt: false, rbac: false, guard: false,
+    usecase: 'Local development',
+    desc: 'Pure proxy pass-through for rapid iteration without security overhead'
+  },
+  guardrails: {
+    jwt: false, rbac: false, guard: true,
+    usecase: 'Staging / shared environments',
+    desc: 'Blocks tool poisoning and header injection before requests hit the backend'
+  },
+  full: {
+    jwt: true, rbac: true, guard: true,
+    usecase: 'Production deployment',
+    desc: 'Full stack: JWT identity verification, role-based tool access, and input sanitization'
+  }
 };
 let activeConfig = CONFIGS.dev;
 
 function onConfigChange() {
   const sel = document.getElementById('config-select').value;
   activeConfig = CONFIGS[sel];
+  document.getElementById('config-usecase').textContent = activeConfig.usecase;
   document.getElementById('config-desc').textContent = activeConfig.desc;
 
   document.getElementById('chip-jwt').className = 'config-chip ' + (activeConfig.jwt ? 'on' : 'off');
