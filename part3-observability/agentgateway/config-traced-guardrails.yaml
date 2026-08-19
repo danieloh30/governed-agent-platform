@@ -7,11 +7,9 @@
 config:
   adminAddr: localhost:15000
   tracing:
-    endpoint: http://localhost:4317
-    protocol: grpc
-    sampling:
-      parent: true
-      default: 1.0
+    otlpEndpoint: http://localhost:4317
+    otlpProtocol: grpc
+    randomSampling: 1.0
 
 mcp:
   port: 3000

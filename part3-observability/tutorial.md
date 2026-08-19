@@ -121,19 +121,16 @@ agentgateway supports native OpenTelemetry trace export. Add a `tracing` block t
 config:
   adminAddr: localhost:15000
   tracing:
-    endpoint: http://localhost:4317
-    protocol: grpc
-    sampling:
-      parent: true
-      default: 1.0
+    otlpEndpoint: http://localhost:4317
+    otlpProtocol: grpc
+    randomSampling: 1.0
 ```
 
 | Field | Purpose |
 |-------|---------|
-| `endpoint` | OTLP gRPC receiver — Jaeger's port 4317 |
-| `protocol` | `grpc` for OTLP/gRPC (also supports `http`) |
-| `sampling.parent` | Honor the parent trace's sampling decision |
-| `sampling.default` | Sample 100% of root traces (reduce in production) |
+| `otlpEndpoint` | OTLP receiver — Jaeger's port 4317 |
+| `otlpProtocol` | `grpc` for OTLP/gRPC (also supports `http`) |
+| `randomSampling` | Sample 100% of traces (reduce to 0.01–0.1 in production) |
 
 ### How Trace Propagation Works
 
