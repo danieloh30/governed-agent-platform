@@ -9,6 +9,7 @@ A multi-part tutorial series for platform engineers building governed AI agent i
 | 1 | [Building Governed MCP Tool Services with Quarkus and Goose](part1-quarkus-mcp/) | `part1-quarkus-mcp/` | Quarkus MCP server exposing enterprise tools over Streamable HTTP, connected to Goose AI agent |
 | 2 | [Securing and Scaling Goose-to-Java Agent Traffic with agentgateway](part2-agentgateway/) | `part2-agentgateway/` | agentgateway as a security proxy with JWT auth, RBAC via CEL, and ExtMCP guardrails against tool poisoning |
 | 3 | [End-to-End Tracing and Observability](part3-observability/) | `part3-observability/` | W3C Trace Context propagation across all layers with Quarkus OpenTelemetry, agentgateway tracing, and Jaeger |
+| 4 | [Multi-Agent Orchestration with A2A Protocol](part4-multi-agent/) | `part4-multi-agent/` | Quarkus Flow state machines with AGENTS.md governance, HITL approval gates, and A2A protocol for agent-to-agent delegation |
 
 ## Architecture
 
@@ -31,6 +32,16 @@ A multi-part tutorial series for platform engineers building governed AI agent i
                    │              Jaeger (OTLP Collector)             │
                    │           :16686 (UI) / :4317 / :4318            │
                    └──────────────────────────────────────────────────┘
+
+                    Part 4
+┌──────────┐       ┌─────────────────────────────────────────┐
+│  Goose   │──A2A──▶  Quarkus Flow Server                    │
+│  Client  │ :8082 │  ┌───────────────────────────────────┐  │
+└──────────┘       │  │ AGENTS.md Governance              │  │
+       ▲           │  │ State Machine (CNCF SW concepts)  │  │
+       │           │  │ HITL Approval Gate                 │  │
+/.well-known/      │  └───────────────────────────────────┘  │
+agent-card.json    └─────────────────────────────────────────┘
 ```
 
 ## Prerequisites
@@ -71,6 +82,14 @@ cd part3-observability
 # Open http://localhost:16686 for Jaeger trace UI
 ```
 
+Run Part 4 (A2A multi-agent orchestration with HITL):
+
+```bash
+cd part4-multi-agent
+./start-all.sh
+# Open http://localhost:8889/index.html for A2A Console
+```
+
 ## Project Structure
 
 ```
@@ -87,9 +106,16 @@ governed-mcp-tools/
 │   ├── index.html                   # Interactive security console SPA
 │   ├── start-all.sh                 # Launches all services
 │   └── tutorial.md                  # DZone tutorial
-└── part3-observability/             # Distributed tracing
-    ├── agentgateway/                # Config files with tracing enabled
-    ├── compose.yml                  # Jaeger all-in-one
-    ├── start-all.sh                 # Launches Jaeger + all services
+├── part3-observability/             # Distributed tracing
+│   ├── agentgateway/                # Config files with tracing enabled
+│   ├── compose.yml                  # Jaeger all-in-one
+│   ├── start-all.sh                 # Launches Jaeger + all services
+│   └── tutorial.md                  # DZone tutorial
+└── part4-multi-agent/               # A2A multi-agent orchestration
+    ├── pom.xml
+    ├── src/main/java/               # A2A endpoint, workflow engine, governance
+    ├── src/main/resources/AGENTS.md # Governance rules
+    ├── index.html                   # A2A Console SPA
+    ├── start-all.sh                 # Launches A2A Flow server
     └── tutorial.md                  # DZone tutorial
 ```

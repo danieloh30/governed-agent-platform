@@ -14,6 +14,7 @@
   <modules>
     <module>part1-quarkus-mcp</module>
     <module>part2-agentgateway/extmcp-guardrail</module>
+    <module>part4-multi-agent</module>
   </modules>
 
   <properties>
