@@ -5,14 +5,16 @@ This directory contains the companion demo for Part 4 of the series. It bridges 
 ## Architecture
 
 ```
-┌──────────┐       ┌─────────────────────────────────────────┐
-│  Goose   │──A2A──▶  Quarkus Flow Server (:8082)            │
-│  Client  │       │  ┌───────────────────────────────────┐  │
-└──────────┘       │  │ AGENTS.md Governance              │  │
-       ▲           │  │ State Machine (CNCF SW concepts)  │  │
-       │           │  │ HITL Approval Gate                 │  │
-/.well-known/      │  └───────────────────────────────────┘  │
-agent-card.json    └─────────────────────────────────────────┘
+                                                        Part 1
+┌──────────┐       ┌─────────────────────────────────────────┐       ┌──────────────────────┐
+│  Goose   │──A2A──▶  Quarkus A2A Flow Server (:8082)       │──MCP──▶  Quarkus MCP Server  │
+│  Client  │       │  ┌───────────────────────────────────┐  │ :8080 │  (customer-tools)    │
+└──────────┘       │  │ @PublicAgentCard (A2A SDK)        │  │       └──────────────────────┘
+       ▲           │  │ AgentExecutor (A2A SDK)           │  │
+       │           │  │ AGENTS.md Governance              │  │
+/.well-known/      │  │ HITL Approval Gate                │  │
+agent-card.json    │  └───────────────────────────────────┘  │
+                   └─────────────────────────────────────────┘
 ```
 
 ### A2A Task Lifecycle
@@ -36,11 +38,11 @@ cd part4-multi-agent
 ./start-all.sh
 ```
 
-This builds and starts the Quarkus A2A Flow server, then generates sample tasks automatically:
+This builds Part 1's MCP server and Part 4's A2A Flow server, starts both, and generates sample tasks automatically:
 
 | Task | Operation | Outcome |
 |------|-----------|---------|
-| `demo-task-1` | `analyze-logs` | Auto-approved and completed |
+| `demo-task-1` | `analyze-logs` | Auto-approved, delegates to Part 1 MCP tools |
 | `demo-task-2` | `migrate-schema` | Paused at `input-required` (HITL gate) |
 | `demo-task-3` | `drop-database` | Blocked by AGENTS.md governance |
 
@@ -57,7 +59,7 @@ curl -s http://localhost:8082/.well-known/agent-card.json | jq .
 ### Submit a task (auto-approved)
 
 ```bash
-curl -s http://localhost:8082/a2a \
+curl -s http://localhost:8082/ \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","id":1,"method":"tasks/send","params":{
     "id":"my-task-1",
@@ -68,7 +70,7 @@ curl -s http://localhost:8082/a2a \
 ### Submit a task (HITL required)
 
 ```bash
-curl -s http://localhost:8082/a2a \
+curl -s http://localhost:8082/ \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","id":2,"method":"tasks/send","params":{
     "id":"my-task-2",
@@ -79,7 +81,7 @@ curl -s http://localhost:8082/a2a \
 ### Poll task status
 
 ```bash
-curl -s http://localhost:8082/a2a \
+curl -s http://localhost:8082/ \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","id":3,"method":"tasks/get","params":{"id":"my-task-2"}}' | jq .
 ```
@@ -94,9 +96,9 @@ curl -s -X POST http://localhost:8082/api/tasks/my-task-2/approve | jq .
 
 | File | Purpose |
 |------|---------|
-| `src/main/resources/application.properties` | Quarkus HTTP port (8082) and CORS settings |
+| `src/main/resources/application.properties` | Quarkus HTTP port (8082), CORS, MCP server URL |
 | `src/main/resources/AGENTS.md` | Governance rules: auto-approved, HITL-required, and blocked operations |
-| `start-all.sh` | Builds, launches the A2A server, starts the SPA, and generates sample tasks |
+| `start-all.sh` | Builds Part 1 + Part 4, launches both servers, starts the SPA, generates sample tasks |
 
 ## Cleanup
 

@@ -33,8 +33,8 @@ public class AdminEndpoint {
     @Path("tasks/{id}/approve")
     public Response approveTask(@PathParam("id") String taskId) {
         try {
-            Map<String, Object> result = engine.approveTask(taskId);
-            return Response.ok(result).build();
+            TaskInstance task = engine.approveTask(taskId);
+            return Response.ok(task.toA2AResponse()).build();
         } catch (Exception e) {
             return Response.status(400).entity(Map.of("error", e.getMessage())).build();
         }
@@ -46,8 +46,8 @@ public class AdminEndpoint {
     public Response rejectTask(@PathParam("id") String taskId, Map<String, String> body) {
         try {
             String reason = body != null ? body.getOrDefault("reason", "Rejected by operator") : "Rejected by operator";
-            Map<String, Object> result = engine.rejectTask(taskId, reason);
-            return Response.ok(result).build();
+            TaskInstance task = engine.rejectTask(taskId, reason);
+            return Response.ok(task.toA2AResponse()).build();
         } catch (Exception e) {
             return Response.status(400).entity(Map.of("error", e.getMessage())).build();
         }

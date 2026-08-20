@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 public class TaskInstance {
 
@@ -50,6 +49,20 @@ public class TaskInstance {
             "description", description,
             "parts", List.of(Map.of("type", "text", "text", content))
         ));
+    }
+
+    @SuppressWarnings("unchecked")
+    public String getLastAgentMessage() {
+        for (int i = history.size() - 1; i >= 0; i--) {
+            Map<String, Object> msg = history.get(i);
+            if ("agent".equals(msg.get("role"))) {
+                var parts = (List<Map<String, Object>>) msg.get("parts");
+                if (parts != null && !parts.isEmpty()) {
+                    return (String) parts.getFirst().get("text");
+                }
+            }
+        }
+        return "";
     }
 
     public Map<String, Object> toA2AResponse() {

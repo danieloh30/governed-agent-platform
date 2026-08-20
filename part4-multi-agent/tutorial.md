@@ -26,18 +26,20 @@ Without these guardrails, autonomous agents operate in a governance vacuum — t
 The fix combines three standards into a governed multi-agent architecture:
 
 ```
-┌──────────┐              ┌─────────────────────────────────────────┐
-│  Goose   │──A2A──────── ▶  Quarkus Flow Server (:8082)            │
-│  Client  │  tasks/send  │  ┌───────────────────────────────────┐  │
-└──────────┘              │  │ AGENTS.md Governance              │  │
-       ▲                  │  │ Workflow State Machine            │  │
-       │                  │  │ HITL Approval Gate                │  │
-  /.well-known/           │  └───────────────────────────────────┘  │
-  agent-card.json         └─────────────────────────────────────────┘
+                                                              Part 1
+┌──────────┐              ┌─────────────────────────────┐    ┌──────────────────┐
+│  Goose   │──A2A──────── ▶  Quarkus A2A Flow (:8082)   │    │ Quarkus MCP      │
+│  Client  │  tasks/send  │  ┌───────────────────────┐  │    │ Server (:8080)   │
+└──────────┘              │  │ A2A SDK (AgentExecutor)│  │──MCP──▶ customer-tools  │
+       ▲                  │  │ AGENTS.md Governance   │  │    └──────────────────┘
+       │                  │  │ HITL Approval Gate     │  │
+  /.well-known/           │  └───────────────────────┘  │
+  agent-card.json         └─────────────────────────────┘
 ```
 
-- **A2A (Agent2Agent)** — the Linux Foundation standard for multi-agent interoperability. Goose discovers the Quarkus backend via an Agent Card and delegates tasks using JSON-RPC over HTTP.
+- **A2A (Agent2Agent)** — the Linux Foundation standard for multi-agent interoperability. Goose discovers the Quarkus backend via an Agent Card and delegates tasks using JSON-RPC over HTTP. The A2A Java SDK (`@PublicAgentCard` + `AgentExecutor`) handles protocol compliance automatically.
 - **Quarkus Flow** — a lightweight state machine implementing the CNCF Serverless Workflow concepts: states, transitions, and action handlers. Each delegated task flows through governance validation, optional HITL approval, and execution.
+- **MCP Tool Delegation** — auto-approved operations like `analyze-logs`, `health-check`, and `generate-report` delegate to Part 1's MCP server for live tool execution. The `McpToolClient` manages MCP sessions and calls `tools/call` over Streamable HTTP.
 - **AGENTS.md** — a declarative governance file that defines which operations are auto-approved, which require human approval, and which are permanently blocked. The Quarkus server parses this file at startup and enforces it on every incoming A2A task.
 
 The A2A task lifecycle drives the entire flow:
@@ -51,7 +53,7 @@ submitted → working → input-required → working → completed
 
 ## Prerequisites
 
-Everything from Parts 1–3, plus no additional dependencies. Part 4 uses only `quarkus-rest-jackson` — no new extensions required.
+Everything from Parts 1–3, plus the A2A Java SDK. Part 4 adds the `a2a-java-sdk-reference-jsonrpc` dependency for A2A protocol support and connects to Part 1's MCP server for tool execution.
 
 Verify your environment:
 
@@ -72,19 +74,15 @@ curl -s http://localhost:8082/.well-known/agent-card.json | jq .
 {
   "name": "enterprise-workflow-agent",
   "description": "Multi-step enterprise workflow orchestration with HITL approval gates...",
-  "url": "http://localhost:8082/a2a",
+  "supportedInterfaces": [{ "protocol": "JSONRPC", "url": "http://localhost:8082" }],
   "version": "1.0.0",
-  "capabilities": {
-    "streaming": false,
-    "pushNotifications": false
-  },
+  "capabilities": { "streaming": false, "pushNotifications": false },
   "skills": [
-    { "id": "analyze-logs", "name": "Log Analysis", "description": "..." },
-    { "id": "migrate-schema", "name": "Schema Migration", "description": "..." },
-    { "id": "process-refund", "name": "Refund Processing", "description": "..." },
-    { "id": "deploy-production", "name": "Production Deployment", "description": "..." }
-  ],
-  "governancePolicy": "AGENTS.md"
+    { "id": "analyze-logs", "name": "Log Analysis", "description": "Analyze logs via MCP delegation" },
+    { "id": "health-check", "name": "Health Check", "description": "Verify service health via MCP" },
+    { "id": "migrate-schema", "name": "Schema Migration", "description": "Requires HITL approval" },
+    { "id": "deploy-production", "name": "Production Deployment", "description": "Requires HITL approval" }
+  ]
 }
 ```
 
@@ -92,27 +90,47 @@ The Agent Card tells Goose (or any A2A client) three critical things:
 
 | Field | Purpose |
 |-------|---------|
-| `url` | The JSON-RPC endpoint where A2A tasks are submitted |
+| `supportedInterfaces` | The JSON-RPC endpoint URL and transport protocol |
 | `skills` | The operations the agent can perform — Goose uses these to decide which tasks to delegate |
-| `governancePolicy` | Signals that this agent enforces governance rules — the client knows some operations may pause for approval |
+| `capabilities` | Whether the agent supports streaming, push notifications, etc. |
 
-In Quarkus, the Agent Card is served by a simple JAX-RS endpoint — no static file needed:
+With the A2A Java SDK, the Agent Card is declared using the `@PublicAgentCard` CDI qualifier on a producer method — the SDK automatically serves it at `/.well-known/agent-card.json` and registers the JSON-RPC transport handler:
 
 ```java
-@GET
-@Path(".well-known/agent-card.json")
-public Map<String, Object> agentCard() {
-    return Map.of(
-        "name", "enterprise-workflow-agent",
-        "url", "http://localhost:8082/a2a",
-        "skills", List.of(
-            Map.of("id", "analyze-logs", "name", "Log Analysis", ...),
-            Map.of("id", "migrate-schema", "name", "Schema Migration", ...)
-        ),
-        "governancePolicy", "AGENTS.md"
-    );
+@ApplicationScoped
+public class AgentCardProducer {
+
+    @ConfigProperty(name = "agent.url", defaultValue = "http://localhost:8082")
+    String agentUrl;
+
+    @Produces
+    @PublicAgentCard
+    public AgentCard agentCard() {
+        return AgentCard.builder()
+                .name("enterprise-workflow-agent")
+                .description("Multi-step enterprise workflow orchestration with HITL approval gates...")
+                .supportedInterfaces(Collections.singletonList(
+                        new AgentInterface("JSONRPC", agentUrl)))
+                .version("1.0.0")
+                .capabilities(AgentCapabilities.builder()
+                        .streaming(false).pushNotifications(false).build())
+                .defaultInputModes(Collections.singletonList("text"))
+                .defaultOutputModes(Collections.singletonList("text"))
+                .skills(List.of(
+                        AgentSkill.builder().id("analyze-logs").name("Log Analysis")
+                                .description("Analyze logs via MCP tool delegation (auto-approved)")
+                                .tags(List.of("observability", "auto-approved")).build(),
+                        AgentSkill.builder().id("migrate-schema").name("Schema Migration")
+                                .description("Execute database schema migrations (requires HITL approval)")
+                                .tags(List.of("database", "hitl-required")).build()
+                        // ... additional skills
+                ))
+                .build();
+    }
 }
 ```
+
+No JAX-RS endpoint needed — the SDK handles agent card serving and JSON-RPC routing automatically.
 
 ## Step 2: Defining Governance Rules with AGENTS.md
 
@@ -243,27 +261,52 @@ public Map<String, Object> submitTask(String taskId, String messageText) {
 }
 ```
 
-The A2A JSON-RPC endpoint routes three methods — `tasks/send`, `tasks/get`, and `tasks/cancel` — to the engine:
+The A2A Java SDK handles JSON-RPC routing automatically. You implement the `AgentExecutor` interface — the SDK calls your `execute()` method for each incoming `tasks/send` request:
 
 ```java
-@POST
-@Path("a2a")
-public Response handleRpc(JsonNode request) {
-    String method = request.path("method").asText();
-    JsonNode params = request.path("params");
+@ApplicationScoped
+public class AgentExecutorProducer {
 
-    Object result = switch (method) {
-        case "tasks/send" -> engine.submitTask(
-            params.path("id").asText(),
-            params.path("message").path("parts").get(0).path("text").asText());
-        case "tasks/get" -> engine.getTask(params.path("id").asText());
-        case "tasks/cancel" -> engine.cancelTask(params.path("id").asText());
-        default -> throw new IllegalArgumentException("Unknown method");
-    };
+    @Inject WorkflowEngine engine;
 
-    return Response.ok(Map.of("jsonrpc", "2.0", "id", id, "result", result)).build();
+    @Produces
+    public AgentExecutor agentExecutor() {
+        return new AgentExecutor() {
+            @Override
+            public void execute(RequestContext context, AgentEmitter emitter) throws A2AError {
+                String messageText = extractText(context.getMessage());
+                String taskId = context.getTaskId();
+
+                // HITL follow-up: task already exists in INPUT_REQUIRED state
+                if (context.getTask() != null &&
+                    context.getTask().status().state() == TaskState.TASK_STATE_INPUT_REQUIRED) {
+                    handleHitlFollowUp(taskId, messageText, emitter);
+                    return;
+                }
+
+                // New task: submit to workflow engine for governance check
+                TaskInstance task = engine.submitTask(taskId, messageText);
+
+                switch (task.getState()) {
+                    case FAILED -> emitter.fail(agentMessage(emitter, task.getLastAgentMessage()));
+                    case INPUT_REQUIRED -> {
+                        emitter.startWork();
+                        emitter.requiresInput(agentMessage(emitter, task.getLastAgentMessage()));
+                    }
+                    case COMPLETED -> {
+                        emitter.startWork();
+                        emitter.addArtifact(List.of(new TextPart(task.getLastAgentMessage())));
+                        emitter.complete();
+                    }
+                }
+            }
+            // ...
+        };
+    }
 }
 ```
+
+The `AgentEmitter` manages the A2A task lifecycle — `startWork()`, `requiresInput()`, `complete()`, `fail()` — while the `WorkflowEngine` handles governance validation and MCP tool execution.
 
 ## Step 4: Human-in-the-Loop Approval Gates
 
@@ -274,7 +317,7 @@ When Goose submits a high-risk operation, the workflow pauses at `input-required
 Submit a schema migration — this is a high-risk operation that requires approval:
 
 ```bash
-curl -s http://localhost:8082/a2a \
+curl -s http://localhost:8082/ \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","id":1,"method":"tasks/send","params":{
     "id":"migration-1",
@@ -300,7 +343,7 @@ curl -s http://localhost:8082/a2a \
 Goose polls `tasks/get` and sees the task is paused. It can alert the developer:
 
 ```bash
-curl -s http://localhost:8082/a2a \
+curl -s http://localhost:8082/ \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","id":2,"method":"tasks/get","params":{"id":"migration-1"}}' \
   | jq .result.status.state
@@ -353,7 +396,7 @@ Not every operation triggers HITL. Compare three scenarios:
 
 ```bash
 # Auto-approved: executes immediately
-curl -s http://localhost:8082/a2a -H "Content-Type: application/json" \
+curl -s http://localhost:8082/ -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","id":3,"method":"tasks/send","params":{
     "id":"logs-1",
     "message":{"role":"user","parts":[{"type":"text","text":"analyze-logs --service api-gateway --timeframe 24h"}]}
@@ -361,7 +404,7 @@ curl -s http://localhost:8082/a2a -H "Content-Type: application/json" \
 # → "completed"
 
 # Blocked: fails immediately
-curl -s http://localhost:8082/a2a -H "Content-Type: application/json" \
+curl -s http://localhost:8082/ -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","id":4,"method":"tasks/send","params":{
     "id":"drop-1",
     "message":{"role":"user","parts":[{"type":"text","text":"drop-database --target production"}]}
@@ -378,7 +421,7 @@ cd part4-multi-agent
 ./start-all.sh
 ```
 
-The script builds the Quarkus A2A server, starts it on port 8082, and launches the interactive demo SPA.
+The script builds Part 1's MCP server and Part 4's A2A Flow server, starts both (MCP on :8080, A2A on :8082), and launches the interactive demo SPA. Auto-approved tasks like `analyze-logs` delegate to Part 1's MCP tools for live data.
 
 Open the **A2A Multi-Agent Console** at [http://localhost:8889/index.html](http://localhost:8889/index.html).
 
@@ -411,9 +454,10 @@ Starting from the observable architecture in Part 3, we added multi-agent orches
 
 | Layer | What We Added | Key File |
 |-------|--------------|----------|
-| A2A Protocol | Agent Card discovery + JSON-RPC task endpoint | `A2AEndpoint.java` |
+| A2A Protocol | Agent Card + JSON-RPC via A2A Java SDK | `AgentCardProducer.java`, `AgentExecutorProducer.java` |
 | Governance | AGENTS.md rule parsing and enforcement | `GovernanceEngine.java`, `AGENTS.md` |
 | Workflow | State machine with HITL approval gates | `WorkflowEngine.java` |
+| MCP Integration | Tool delegation to Part 1's MCP server | `McpToolClient.java` |
 | Admin | REST API + SPA for human approvals | `AdminEndpoint.java`, `index.html` |
 
 ### Production Considerations

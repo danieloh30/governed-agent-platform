@@ -9,7 +9,7 @@ A multi-part tutorial series for platform engineers building governed AI agent i
 | 1 | [Building Governed MCP Tool Services with Quarkus and Goose](part1-quarkus-mcp/) | `part1-quarkus-mcp/` | Quarkus MCP server exposing enterprise tools over Streamable HTTP, connected to Goose AI agent |
 | 2 | [Securing and Scaling Goose-to-Java Agent Traffic with agentgateway](part2-agentgateway/) | `part2-agentgateway/` | agentgateway as a security proxy with JWT auth, RBAC via CEL, and ExtMCP guardrails against tool poisoning |
 | 3 | [End-to-End Tracing and Observability](part3-observability/) | `part3-observability/` | W3C Trace Context propagation across all layers with Quarkus OpenTelemetry, agentgateway tracing, and Jaeger |
-| 4 | [Multi-Agent Orchestration with A2A Protocol](part4-multi-agent/) | `part4-multi-agent/` | Quarkus Flow state machines with AGENTS.md governance, HITL approval gates, and A2A protocol for agent-to-agent delegation |
+| 4 | [Multi-Agent Orchestration with A2A Protocol](part4-multi-agent/) | `part4-multi-agent/` | A2A Java SDK (`@PublicAgentCard` + `AgentExecutor`) with AGENTS.md governance, HITL approval gates, and MCP tool delegation to Part 1 |
 
 ## Architecture
 
@@ -33,15 +33,16 @@ A multi-part tutorial series for platform engineers building governed AI agent i
                    │           :16686 (UI) / :4317 / :4318            │
                    └──────────────────────────────────────────────────┘
 
-                    Part 4
-┌──────────┐       ┌─────────────────────────────────────────┐
-│  Goose   │──A2A──▶  Quarkus Flow Server                    │
-│  Client  │ :8082 │  ┌───────────────────────────────────┐  │
-└──────────┘       │  │ AGENTS.md Governance              │  │
-       ▲           │  │ State Machine (CNCF SW concepts)  │  │
-       │           │  │ HITL Approval Gate                 │  │
-/.well-known/      │  └───────────────────────────────────┘  │
-agent-card.json    └─────────────────────────────────────────┘
+                    Part 4                                        Part 1
+┌──────────┐       ┌─────────────────────────────────────────┐       ┌───────────────┐
+│  Goose   │──A2A──▶  Quarkus A2A Flow Server                │──MCP──▶  Quarkus MCP  │
+│  Client  │ :8082 │  ┌───────────────────────────────────┐  │ :8080 │  Server       │
+└──────────┘       │  │ @PublicAgentCard (A2A Java SDK)   │  │       └───────────────┘
+       ▲           │  │ AgentExecutor + McpToolClient     │  │
+       │           │  │ AGENTS.md Governance              │  │
+/.well-known/      │  │ HITL Approval Gate                 │  │
+agent-card.json    │  └───────────────────────────────────┘  │
+                   └─────────────────────────────────────────┘
 ```
 
 ## Prerequisites

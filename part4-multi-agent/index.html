@@ -447,8 +447,9 @@ body {
         <div class="node-port mono">:8082</div>
         <div class="trace-layers">
           <div class="trace-layer" id="tl-governance"><span class="trace-dot"></span> AGENTS.md Governance</div>
-          <div class="trace-layer" id="tl-statemachine"><span class="trace-dot"></span> State Machine (CNCF SW)</div>
+          <div class="trace-layer" id="tl-statemachine"><span class="trace-dot"></span> A2A SDK (AgentExecutor)</div>
           <div class="trace-layer" id="tl-hitl"><span class="trace-dot"></span> HITL Approval Gate</div>
+          <div class="trace-layer" id="tl-mcp"><span class="trace-dot"></span> MCP Tool Delegation (:8080)</div>
         </div>
       </div>
       <div class="arch-arrow" id="arrow-gov">
@@ -642,7 +643,7 @@ function setSmPhase(id, state) {
 
 function resetArch() {
   ['node-goose', 'node-flow', 'node-agents-md'].forEach(id => setNodeState(id, null));
-  ['tl-governance', 'tl-statemachine', 'tl-hitl'].forEach(id => setLayerState(id, null));
+  ['tl-governance', 'tl-statemachine', 'tl-hitl', 'tl-mcp'].forEach(id => setLayerState(id, null));
 }
 
 function resetStateMachine() {
@@ -652,7 +653,7 @@ function resetStateMachine() {
 }
 
 async function a2aCall(method, params) {
-  const res = await fetch(A2A_SERVER + '/a2a', {
+  const res = await fetch(A2A_SERVER + '/', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ jsonrpc: '2.0', id: ++rpcId, method, params })
@@ -768,6 +769,11 @@ async function stepAutoApproved() {
     setLayerState('tl-statemachine', 'pass');
     addLog('a2a', 'a2a', 'HITL gate: <strong>skipped</strong> (auto-approved operation)');
     await delay(400);
+
+    setLayerState('tl-mcp', 'active');
+    addLog('mcp', 'a2a', 'MCP delegation: calling Part 1 tool via <strong>McpToolClient</strong> (:8080)');
+    await delay(400);
+    setLayerState('tl-mcp', 'pass');
 
     setSmPhase('sm-executing', 'pass');
     setSmPhase('sm-completed', 'pass');
@@ -887,7 +893,12 @@ async function approveTask() {
 
     setSmPhase('sm-executing', 'active');
     addLog('a2a', 'a2a', 'Resuming workflow execution...');
-    await delay(500);
+    await delay(300);
+
+    setLayerState('tl-mcp', 'active');
+    addLog('mcp', 'a2a', 'MCP delegation: calling Part 1 tool via <strong>McpToolClient</strong> (:8080)');
+    await delay(400);
+    setLayerState('tl-mcp', 'pass');
 
     setSmPhase('sm-executing', 'pass');
     setSmPhase('sm-completed', 'pass');
