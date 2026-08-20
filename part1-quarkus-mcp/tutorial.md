@@ -2,13 +2,17 @@
 
 > **TL;DR** — Build governed, cloud-native Java MCP tool services for Goose agents using Quarkus LangChain4j, Java 25, and Jakarta Bean Validation.
 
-Goose — the open-source, Rust-based AI developer agent from Block (donated to the Linux Foundation's Agentic AI Foundation) — interacts natively with your local development environment via the Model Context Protocol (MCP). In this tutorial, you will learn how to build stateless, cloud-native Java microservices using Quarkus LangChain4j and expose them as governed MCP extensions that Goose can discover and run seamlessly.
+## The Core Problem
 
-Autonomous AI coding agents like Goose go far beyond simple code autocompletion. Built in Rust for speed and portability, Goose runs on your local machine, inspects files, runs terminal commands, and uses tools over MCP to automate complex engineering tasks.
+Autonomous AI coding agents like Goose go far beyond simple code autocompletion. Built in Rust for speed and portability, Goose runs on your local machine, inspects files, runs terminal commands, and uses tools over the Model Context Protocol (MCP) to automate complex engineering tasks.
 
-However, when developers want an AI agent to query enterprise microservices, trigger database migrations, or fetch internal API metrics, writing custom local scripts or ad-hoc wrappers is brittle and dangerous.
+But when developers want an AI agent to query enterprise microservices, trigger database migrations, or fetch internal API metrics, the default approach — writing custom local scripts or ad-hoc wrappers — is brittle and dangerous:
 
-The solution is to build a stateless MCP Tool Server in Java using Quarkus LangChain4j. Quarkus provides near-zero startup time and low memory footprint, while LangChain4j makes exposing `@Tool` methods via standard MCP HTTP/JSON-RPC trivial.
+- **No input validation.** An LLM might hallucinate a malformed customer ID or inject unexpected characters. Without server-side validation, bad data reaches your business logic unchecked.
+- **No standard discovery.** Each tool needs its own documentation and wiring. There is no schema-driven way for Goose to discover what tools exist, what parameters they accept, or what types to expect.
+- **No production readiness.** Local scripts don't have health checks, structured logging, or observability. When something fails at 2 AM, there is no telemetry to diagnose it.
+
+The solution is to build a stateless **MCP Tool Server** in Java using Quarkus. Quarkus provides near-zero startup time and low memory footprint, while the `quarkus-mcp-server-http` extension makes exposing `@Tool` methods via standard MCP JSON-RPC trivial. Jakarta Bean Validation hardens every tool invocation with regex patterns, size limits, and nullability constraints — all enforced before your business logic runs.
 
 ## Architecture: How Goose Integrates with Quarkus MCP
 
@@ -18,26 +22,32 @@ The solution is to build a stateless MCP Tool Server in Java using Quarkus LangC
 │       (Local CLI / Desktop App / ACP Server)           │
 └───────────────────────────┬────────────────────────────┘
                             │ Model Context Protocol (MCP)
-                            │ JSON-RPC over Stateless HTTP
+                            │ JSON-RPC over Streamable HTTP
                             ▼
 ┌────────────────────────────────────────────────────────┐
 │            Quarkus LangChain4j MCP Server              │
-│  - @Tool Annotations & Bean Validation                 │
-│  - Reactive SmallRye Mutiny Execution                  │
+│  ┌──────────────────────────────────────────────────┐  │
+│  │  @Tool Annotations → Auto-registered MCP tools   │  │
+│  │  @ToolArg + Bean Validation → Input hardening    │  │
+│  │  Reactive SmallRye Mutiny → Non-blocking I/O     │  │
+│  └──────────────────────────────────────────────────┘  │
 │  - GraalVM Native Image Ready                          │
+│  - OpenTelemetry Instrumented (Part 3)                 │
 └───────────────────────────┬────────────────────────────┘
-                            │ Reactive Clients
+                            │ CDI / Reactive Clients
                             ▼
              Enterprise APIs / Databases / Dev UI
 ```
 
-- **Goose Agent (Client):** Executes on the developer machine, orchestrating LLM tool loops via MCP.
-- **MCP HTTP Transport:** Goose sends structured tool calls to the Quarkus backend as stateless HTTP POST requests using standardized MCP methods (`tools/list`, `tools/call`).
-- **Quarkus Microservice:** Validates parameters with Jakarta Bean Validation, executes reactive business logic, and returns structured data to Goose.
+The flow has three actors:
+
+- **Goose Agent (Client):** Executes on the developer machine, orchestrating LLM tool loops via MCP. Goose discovers tools automatically and decides which to call based on the developer's natural-language prompt.
+- **MCP HTTP Transport:** Goose sends structured tool calls to the Quarkus backend as HTTP POST requests using standardized MCP methods (`initialize`, `tools/list`, `tools/call`). The Streamable HTTP transport supports both request-response and server-sent events.
+- **Quarkus Microservice:** Validates every parameter with Jakarta Bean Validation, executes reactive business logic via SmallRye Mutiny, and returns structured JSON to Goose.
 
 ## Step 1: Configuring Dependencies in Quarkus
 
-Create a new Quarkus project or update your `pom.xml` to include `quarkus-langchain4j-mcp` and RESTEasy Reactive:
+Create a new Quarkus project or update your `pom.xml` to include the MCP server extension and Hibernate Validator:
 
 ```xml
 <dependencyManagement>
@@ -78,11 +88,13 @@ Create a new Quarkus project or update your `pom.xml` to include `quarkus-langch
 </dependencies>
 ```
 
+The key dependency is `quarkus-mcp-server-http` — it provides the Streamable HTTP transport layer that listens on `/mcp` and handles the full MCP JSON-RPC lifecycle (initialize, tools/list, tools/call). The `quarkus-hibernate-validator` dependency enables Jakarta Bean Validation annotations (`@NotNull`, `@Pattern`, `@Size`) on tool parameters.
+
 ## Step 2: Implementing Hardened MCP Tools
 
-We will create a Customer Services MCP Tool that Goose can call when an engineer asks: *"Goose, check the database status for customer CUST-4091 and fetch their recent telemetry."*
+We will create a `CustomerServiceTools` class that Goose can call when an engineer asks: *"Goose, check the database status for customer CUST-4091 and fetch their recent telemetry."*
 
-By placing `@Tool` annotations on CDI beans, Quarkus LangChain4j automatically registers the class as an MCP server endpoint:
+By placing `@Tool` annotations on CDI beans, Quarkus automatically registers each method as an MCP tool endpoint. The `@ToolArg` annotation provides parameter descriptions that Goose uses to understand what values to pass:
 
 ```java
 @ApplicationScoped
@@ -200,6 +212,17 @@ public class CustomerServiceTools {
 }
 ```
 
+Notice the layered validation strategy:
+
+| Annotation | Purpose | Example |
+|---|---|---|
+| `@NotNull` | Rejects null values before business logic | `customerId` cannot be omitted |
+| `@Pattern` | Enforces format with regex | `CUST-4091` passes; `INVALID` is rejected |
+| `@Size` | Limits string length | `zoneId` max 20 characters prevents overflow |
+| `@ToolArg` | Describes the parameter for LLM agents | Goose reads this to format correct values |
+
+This means an LLM that hallucinates `customerId: "DROP TABLE users"` gets a validation error — not a database query.
+
 ## Step 3: Enabling the MCP Extension in application.properties
 
 Configure your Quarkus MCP server settings:
@@ -212,13 +235,36 @@ quarkus.mcp-server.http.root-path=/mcp
 quarkus.log.category."io.quarkiverse.mcp".level=DEBUG
 ```
 
+The `root-path` setting exposes the MCP endpoint at `http://localhost:8080/mcp`. The server name and version are returned in the `initialize` handshake so clients know what they are connecting to.
+
 Launch Quarkus in dev mode:
 
 ```bash
 ./mvnw quarkus:dev
 ```
 
-## Step 4: Connecting Goose to Your Quarkus MCP Server
+## Step 4: Running the Interactive Demo
+
+The project includes a start script that launches the MCP server and an interactive demo SPA:
+
+```bash
+./start-all.sh
+```
+
+This will:
+1. Build the Quarkus MCP server
+2. Start it on `:8080`
+3. Launch a demo SPA on `:8887`
+4. Verify the MCP session is working
+
+Open `http://localhost:8887/index.html` and walk through the four demo steps:
+
+1. **Initialize** — Establishes an MCP session with the Quarkus server via the `initialize` JSON-RPC handshake. The flow log shows the server name, version, and protocol.
+2. **List Tools** — Sends `tools/list` to discover all 5 registered `@Tool` methods with their JSON schemas. The tool inventory panel appears below.
+3. **Call Tool** — Select any tool, set parameters, and execute `tools/call`. The architecture diagram animates the request/response flow through the validation layers.
+4. **Validation Test** — Sends `getCustomerStatus` with `customerId: "INVALID"` to demonstrate Jakarta Bean Validation rejecting input that does not match `^CUST-[0-9]{4,8}$`.
+
+## Step 5: Connecting Goose to Your Quarkus MCP Server
 
 Goose can be extended with any MCP server over stdio or HTTP. Configure Goose by editing its YAML configuration file or using the Goose CLI.
 
@@ -246,7 +292,7 @@ extensions:
       Content-Type: "application/json"
 ```
 
-## Step 5: Testing the Developer Workflow
+## Step 6: Testing the Developer Workflow
 
 Launch Goose via CLI or the Desktop App:
 
@@ -258,21 +304,25 @@ Prompt Goose:
 
 > **Developer:** *"I'm debugging customer CUST-4091. Use customer-tools to fetch their account tier, and then check the health logs for their primary region."*
 
-> **Frontend UI:** Choose one of the Tool explorers. Select the "Run tool" button on the right panel. Verify the audit events.
-
 ### What Happens Under the Hood
 
-1. **Discovery:** Goose sends an HTTP `POST /mcp` JSON-RPC `tools/list` request. Quarkus responds with JSON schema definitions derived from `getCustomerStatus` and `getZoneHealthLogs`.
+1. **Discovery:** Goose sends an HTTP `POST /mcp` JSON-RPC `tools/list` request. Quarkus responds with JSON schema definitions for all five tools — including parameter types, descriptions, and validation constraints.
 2. **Tool Invocation 1:** Goose parses the prompt, formats a `tools/call` JSON payload with `{"customerId": "CUST-4091"}`, and posts it to Quarkus.
 3. **Execution & Validation:** Quarkus executes Hibernate Bean Validation. Since `CUST-4091` matches `^CUST-[0-9]{4,8}$`, it runs `getCustomerStatus` and returns `primaryRegion: US-EAST-1`.
-4. **Tool Invocation 2:** Goose sees `US-EAST-1`, triggers `getZoneHealthLogs("US-EAST-1")`, receives the green health metrics, and summarizes the complete diagnostic report back to you in the CLI.
+4. **Tool Invocation 2:** Goose sees `US-EAST-1`, triggers `getZoneHealthLogs("US-EAST-1")`, receives the health metrics, and summarizes the complete diagnostic report back to you in the CLI.
 
-## Summary and Next Steps
+## What We Achieved
 
-By wrapping Java business logic in Quarkus LangChain4j `@Tool` beans, you give local AI developer agents like Goose secure, validated access to enterprise backend systems.
+| Capability | How |
+|---|---|
+| **MCP tool discovery** | `@Tool` annotations auto-register methods as MCP endpoints with JSON schemas |
+| **Input hardening** | Jakarta Bean Validation (`@Pattern`, `@NotNull`, `@Size`) rejects malformed input before business logic |
+| **Reactive execution** | SmallRye Mutiny `Uni` return types enable non-blocking I/O |
+| **Streamable HTTP** | `quarkus-mcp-server-http` provides JSON-RPC over HTTP with SSE support |
+| **Zero boilerplate** | No hand-written JSON-RPC parsing, schema generation, or HTTP routing |
 
-However, when hundreds of developers run local Goose agents against shared backend microservices in production, connecting them directly creates security and governance risks.
+## Coming Up in Part 2
 
-**Coming Up in Part 2:** We will introduce [agentgateway](https://agentgateway.dev/) — the Linux Foundation data plane proxy — to sit between Goose and Quarkus. We will configure OAuth2/OIDC authentication, fine-grained tool-level RBAC, and rate limiting to harden our enterprise AI infrastructure.
+The MCP server we built gives Goose validated access to enterprise tools — but it is wide open. Any client that can reach `:8080` can call any tool with any arguments. When hundreds of developers run local Goose agents against shared backend microservices, this creates security and governance risks.
 
-- **[Part 2: Securing and Scaling Goose-to-Java Agent Traffic with agentgateway](../part2-agentgateway/tutorial.md)**
+**[Part 2: Securing and Scaling Goose-to-Java Agent Traffic with agentgateway](../part2-agentgateway/tutorial.md)** introduces [agentgateway](https://agentgateway.dev/) — the Linux Foundation data plane proxy — to sit between Goose and Quarkus. We will configure OAuth2/OIDC authentication, fine-grained tool-level RBAC with CEL expressions, and ExtMCP guardrails to harden the enterprise AI infrastructure.

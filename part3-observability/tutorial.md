@@ -295,4 +295,6 @@ The entire stack runs locally with a single `./start-all.sh` command and produce
 
 ## Coming Up in Part 4
 
-With tracing in place, you can now see every MCP tool call flowing through the system. In Part 4, we will build on this observability foundation to add **automated agent evaluation and regression testing** — using trace data to verify that agentic workflows produce correct, consistent results across code changes.
+With tracing in place, you can now see every MCP tool call flowing through the system. In Part 4, we will move beyond single-agent tool calls to **multi-agent orchestration** — using the [Agent-to-Agent (A2A) protocol](https://github.com/a2aproject/a2a-spec) to coordinate autonomous agents that can delegate work, enforce governance via `AGENTS.md`, and call back into our MCP tool services.
+
+- **[Part 4: Multi-Agent Orchestration with A2A Protocol](../part4-multi-agent/tutorial.md)**
