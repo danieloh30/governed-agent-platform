@@ -97,17 +97,20 @@ echo "--- Generating sample A2A tasks -----------------------------------------"
 echo "[tasks] Submitting auto-approved task: analyze-logs (delegates to MCP)..."
 curl -s http://localhost:8082/ \
   -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":1,"method":"tasks/send","params":{"id":"demo-task-1","message":{"role":"user","parts":[{"type":"text","text":"analyze-logs --service api-gateway --timeframe 24h"}]}}}' > /dev/null
+  -H "A2A-Version: 1.0" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"SendMessage","params":{"message":{"messageId":"demo-msg-1","role":"ROLE_USER","parts":[{"text":"analyze-logs --service api-gateway --timeframe 24h"}]},"configuration":{"returnImmediately":true}}}' > /dev/null
 
 echo "[tasks] Submitting HITL task: migrate-schema (will pause for approval)..."
 curl -s http://localhost:8082/ \
   -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":2,"method":"tasks/send","params":{"id":"demo-task-2","message":{"role":"user","parts":[{"type":"text","text":"migrate-schema --database production --table users --changes add-column-email"}]}}}' > /dev/null
+  -H "A2A-Version: 1.0" \
+  -d '{"jsonrpc":"2.0","id":2,"method":"SendMessage","params":{"message":{"messageId":"demo-msg-2","role":"ROLE_USER","parts":[{"text":"migrate-schema --database production --table users --changes add-column-email"}]},"configuration":{"returnImmediately":true}}}' > /dev/null
 
 echo "[tasks] Submitting blocked task: drop-database..."
 curl -s http://localhost:8082/ \
   -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":3,"method":"tasks/send","params":{"id":"demo-task-3","message":{"role":"user","parts":[{"type":"text","text":"drop-database --database production"}]}}}' > /dev/null
+  -H "A2A-Version: 1.0" \
+  -d '{"jsonrpc":"2.0","id":3,"method":"SendMessage","params":{"message":{"messageId":"demo-msg-3","role":"ROLE_USER","parts":[{"text":"drop-database --database production"}]},"configuration":{"returnImmediately":true}}}' > /dev/null
 
 echo "[tasks] Sample tasks generated -- open the SPA to view and approve."
 echo ""

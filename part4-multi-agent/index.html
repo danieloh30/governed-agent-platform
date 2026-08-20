@@ -409,7 +409,7 @@ body {
     <div class="stat">
       <div class="stat-label">Tasks Submitted</div>
       <div class="stat-value orange" id="stat-submitted">0</div>
-      <div class="stat-sub">Via A2A tasks/send</div>
+      <div class="stat-sub">Via A2A SendMessage</div>
     </div>
     <div class="stat">
       <div class="stat-label">Awaiting Approval</div>
@@ -655,10 +655,21 @@ function resetStateMachine() {
 async function a2aCall(method, params) {
   const res = await fetch(A2A_SERVER + '/', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'A2A-Version': '1.0' },
     body: JSON.stringify({ jsonrpc: '2.0', id: ++rpcId, method, params })
   });
   return res.json();
+}
+
+function sendMessageParams(command) {
+  return {
+    message: {
+      messageId: crypto.randomUUID(),
+      role: 'ROLE_USER',
+      parts: [{ text: command }]
+    },
+    configuration: { returnImmediately: true }
+  };
 }
 
 // ── Step 1: Discover Agent ──
@@ -728,7 +739,7 @@ async function stepAutoApproved() {
   updateStats();
 
   try {
-    addLog('a2a', 'a2a', `<strong>tasks/send</strong> &#8594; ${esc(command)}`);
+    addLog('a2a', 'a2a', `<strong>SendMessage</strong> &#8594; ${esc(command)}`);
     document.getElementById('sm-status').textContent = 'running';
 
     setSmPhase('sm-submitted', 'active');
@@ -759,10 +770,7 @@ async function stepAutoApproved() {
     addLog('governance', 'governance', 'Governance check: <strong>auto-approved</strong> (read-only operation)');
     await delay(300);
 
-    const res = await a2aCall('tasks/send', {
-      id: taskId,
-      message: { role: 'user', parts: [{ type: 'text', text: command }] }
-    });
+    const res = await a2aCall('SendMessage', sendMessageParams(command));
 
     setSmPhase('sm-hitl-gate', 'pass');
     setSmPhase('sm-executing', 'active');
@@ -786,11 +794,11 @@ async function stepAutoApproved() {
     setNodeState('node-goose', 'pass');
     setNodeState('node-flow', 'pass');
 
-    showJson(res, 'tasks/send (auto)');
+    showJson(res, 'SendMessage (auto)');
     addLog('response', 'response', `Task <strong>completed</strong>: analyze-logs finished successfully`);
   } catch (err) {
     addLog('error', 'error', `Task failed: ${esc(err.message)}`);
-    showJson({ error: err.message }, 'tasks/send');
+    showJson({ error: err.message }, 'SendMessage');
   }
 
   btn.disabled = false;
@@ -813,7 +821,7 @@ async function stepHitlTask() {
   updateStats();
 
   try {
-    addLog('a2a', 'a2a', `<strong>tasks/send</strong> &#8594; ${esc(command)}`);
+    addLog('a2a', 'a2a', `<strong>SendMessage</strong> &#8594; ${esc(command)}`);
     document.getElementById('sm-status').textContent = 'running';
 
     setSmPhase('sm-submitted', 'active');
@@ -844,17 +852,14 @@ async function stepHitlTask() {
     addLog('governance', 'governance', 'Governance check: <strong>requires human approval</strong> (schema migration)');
     await delay(300);
 
-    const res = await a2aCall('tasks/send', {
-      id: taskId,
-      message: { role: 'user', parts: [{ type: 'text', text: command }] }
-    });
+    const res = await a2aCall('SendMessage', sendMessageParams(command));
 
     setSmPhase('sm-hitl-gate', 'hitl');
     setLayerState('tl-hitl', 'hitl');
     setLayerState('tl-statemachine', 'active');
     document.getElementById('sm-status').textContent = 'input-required';
 
-    showJson(res, 'tasks/send (hitl)');
+    showJson(res, 'SendMessage (hitl)');
     addLog('hitl', 'hitl', 'Workflow <strong>paused</strong>: awaiting human approval for schema migration on production table "users"');
 
     const panel = document.getElementById('hitl-panel');
@@ -865,7 +870,7 @@ async function stepHitlTask() {
     panel.classList.add('visible');
   } catch (err) {
     addLog('error', 'error', `Task failed: ${esc(err.message)}`);
-    showJson({ error: err.message }, 'tasks/send');
+    showJson({ error: err.message }, 'SendMessage');
     pendingCount--;
     updateStats();
   }
@@ -969,7 +974,7 @@ async function stepBlockedTask() {
   updateStats();
 
   try {
-    addLog('a2a', 'a2a', `<strong>tasks/send</strong> &#8594; ${esc(command)}`);
+    addLog('a2a', 'a2a', `<strong>SendMessage</strong> &#8594; ${esc(command)}`);
     document.getElementById('sm-status').textContent = 'running';
 
     setSmPhase('sm-submitted', 'active');
@@ -994,10 +999,7 @@ async function stepBlockedTask() {
     addLog('governance', 'governance', 'Validating <strong>drop-database</strong> against AGENTS.md...');
     await delay(600);
 
-    const res = await a2aCall('tasks/send', {
-      id: taskId,
-      message: { role: 'user', parts: [{ type: 'text', text: command }] }
-    });
+    const res = await a2aCall('SendMessage', sendMessageParams(command));
 
     setNodeState('node-agents-md', 'fail');
     setLayerState('tl-governance', 'fail');
@@ -1008,11 +1010,11 @@ async function stepBlockedTask() {
 
     setNodeState('node-flow', 'fail');
 
-    showJson(res, 'tasks/send (blocked)');
+    showJson(res, 'SendMessage (blocked)');
     addLog('error', 'error', 'Governance <strong>BLOCKED</strong>: drop-database is never allowed via agent delegation');
   } catch (err) {
     addLog('error', 'error', `Task failed: ${esc(err.message)}`);
-    showJson({ error: err.message }, 'tasks/send');
+    showJson({ error: err.message }, 'SendMessage');
   }
 
   btn.disabled = false;

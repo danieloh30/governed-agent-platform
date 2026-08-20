@@ -61,9 +61,9 @@ curl -s http://localhost:8082/.well-known/agent-card.json | jq .
 ```bash
 curl -s http://localhost:8082/ \
   -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":1,"method":"tasks/send","params":{
-    "id":"my-task-1",
-    "message":{"role":"user","parts":[{"type":"text","text":"health-check --service api-gateway"}]}
+  -H "A2A-Version: 1.0" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"SendMessage","params":{
+    "message":{"messageId":"my-msg-1","role":"ROLE_USER","parts":[{"text":"health-check --service api-gateway"}]}
   }}' | jq .
 ```
 
@@ -72,9 +72,10 @@ curl -s http://localhost:8082/ \
 ```bash
 curl -s http://localhost:8082/ \
   -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":2,"method":"tasks/send","params":{
-    "id":"my-task-2",
-    "message":{"role":"user","parts":[{"type":"text","text":"process-refund --customer CUST-4091 --amount 2500"}]}
+  -H "A2A-Version: 1.0" \
+  -d '{"jsonrpc":"2.0","id":2,"method":"SendMessage","params":{
+    "message":{"messageId":"my-msg-2","role":"ROLE_USER","parts":[{"text":"process-refund --customer CUST-4091 --amount 2500"}]},
+    "configuration":{"returnImmediately":true}
   }}' | jq .
 ```
 
@@ -83,7 +84,8 @@ curl -s http://localhost:8082/ \
 ```bash
 curl -s http://localhost:8082/ \
   -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":3,"method":"tasks/get","params":{"id":"my-task-2"}}' | jq .
+  -H "A2A-Version: 1.0" \
+  -d '{"jsonrpc":"2.0","id":3,"method":"GetTask","params":{"id":"<task-id-from-above>"}}' | jq .
 ```
 
 ### Approve a pending task (via admin API)

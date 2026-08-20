@@ -29,7 +29,7 @@ The fix combines three standards into a governed multi-agent architecture:
                                                               Part 1
 ┌──────────┐              ┌─────────────────────────────┐    ┌──────────────────┐
 │  Goose   │──A2A──────── ▶  Quarkus A2A Flow (:8082)   │    │ Quarkus MCP      │
-│  Client  │  tasks/send  │  ┌───────────────────────┐  │    │ Server (:8080)   │
+│  Client  │  SendMessage │  ┌───────────────────────┐  │    │ Server (:8080)   │
 └──────────┘              │  │ A2A SDK (AgentExecutor)│  │──MCP──▶ customer-tools  │
        ▲                  │  │ AGENTS.md Governance   │  │    └──────────────────┘
        │                  │  │ HITL Approval Gate     │  │
@@ -261,7 +261,7 @@ public Map<String, Object> submitTask(String taskId, String messageText) {
 }
 ```
 
-The A2A Java SDK handles JSON-RPC routing automatically. You implement the `AgentExecutor` interface — the SDK calls your `execute()` method for each incoming `tasks/send` request:
+The A2A Java SDK handles JSON-RPC routing automatically. You implement the `AgentExecutor` interface — the SDK calls your `execute()` method for each incoming `SendMessage` request:
 
 ```java
 @ApplicationScoped
@@ -319,19 +319,19 @@ Submit a schema migration — this is a high-risk operation that requires approv
 ```bash
 curl -s http://localhost:8082/ \
   -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":1,"method":"tasks/send","params":{
-    "id":"migration-1",
-    "message":{"role":"user","parts":[{"type":"text","text":"migrate-schema --database production --table users --changes add-column-email"}]}
-  }}' | jq .result.status
+  -H "A2A-Version: 1.0" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"SendMessage","params":{
+    "message":{"messageId":"migration-msg-1","role":"ROLE_USER","parts":[{"text":"migrate-schema --database production --table users --changes add-column-email"}]},
+    "configuration":{"returnImmediately":true}
+  }}' | jq .result.task.status
 ```
 
 ```json
 {
-  "state": "input-required",
+  "state": "TASK_STATE_INPUT_REQUIRED",
   "message": {
-    "role": "agent",
+    "role": "ROLE_AGENT",
     "parts": [{
-      "type": "text",
       "text": "HITL approval required. Reason: Database schema migrations on production tables. Workflow paused at state INPUT_REQUIRED. Awaiting human decision."
     }]
   }
@@ -340,17 +340,18 @@ curl -s http://localhost:8082/ \
 
 ### Polling for Status
 
-Goose polls `tasks/get` and sees the task is paused. It can alert the developer:
+Goose polls `GetTask` and sees the task is paused. It can alert the developer:
 
 ```bash
 curl -s http://localhost:8082/ \
   -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":2,"method":"tasks/get","params":{"id":"migration-1"}}' \
+  -H "A2A-Version: 1.0" \
+  -d '{"jsonrpc":"2.0","id":2,"method":"GetTask","params":{"id":"<task-id-from-above>"}}' \
   | jq .result.status.state
 ```
 
 ```
-"input-required"
+"TASK_STATE_INPUT_REQUIRED"
 ```
 
 ### Approving the Task
@@ -363,11 +364,10 @@ curl -s -X POST http://localhost:8082/api/tasks/migration-1/approve | jq .status
 
 ```json
 {
-  "state": "completed",
+  "state": "COMPLETED",
   "message": {
     "role": "agent",
     "parts": [{
-      "type": "text",
       "text": "Schema migration completed successfully. Database: production. Table: users. Changes: add-column-email..."
     }]
   }
@@ -388,7 +388,7 @@ curl -s -X POST http://localhost:8082/api/tasks/migration-2/reject \
 "failed"
 ```
 
-The rejection reason is recorded in the task history — Goose receives it on the next `tasks/get` poll and can relay it to the developer.
+The rejection reason is recorded in the task history — Goose receives it on the next `GetTask` poll and can relay it to the developer.
 
 ### Contrast: Auto-Approved and Blocked Operations
 
@@ -396,20 +396,21 @@ Not every operation triggers HITL. Compare three scenarios:
 
 ```bash
 # Auto-approved: executes immediately
-curl -s http://localhost:8082/ -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":3,"method":"tasks/send","params":{
-    "id":"logs-1",
-    "message":{"role":"user","parts":[{"type":"text","text":"analyze-logs --service api-gateway --timeframe 24h"}]}
-  }}' | jq .result.status.state
-# → "completed"
+curl -s http://localhost:8082/ \
+  -H "Content-Type: application/json" -H "A2A-Version: 1.0" \
+  -d '{"jsonrpc":"2.0","id":3,"method":"SendMessage","params":{
+    "message":{"messageId":"logs-msg-1","role":"ROLE_USER","parts":[{"text":"analyze-logs --service api-gateway --timeframe 24h"}]}
+  }}' | jq .result.task.status.state
+# → "TASK_STATE_COMPLETED"
 
 # Blocked: fails immediately
-curl -s http://localhost:8082/ -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":4,"method":"tasks/send","params":{
-    "id":"drop-1",
-    "message":{"role":"user","parts":[{"type":"text","text":"drop-database --target production"}]}
-  }}' | jq .result.status.state
-# → "failed"
+curl -s http://localhost:8082/ \
+  -H "Content-Type: application/json" -H "A2A-Version: 1.0" \
+  -d '{"jsonrpc":"2.0","id":4,"method":"SendMessage","params":{
+    "message":{"messageId":"drop-msg-1","role":"ROLE_USER","parts":[{"text":"drop-database --target production"}]},
+    "configuration":{"returnImmediately":true}
+  }}' | jq .result.task.status.state
+# → "TASK_STATE_FAILED"
 ```
 
 ## Step 5: Running the Complete Demo
@@ -446,7 +447,7 @@ When Goose adds A2A support, configure it to discover the backend agent:
 goose session --a2a-discover http://localhost:8082
 ```
 
-Goose will fetch the Agent Card, enumerate available skills, and delegate operations via `tasks/send`. High-risk operations will pause until a human approves them through the SPA or CLI.
+Goose will fetch the Agent Card, enumerate available skills, and delegate operations via `SendMessage`. High-risk operations will pause until a human approves them through the SPA or CLI.
 
 ## What We Achieved
 
