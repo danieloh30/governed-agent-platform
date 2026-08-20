@@ -4,7 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 CONFIG="${1:-$SCRIPT_DIR/agentgateway/config-traced.yaml}"
-SPA_PORT="${2:-8888}"
+SPA_PORT="${2:-8890}"
 
 PIDS=()
 cleanup() {
