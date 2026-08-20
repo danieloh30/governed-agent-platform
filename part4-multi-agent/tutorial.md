@@ -27,19 +27,19 @@ The fix combines three standards into a governed multi-agent architecture:
 
 ```
                                                               Part 1
-┌──────────┐              ┌─────────────────────────────┐    ┌──────────────────┐
-│  Goose   │──A2A──────── ▶  Quarkus A2A Flow (:8082)   │    │ Quarkus MCP      │
-│  Client  │  SendMessage │  ┌───────────────────────┐  │    │ Server (:8080)   │
-└──────────┘              │  │ A2A SDK (AgentExecutor)│  │──MCP──▶ customer-tools  │
+┌──────────┐              ┌──────────────────────────────┐    ┌──────────────────┐
+│  Goose   │──A2A──────── ▶  Quarkus A2A Flow (:8082)    │    │ Quarkus MCP      │
+│  Client  │  SendMessage │  ┌────────────────────────┐  │    │ Server (:8080)   │
+└──────────┘              │  │ A2A SDK (AgentExecutor)│  │──MCP──▶ customer-tools│
        ▲                  │  │ AGENTS.md Governance   │  │    └──────────────────┘
        │                  │  │ HITL Approval Gate     │  │
-  /.well-known/           │  └───────────────────────┘  │
-  agent-card.json         └─────────────────────────────┘
+  /.well-known/           │  └────────────────────────┘  │
+  agent-card.json         └──────────────────────────────┘
 ```
 
 - **A2A (Agent2Agent)** — the Linux Foundation standard for multi-agent interoperability. Goose discovers the Quarkus backend via an Agent Card and delegates tasks using JSON-RPC over HTTP. The A2A Java SDK (`@PublicAgentCard` + `AgentExecutor`) handles protocol compliance automatically.
 - **Quarkus Flow** — a lightweight state machine implementing the CNCF Serverless Workflow concepts: states, transitions, and action handlers. Each delegated task flows through governance validation, optional HITL approval, and execution.
-- **MCP Tool Delegation** — auto-approved operations like `analyze-logs`, `health-check`, and `generate-report` delegate to Part 1's MCP server for live tool execution. The `McpToolClient` manages MCP sessions and calls `tools/call` over Streamable HTTP.
+- **MCP Tool Delegation** — auto-approved operations like `analyze-logs`, `health-check`, and `generate-report` delegate to Part 1's MCP server for live tool execution. The `quarkus-langchain4j-mcp` extension provides a managed `McpClient` that handles Streamable HTTP transport and MCP sessions automatically.
 - **AGENTS.md** — a declarative governance file that defines which operations are auto-approved, which require human approval, and which are permanently blocked. The Quarkus server parses this file at startup and enforces it on every incoming A2A task.
 
 The A2A task lifecycle drives the entire flow:
@@ -458,7 +458,7 @@ Starting from the observable architecture in Part 3, we added multi-agent orches
 | A2A Protocol | Agent Card + JSON-RPC via A2A Java SDK | `AgentCardProducer.java`, `AgentExecutorProducer.java` |
 | Governance | AGENTS.md rule parsing and enforcement | `GovernanceEngine.java`, `AGENTS.md` |
 | Workflow | State machine with HITL approval gates | `WorkflowEngine.java` |
-| MCP Integration | Tool delegation to Part 1's MCP server | `McpToolClient.java` |
+| MCP Integration | Tool delegation via `quarkus-langchain4j-mcp` | `McpToolClient.java`, `application.properties` |
 | Admin | REST API + SPA for human approvals | `AdminEndpoint.java`, `index.html` |
 
 ### Production Considerations

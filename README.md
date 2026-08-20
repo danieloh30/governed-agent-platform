@@ -40,7 +40,7 @@ A multi-part tutorial series for platform engineers building governed AI agent i
 └──────────┘       │  │ @PublicAgentCard (A2A Java SDK)   │  │       └───────────────┘
        ▲           │  │ AgentExecutor + McpToolClient     │  │
        │           │  │ AGENTS.md Governance              │  │
-/.well-known/      │  │ HITL Approval Gate                 │  │
+/.well-known/      │  │ HITL Approval Gate                │  │
 agent-card.json    │  └───────────────────────────────────┘  │
                    └─────────────────────────────────────────┘
 ```
