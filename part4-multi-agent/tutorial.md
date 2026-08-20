@@ -428,16 +428,19 @@ Open the **A2A Multi-Agent Console** at [http://localhost:8889/index.html](http:
 
 ### Demo Walkthrough
 
-The SPA provides three demo scenarios that showcase the governance spectrum:
+The SPA provides four guided steps that showcase the full governance spectrum:
 
-**Scenario 1 — Auto-Approved (analyze-logs):**
-Click "Analyze Logs" to submit a read-only operation. The task flows through governance validation and executes immediately — no human intervention. The state machine transitions: `submitted → working → completed`.
+**Step 1 — Discover Agent:**
+Click **Discover Agent** to fetch the Agent Card from `/.well-known/agent-card.json`. The architecture diagram animates the discovery flow and loads the AGENTS.md governance rules. The stat tiles show the agent is online and governance rules are loaded.
 
-**Scenario 2 — HITL Required (migrate-schema):**
-Click "Migrate Schema" to submit a high-risk database operation. The task pauses at `input-required`. An approval panel appears with Approve and Reject buttons. Click Approve to resume execution, or Reject to terminate the task. State machine: `submitted → working → input-required → (approve) → working → completed`.
+**Step 2 — Auto-Approved Task (analyze-logs):**
+Click **Auto-Approved Task** to submit a read-only log analysis operation. The task flows through AGENTS.md validation (auto-approved), skips the HITL gate, and delegates to Part 1's MCP tools via `McpToolClient`. The state machine transitions: `SUBMITTED → WORKING → GOVERNANCE → EXECUTING → COMPLETED`.
 
-**Scenario 3 — Blocked (drop-database):**
-Click "Drop Database" to submit a destructive operation. Governance rejects it immediately — the task never enters the workflow. State machine: `submitted → working → failed`.
+**Step 3 — HITL Task (migrate-schema):**
+Click **HITL Task** to submit a high-risk database migration. The task pauses at `INPUT_REQUIRED` after governance flags it for human review. An approval panel appears with **Approve** and **Reject** buttons. Click Approve to resume execution through MCP delegation, or Reject to terminate the task. State machine: `SUBMITTED → WORKING → GOVERNANCE → HITL GATE → (approve) → EXECUTING → COMPLETED`.
+
+**Step 4 — Blocked Task (drop-database):**
+Click **Blocked Task** to submit a destructive operation. AGENTS.md governance rejects it immediately — the task never reaches the HITL gate or MCP delegation. State machine: `SUBMITTED → WORKING → GOVERNANCE → FAILED`.
 
 ### Connecting Goose
 

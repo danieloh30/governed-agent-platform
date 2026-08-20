@@ -165,7 +165,7 @@ Part 3 provides two agentgateway configurations:
 | `config-traced.yaml` | Tracing only — proxy + OTLP export, no security layers |
 | `config-traced-guardrails.yaml` | Tracing + ExtMCP guardrails — observe the guardrail evaluation spans too |
 
-## Step 4: Generating Traces with MCP Tool Calls
+## Step 4: Running the Interactive Demo
 
 Start all services with the one-command script:
 
@@ -174,7 +174,17 @@ cd part3-observability
 ./start-all.sh
 ```
 
-The script starts Jaeger, Quarkus (with OTel enabled), and agentgateway (with trace export), then generates sample traces automatically.
+The script starts Jaeger, Quarkus (with OTel enabled), and agentgateway (with trace export), then launches the demo SPA on `:8890`.
+
+Open the **MCP Observability Console** at [http://localhost:8890/index.html](http://localhost:8890/index.html) and walk through the three demo steps:
+
+1. **Initialize** — Establishes an MCP session through agentgateway. The architecture diagram animates the trace propagation: root span creation in agentgateway, `traceparent` injection, child span in Quarkus, and OTLP export to Jaeger.
+2. **List Tools** — Discovers all 5 tools through the traced proxy. The trace waterfall panel shows the agentgateway proxy span and the Quarkus HTTP span side by side with timing.
+3. **Multi-Tool Workflow** — Simulates Goose's multi-turn reasoning: `getCustomerStatus` (finds region US-EAST-1) → `getZoneHealthLogs` (checks zone health) → `getSLACompliance` (correlates SLA metrics). Each step generates a full trace with waterfall visualization.
+
+The stat tiles track traces generated, spans collected, and Jaeger status. Click **Open Jaeger** to view the real trace waterfalls in the Jaeger UI at `http://localhost:16686`.
+
+## Step 5: Generating Traces via CLI
 
 To generate additional traces manually, simulate a multi-turn agentic workflow:
 
@@ -226,7 +236,7 @@ curl -s http://localhost:3000/mcp \
 
 Each of these requests generates a trace that flows through agentgateway into Quarkus and lands in Jaeger.
 
-## Step 5: Visualizing the Trace Waterfall in Jaeger
+## Step 6: Visualizing the Trace Waterfall in Jaeger
 
 Open [http://localhost:16686](http://localhost:16686) in your browser.
 
