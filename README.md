@@ -61,35 +61,28 @@ Build all modules from the root:
 mvn clean package -DskipTests
 ```
 
-Run Part 1 standalone:
+Each part includes a `start-all.sh` script that launches all required services and an interactive demo SPA:
 
 ```bash
-cd part1-quarkus-mcp
-mvn quarkus:dev
+# Part 1: Quarkus MCP server + MCP Console SPA
+cd part1-quarkus-mcp && ./start-all.sh
+# → MCP Console: http://localhost:8887/index.html
+
+# Part 2: agentgateway security proxy + Security Console SPA
+cd part2-agentgateway && ./start-all.sh
+# → Security Console: http://localhost:8888/index.html
+
+# Part 3: Jaeger tracing + Observability Console SPA
+cd part3-observability && ./start-all.sh
+# → Observability Console: http://localhost:8890/index.html
+# → Jaeger UI: http://localhost:16686
+
+# Part 4: A2A multi-agent + A2A Console SPA
+cd part4-multi-agent && ./start-all.sh
+# → A2A Console: http://localhost:8889/index.html
 ```
 
-Run Part 2 (starts all services including Part 1):
-
-```bash
-cd part2-agentgateway
-./start-all.sh
-```
-
-Run Part 3 (starts Jaeger + all services with tracing):
-
-```bash
-cd part3-observability
-./start-all.sh
-# Open http://localhost:16686 for Jaeger trace UI
-```
-
-Run Part 4 (A2A multi-agent orchestration with HITL):
-
-```bash
-cd part4-multi-agent
-./start-all.sh
-# Open http://localhost:8889/index.html for A2A Console
-```
+Each demo SPA provides guided steps that walk through the key concepts of that part — no Goose or LLM required.
 
 ## Project Structure
 
@@ -99,7 +92,10 @@ governed-mcp-tools/
 ├── part1-quarkus-mcp/               # Quarkus MCP server
 │   ├── pom.xml
 │   ├── src/main/java/               # MCP tools and models
-│   ├── src/main/resources/          # Config + dashboard SPA
+│   ├── src/main/resources/          # Config + server info page
+│   ├── index.html                   # MCP Console demo SPA
+│   ├── start-all.sh                 # Launches MCP server + demo SPA
+│   ├── tutorial.md                  # DZone tutorial
 │   └── goose-extension-config.yaml
 ├── part2-agentgateway/              # agentgateway security proxy
 │   ├── agentgateway/                # Config files (dev/guardrails/full)

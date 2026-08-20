@@ -42,8 +42,8 @@ echo ""
 
 # ── Step 1: Quarkus MCP Server ──
 echo "--- Step 1/2: Quarkus MCP Server (:8080) --------------------------------"
-echo "[mcp] Starting Quarkus MCP server..."
-java -jar "$SCRIPT_DIR/target/quarkus-app/quarkus-run.jar" &
+echo "[mcp] Starting Quarkus MCP server (OTel disabled)..."
+QUARKUS_OTEL_SDK_DISABLED=true java -jar "$SCRIPT_DIR/target/quarkus-app/quarkus-run.jar" &
 PIDS+=($!)
 echo "[mcp] PID: $!"
 
