@@ -58,46 +58,10 @@ public class EvalRunner {
     private EvalResult runCase(EvalCase evalCase) {
         long start = System.currentTimeMillis();
         try {
-            JsonNode response = client.callTool(evalCase.tool(), evalCase.arguments());
+            JsonNode actual = client.callToolAsJson(evalCase.tool(), evalCase.arguments());
             long latency = System.currentTimeMillis() - start;
 
-            if (response.has("error")) {
-                String errorMsg = response.path("error").path("message").asText("");
-                if (evalCase.expectError()) {
-                    if (evalCase.errorContains() != null && !errorMsg.contains(evalCase.errorContains())) {
-                        return EvalResult.fail(evalCase.id(), evalCase.tool(), latency,
-                                response.get("error"), null,
-                                "Error message does not contain: " + evalCase.errorContains());
-                    }
-                    return EvalResult.pass(evalCase.id(), evalCase.tool(), latency, response.get("error"));
-                }
-                return EvalResult.fail(evalCase.id(), evalCase.tool(), latency,
-                        response.get("error"), null, "Unexpected error: " + errorMsg);
-            }
-
-            JsonNode content = response.path("result").path("content");
-            if (content.isMissingNode() || !content.isArray() || content.isEmpty()) {
-                if (evalCase.expectError()) {
-                    return EvalResult.fail(evalCase.id(), evalCase.tool(), latency,
-                            null, null, "Expected error but got empty result");
-                }
-                return EvalResult.fail(evalCase.id(), evalCase.tool(), latency,
-                        null, evalCase.expect(), "Empty content in response");
-            }
-
-            JsonNode actual = parseContent(content);
-
             if (evalCase.expectError()) {
-                boolean isError = content.size() > 0 && content.get(0).path("isError").asBoolean(false);
-                if (isError) {
-                    String errorText = content.get(0).path("text").asText("");
-                    if (evalCase.errorContains() != null && !errorText.contains(evalCase.errorContains())) {
-                        return EvalResult.fail(evalCase.id(), evalCase.tool(), latency,
-                                actual, null,
-                                "Error text does not contain: " + evalCase.errorContains());
-                    }
-                    return EvalResult.pass(evalCase.id(), evalCase.tool(), latency, actual);
-                }
                 return EvalResult.fail(evalCase.id(), evalCase.tool(), latency,
                         actual, null, "Expected error but got success");
             }
@@ -125,16 +89,20 @@ public class EvalRunner {
 
         } catch (Exception e) {
             long latency = System.currentTimeMillis() - start;
+            String msg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+
             if (evalCase.expectError()) {
-                String msg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
                 if (evalCase.errorContains() == null || msg.contains(evalCase.errorContains())) {
                     return EvalResult.pass(evalCase.id(), evalCase.tool(), latency,
-                            mapper.valueToTree(Map.of("exception", msg)));
+                            mapper.valueToTree(Map.of("error", msg)));
                 }
+                return EvalResult.fail(evalCase.id(), evalCase.tool(), latency,
+                        mapper.valueToTree(Map.of("error", msg)), null,
+                        "Error does not contain: " + evalCase.errorContains());
             }
+
             return EvalResult.fail(evalCase.id(), evalCase.tool(), latency,
-                    null, evalCase.expect(),
-                    "Exception: " + (e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName()));
+                    null, evalCase.expect(), "Exception: " + msg);
         }
     }
 
@@ -167,7 +135,8 @@ public class EvalRunner {
             EvalResult result = runCase(resolved);
             results.add(result);
 
-            if (result.passed() && step.extractField() != null && step.extractAs() != null && result.actual() != null) {
+            if (result.passed() && step.extractField() != null
+                    && step.extractAs() != null && result.actual() != null) {
                 JsonNode val = result.actual().path(step.extractField());
                 if (!val.isMissingNode()) {
                     extractions.put(step.extractAs(), val.asText());
@@ -175,30 +144,6 @@ public class EvalRunner {
             }
         }
         return results;
-    }
-
-    private JsonNode parseContent(JsonNode content) {
-        if (content.isArray() && content.size() == 1) {
-            String text = content.get(0).path("text").asText("");
-            try {
-                return mapper.readTree(text);
-            } catch (Exception e) {
-                return content.get(0);
-            }
-        }
-        if (content.isArray()) {
-            var arr = mapper.createArrayNode();
-            for (JsonNode item : content) {
-                String text = item.path("text").asText("");
-                try {
-                    arr.add(mapper.readTree(text));
-                } catch (Exception e) {
-                    arr.add(item);
-                }
-            }
-            return arr;
-        }
-        return content;
     }
 
     private String compareFields(JsonNode actual, JsonNode expected) {
