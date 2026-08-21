@@ -1,0 +1,130 @@
+{
+  "name": "tool-accuracy",
+  "description": "Verify correct output for each MCP tool with known inputs",
+  "cases": [
+    {
+      "id": "customer-active-enterprise",
+      "description": "Active enterprise customer returns correct status and region",
+      "tool": "getCustomerStatus",
+      "arguments": {"customerId": "CUST-4091"},
+      "expect": {
+        "customerId": "CUST-4091",
+        "status": "ACTIVE",
+        "tier": "ENTERPRISE_TIER",
+        "primaryRegion": "US-EAST-1"
+      }
+    },
+    {
+      "id": "customer-active-business",
+      "description": "Active business-tier customer in EU region",
+      "tool": "getCustomerStatus",
+      "arguments": {"customerId": "CUST-2187"},
+      "expect": {
+        "customerId": "CUST-2187",
+        "status": "ACTIVE",
+        "tier": "BUSINESS_TIER",
+        "primaryRegion": "EU-WEST-1"
+      }
+    },
+    {
+      "id": "customer-suspended",
+      "description": "Suspended starter-tier customer",
+      "tool": "getCustomerStatus",
+      "arguments": {"customerId": "CUST-7734"},
+      "expect": {
+        "customerId": "CUST-7734",
+        "status": "SUSPENDED",
+        "tier": "STARTER_TIER",
+        "primaryRegion": "AP-SOUTH-1"
+      }
+    },
+    {
+      "id": "customer-not-found",
+      "description": "Unknown customer ID returns NOT_FOUND",
+      "tool": "getCustomerStatus",
+      "arguments": {"customerId": "CUST-9999"},
+      "expect": {
+        "status": "NOT_FOUND",
+        "tier": "UNKNOWN"
+      }
+    },
+    {
+      "id": "order-shipped",
+      "description": "Shipped order with correct item count and amount",
+      "tool": "getOrderStatus",
+      "arguments": {"orderId": "ORD-20240815"},
+      "expect": {
+        "orderId": "ORD-20240815",
+        "status": "SHIPPED",
+        "itemCount": 12,
+        "totalAmount": "$48,750.00"
+      }
+    },
+    {
+      "id": "order-processing",
+      "description": "Processing order returns correct status",
+      "tool": "getOrderStatus",
+      "arguments": {"orderId": "ORD-20240901"},
+      "expect": {
+        "status": "PROCESSING",
+        "itemCount": 5
+      }
+    },
+    {
+      "id": "order-delivered",
+      "description": "Delivered order with high-value amount",
+      "tool": "getOrderStatus",
+      "arguments": {"orderId": "ORD-20241003"},
+      "expect": {
+        "status": "DELIVERED",
+        "itemCount": 28,
+        "totalAmount": "$134,500.00"
+      }
+    },
+    {
+      "id": "sla-api-gateway",
+      "description": "API gateway SLA above 99.95% with zero violations",
+      "tool": "getSLACompliance",
+      "arguments": {"serviceId": "api-gateway"},
+      "expect": {
+        "serviceId": "api-gateway",
+        "compliancePct": 99.97,
+        "violationCount": 0
+      }
+    },
+    {
+      "id": "sla-auth-service",
+      "description": "Auth service SLA with 3 violations",
+      "tool": "getSLACompliance",
+      "arguments": {"serviceId": "auth-service"},
+      "expect": {
+        "compliancePct": 99.82,
+        "violationCount": 3
+      }
+    },
+    {
+      "id": "sla-data-pipeline",
+      "description": "Data pipeline SLA below 99% threshold",
+      "tool": "getSLACompliance",
+      "arguments": {"serviceId": "data-pipeline"},
+      "expect": {
+        "compliancePct": 98.50,
+        "violationCount": 12
+      }
+    },
+    {
+      "id": "zone-health-entries",
+      "description": "Zone health returns exactly 6 diagnostic entries",
+      "tool": "getZoneHealthLogs",
+      "arguments": {"zoneId": "US-EAST-1"},
+      "expectCount": 6
+    },
+    {
+      "id": "audit-trail-entries",
+      "description": "Known customer audit trail returns 5 events",
+      "tool": "getAuditTrail",
+      "arguments": {"customerId": "CUST-4091"},
+      "expectCount": 5
+    }
+  ]
+}

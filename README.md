@@ -10,6 +10,7 @@ A multi-part tutorial series for platform engineers building governed AI agent i
 | 2 | [Securing and Scaling Goose-to-Java Agent Traffic with agentgateway](part2-agentgateway/) | `part2-agentgateway/` | agentgateway as a security proxy with JWT auth, RBAC via CEL, and ExtMCP guardrails against tool poisoning |
 | 3 | [End-to-End Tracing and Observability](part3-observability/) | `part3-observability/` | W3C Trace Context propagation across all layers with Quarkus OpenTelemetry, agentgateway tracing, and Jaeger |
 | 4 | [Multi-Agent Orchestration with A2A Protocol](part4-multi-agent/) | `part4-multi-agent/` | A2A Java SDK (`@PublicAgentCard` + `AgentExecutor`) with AGENTS.md governance, HITL approval gates, and MCP tool delegation to Part 1 |
+| 5 | [Automated Agent Evaluation and Regression Testing](part5-evaluation/) | `part5-evaluation/` | Golden datasets, MCP eval runner with accuracy/latency/validation testing, CI/CD integration |
 
 ## Architecture
 
@@ -43,6 +44,18 @@ A multi-part tutorial series for platform engineers building governed AI agent i
 /.well-known/      │  │ HITL Approval Gate                │  │
 agent-card.json    │  └───────────────────────────────────┘  │
                    └─────────────────────────────────────────┘
+
+                    Part 5                                        Part 1
+┌─────────────────────────────────────────────────────┐       ┌───────────────┐
+│         Quarkus Eval Runner (:8083)                 │──MCP──▶  Quarkus MCP  │
+│  ┌───────────────────────────────────────────────┐  │ :8080 │  Server       │
+│  │ Golden Datasets                               │  │       └───────────────┘
+│  │  tool-accuracy · validation-boundary           │  │
+│  │  workflow-regression                           │  │
+│  │ Eval Engine (McpEvalClient + ResultComparator) │  │
+│  │ REST API: GET /eval/suites POST /eval/run/{s}  │  │
+│  └───────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────┘
 ```
 
 ## Prerequisites
@@ -80,6 +93,11 @@ cd part3-observability && ./start-all.sh
 # Part 4: A2A multi-agent + A2A Console SPA
 cd part4-multi-agent && ./start-all.sh
 # → A2A Console: http://localhost:8889/index.html
+
+# Part 5: Evaluation runner + Evaluation Console SPA
+cd part5-evaluation && ./start-all.sh
+# → Evaluation Console: http://localhost:8891/index.html
+# → Eval API: http://localhost:8083/eval
 ```
 
 Each demo SPA provides guided steps that walk through the key concepts of that part — no Goose or LLM required.
@@ -108,11 +126,21 @@ governed-mcp-tools/
 │   ├── compose.yml                  # Jaeger all-in-one
 │   ├── start-all.sh                 # Launches Jaeger + all services
 │   └── tutorial.md                  # DZone tutorial
-└── part4-multi-agent/               # A2A multi-agent orchestration
+├── part4-multi-agent/               # A2A multi-agent orchestration
+│   ├── pom.xml
+│   ├── src/main/java/               # A2A endpoint, workflow engine, governance
+│   ├── src/main/resources/AGENTS.md # Governance rules
+│   ├── index.html                   # A2A Console SPA
+│   ├── start-all.sh                 # Launches A2A Flow server
+│   └── tutorial.md                  # DZone tutorial
+└── part5-evaluation/                # Automated eval and regression testing
     ├── pom.xml
-    ├── src/main/java/               # A2A endpoint, workflow engine, governance
-    ├── src/main/resources/AGENTS.md # Governance rules
-    ├── index.html                   # A2A Console SPA
-    ├── start-all.sh                 # Launches A2A Flow server
+    ├── src/main/java/               # Eval engine, MCP client, REST API
+    ├── golden/                      # Golden datasets (JSON)
+    │   ├── tool-accuracy.json
+    │   ├── validation-boundary.json
+    │   └── workflow-regression.json
+    ├── index.html                   # Evaluation Console SPA
+    ├── start-all.sh                 # Launches MCP server + eval runner
     └── tutorial.md                  # DZone tutorial
 ```

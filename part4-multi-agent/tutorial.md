@@ -477,4 +477,6 @@ Starting from the observable architecture in Part 3, we added multi-agent orches
 
 ## Coming Up in Part 5
 
-With governance, security, tracing, and multi-agent orchestration in place, the stack is production-capable — but how do you know it stays correct across code changes? In Part 5, we will add **automated agent evaluation and regression testing** — using trace data and golden datasets to verify that agentic workflows produce correct, consistent results as the codebase evolves.
+With governance, security, tracing, and multi-agent orchestration in place, the stack is production-capable — but how do you know it stays correct across code changes? In Part 5, we will add **automated agent evaluation and regression testing** — using golden datasets to verify that MCP tool outputs, Bean Validation boundaries, and multi-step agent workflows produce correct, consistent results as the codebase evolves.
+
+- **[Part 5: Automated Agent Evaluation and Regression Testing](../part5-evaluation/tutorial.md)**

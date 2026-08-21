@@ -1,0 +1,70 @@
+{
+  "name": "validation-boundary",
+  "description": "Verify Jakarta Bean Validation rejects malformed inputs at the MCP boundary",
+  "cases": [
+    {
+      "id": "customer-invalid-format",
+      "description": "Non-CUST format fails @Pattern validation",
+      "tool": "getCustomerStatus",
+      "arguments": {"customerId": "INVALID"},
+      "expectError": true,
+      "errorContains": "must match"
+    },
+    {
+      "id": "customer-sql-injection",
+      "description": "SQL injection payload rejected by pattern constraint",
+      "tool": "getCustomerStatus",
+      "arguments": {"customerId": "'; DROP TABLE users; --"},
+      "expectError": true,
+      "errorContains": "must match"
+    },
+    {
+      "id": "customer-empty-string",
+      "description": "Empty customer ID fails @Pattern validation",
+      "tool": "getCustomerStatus",
+      "arguments": {"customerId": ""},
+      "expectError": true,
+      "errorContains": "must match"
+    },
+    {
+      "id": "order-invalid-format",
+      "description": "Non-ORD format fails @Pattern validation",
+      "tool": "getOrderStatus",
+      "arguments": {"orderId": "BAD-ORDER"},
+      "expectError": true,
+      "errorContains": "must match"
+    },
+    {
+      "id": "order-short-digits",
+      "description": "ORD with too few digits fails @Pattern validation",
+      "tool": "getOrderStatus",
+      "arguments": {"orderId": "ORD-123"},
+      "expectError": true,
+      "errorContains": "must match"
+    },
+    {
+      "id": "zone-overflow",
+      "description": "Zone ID exceeding 20 chars fails @Size validation",
+      "tool": "getZoneHealthLogs",
+      "arguments": {"zoneId": "AAAAAAAAAAAAAAAAAAAAAAAAA"},
+      "expectError": true,
+      "errorContains": "size must be"
+    },
+    {
+      "id": "sla-service-overflow",
+      "description": "Service ID exceeding 40 chars fails @Size validation",
+      "tool": "getSLACompliance",
+      "arguments": {"serviceId": "this-service-id-is-intentionally-way-too-long-for-the-size-constraint"},
+      "expectError": true,
+      "errorContains": "size must be"
+    },
+    {
+      "id": "audit-xss-payload",
+      "description": "XSS payload in customer ID rejected by pattern constraint",
+      "tool": "getAuditTrail",
+      "arguments": {"customerId": "<script>alert(1)</script>"},
+      "expectError": true,
+      "errorContains": "must match"
+    }
+  ]
+}

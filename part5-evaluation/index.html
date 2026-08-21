@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MCP Evaluation Console</title>
+<style>
+:root {
+  color-scheme: light;
+  --surface-page:     #f5f5f3;
+  --surface-card:     #ffffff;
+  --surface-inset:    #f9f9f7;
+  --text-primary:     #0b0b0b;
+  --text-secondary:   #52514e;
+  --text-muted:       #898781;
+  --gridline:         #e8e7e2;
+  --baseline:         #d0cfca;
+  --border:           rgba(11,11,11,0.08);
+  --shadow-sm:        0 1px 2px rgba(0,0,0,0.05);
+  --shadow-md:        0 2px 8px rgba(0,0,0,0.08);
+  --shadow-lg:        0 4px 16px rgba(0,0,0,0.10);
+  --cat-1: #2a78d6;
+  --cat-2: #eb6834;
+  --cat-3: #1baf7a;
+  --cat-4: #eda100;
+  --cat-5: #e87ba4;
+  --status-good:      #0ca30c;
+  --status-warn:      #fab219;
+  --status-serious:   #ec835a;
+  --status-critical:  #d03b3b;
+  --status-good-bg:   rgba(12,163,12,0.08);
+  --status-good-text: #006300;
+  --status-crit-bg:   rgba(208,59,59,0.08);
+  --seq-100: #cde2fb;
+  --seq-200: #9dc5f3;
+  --seq-300: #6da7ec;
+  --seq-500: #256abf;
+  --radius: 10px;
+  --radius-sm: 6px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --surface-page: #0a0a0a; --surface-card: #161615; --surface-inset: #1e1e1c;
+    --text-primary: #f0f0ee; --text-secondary: #b0afa8; --text-muted: #7a7972;
+    --gridline: #262624; --baseline: #333331; --border: rgba(255,255,255,0.07);
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.3); --shadow-md: 0 2px 8px rgba(0,0,0,0.4);
+    --shadow-lg: 0 4px 16px rgba(0,0,0,0.5);
+    --cat-1: #4d9aee; --cat-2: #d95926; --cat-3: #24c98e;
+    --cat-4: #e5a617; --cat-5: #d55181;
+    --status-good: #2ecc40; --status-good-bg: rgba(46,204,64,0.10);
+    --status-good-text: #2ecc40; --status-crit-bg: rgba(208,59,59,0.12);
+    --seq-100: #1a4d8a; --seq-200: #2668b5; --seq-300: #4d9aee; --seq-500: #a3cdf7;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --surface-page: #0a0a0a; --surface-card: #161615; --surface-inset: #1e1e1c;
+  --text-primary: #f0f0ee; --text-secondary: #b0afa8; --text-muted: #7a7972;
+  --gridline: #262624; --baseline: #333331; --border: rgba(255,255,255,0.07);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.3); --shadow-md: 0 2px 8px rgba(0,0,0,0.4);
+  --shadow-lg: 0 4px 16px rgba(0,0,0,0.5);
+  --cat-1: #4d9aee; --cat-2: #d95926; --cat-3: #24c98e;
+  --cat-4: #e5a617; --cat-5: #d55181;
+  --status-good: #2ecc40; --status-good-bg: rgba(46,204,64,0.10);
+  --status-good-text: #2ecc40; --status-crit-bg: rgba(208,59,59,0.12);
+  --seq-100: #1a4d8a; --seq-200: #2668b5; --seq-300: #4d9aee; --seq-500: #a3cdf7;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: var(--surface-page); color: var(--text-primary);
+  line-height: 1.5; min-height: 100vh;
+}
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace; }
+
+.topbar {
+  background: var(--surface-card); border-bottom: 1px solid var(--border);
+  padding: 0 32px; height: 56px;
+  display: flex; align-items: center; gap: 16px;
+  box-shadow: var(--shadow-sm); position: sticky; top: 0; z-index: 10;
+}
+.topbar-logo {
+  width: 28px; height: 28px; border-radius: 6px;
+  background: linear-gradient(135deg, var(--cat-4), var(--cat-2));
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-weight: 700; font-size: 0.75rem;
+}
+.topbar h1 { font-size: 0.95rem; font-weight: 600; }
+.topbar .badge {
+  font-size: 0.65rem; font-weight: 600; padding: 2px 8px;
+  border-radius: 10px; background: var(--cat-4); color: #fff;
+  text-transform: uppercase; letter-spacing: 0.05em;
+}
+.topbar-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+.topbar-status {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 0.78rem; color: var(--text-muted);
+}
+.topbar-status .dot {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--baseline);
+  transition: background 0.3s;
+}
+.topbar-status .dot.on { background: var(--status-good); box-shadow: 0 0 6px rgba(12,163,12,0.4); }
+.topbar-status .dot.off { background: var(--status-critical); }
+.theme-btn {
+  background: none; border: 1px solid var(--baseline); border-radius: var(--radius-sm);
+  padding: 4px 10px; color: var(--text-secondary); cursor: pointer; font-size: 0.78rem;
+}
+
+.shell { max-width: 1400px; margin: 0 auto; padding: 28px 32px; }
+
+.stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-bottom: 28px; }
+@media (max-width: 900px) { .stats { grid-template-columns: repeat(3, 1fr); } }
+.stat {
+  background: var(--surface-card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px 24px;
+  box-shadow: var(--shadow-sm); transition: box-shadow 0.2s;
+}
+.stat:hover { box-shadow: var(--shadow-md); }
+.stat-label { font-size: 0.72rem; font-weight: 500; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+.stat-value { font-size: 1.6rem; font-weight: 700; line-height: 1.2; }
+.stat-sub { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; }
+.stat-value.good { color: var(--status-good-text); }
+.stat-value.crit { color: var(--status-critical); }
+.stat-value.blue { color: var(--cat-1); }
+.stat-value.warn { color: var(--cat-4); }
+
+.arch-card {
+  background: var(--surface-card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 32px; margin-bottom: 28px;
+  box-shadow: var(--shadow-sm);
+}
+.arch-card h2 { font-size: 0.82rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 24px; }
+.arch-row {
+  display: flex; align-items: stretch; gap: 0; justify-content: center;
+}
+.arch-node {
+  background: var(--surface-inset); border: 2px solid var(--baseline);
+  border-radius: var(--radius); padding: 24px 28px; min-width: 200px;
+  text-align: center; position: relative; transition: all 0.35s;
+}
+.arch-node.active {
+  border-color: var(--cat-1);
+  box-shadow: 0 0 0 4px rgba(42,120,214,0.12), var(--shadow-md);
+}
+.arch-node.pass { border-color: var(--status-good); box-shadow: 0 0 0 4px rgba(12,163,12,0.10), var(--shadow-md); }
+.arch-node.fail { border-color: var(--status-critical); box-shadow: 0 0 0 4px rgba(208,59,59,0.10), var(--shadow-md); }
+.arch-node .node-icon { font-size: 1.5rem; margin-bottom: 6px; }
+.arch-node .node-label {
+  font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--text-muted); margin-bottom: 4px;
+}
+.arch-node .node-title { font-size: 1rem; font-weight: 600; margin-bottom: 2px; }
+.arch-node .node-port { font-size: 0.78rem; color: var(--text-muted); }
+.arch-arrow {
+  display: flex; align-items: center; padding: 0 12px;
+  color: var(--baseline); font-size: 1.4rem; min-width: 56px; justify-content: center;
+  position: relative; transition: color 0.3s;
+}
+.arch-arrow.active { color: var(--cat-1); }
+.arch-arrow.pass { color: var(--status-good); }
+.arrow-label {
+  position: absolute; top: -18px; font-size: 0.65rem; font-weight: 500;
+  color: var(--text-muted); white-space: nowrap;
+}
+
+.controls-bar {
+  background: var(--surface-card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px 24px; margin-bottom: 28px;
+  box-shadow: var(--shadow-sm);
+  display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+}
+.controls-bar .section-label {
+  font-size: 0.72rem; font-weight: 600; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.06em; margin-right: 8px;
+}
+.suite-select {
+  padding: 8px 14px; border: 1px solid var(--baseline); border-radius: var(--radius-sm);
+  font-size: 0.82rem; background: var(--surface-inset); color: var(--text-primary);
+  cursor: pointer; font-weight: 500;
+}
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 10px 20px; border: none; border-radius: var(--radius-sm);
+  font-size: 0.82rem; font-weight: 600; cursor: pointer;
+  transition: all 0.15s; letter-spacing: 0.01em;
+}
+.btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
+.btn:active { transform: translateY(0); }
+.btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none; box-shadow: none; }
+.btn-primary { background: var(--cat-1); color: #fff; }
+.btn-secondary { background: var(--gridline); color: var(--text-primary); }
+.btn-danger { background: var(--status-critical); color: #fff; }
+.btn-success { background: var(--status-good); color: #fff; }
+.btn-outline { background: none; border: 1px solid var(--baseline); color: var(--text-secondary); }
+.btn .step-num {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: rgba(255,255,255,0.2); font-size: 0.7rem; font-weight: 700;
+}
+.btn-secondary .step-num { background: var(--baseline); }
+.btn-success .step-num { background: rgba(255,255,255,0.25); }
+
+.main-grid {
+  display: grid; grid-template-columns: 1.4fr 1fr; gap: 24px; margin-bottom: 28px;
+}
+@media (max-width: 900px) { .main-grid { grid-template-columns: 1fr; } }
+
+.card {
+  background: var(--surface-card); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow-sm);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.card-header {
+  padding: 18px 24px 14px;
+  border-bottom: 1px solid var(--gridline);
+  display: flex; align-items: center; gap: 10px;
+}
+.card-header h2 { font-size: 0.88rem; font-weight: 600; }
+.card-header .card-badge {
+  font-size: 0.65rem; font-weight: 600; padding: 2px 8px;
+  border-radius: 10px; background: var(--gridline); color: var(--text-muted);
+}
+.card-body { padding: 20px 24px; flex: 1; overflow-y: auto; }
+
+/* Results table */
+.results-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.82rem; }
+.results-table th {
+  text-align: left; font-size: 0.7rem; font-weight: 600; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.05em;
+  padding: 8px 10px; border-bottom: 2px solid var(--baseline);
+}
+.results-table td {
+  padding: 10px; border-bottom: 1px solid var(--gridline);
+  color: var(--text-secondary); vertical-align: middle;
+}
+.results-table tr:last-child td { border-bottom: none; }
+.results-table tr { cursor: pointer; transition: background 0.15s; }
+.results-table tbody tr:hover { background: var(--gridline); }
+.results-table tr.selected { background: rgba(42,120,214,0.06); }
+.results-table .case-id { font-weight: 600; color: var(--text-primary); }
+.results-table .tool-name { color: var(--cat-1); }
+.status-icon { font-size: 1rem; width: 28px; text-align: center; }
+.status-pending { color: var(--text-muted); }
+.status-pass { color: var(--status-good-text); }
+.status-fail { color: var(--status-critical); }
+.latency-val { font-variant-numeric: tabular-nums; text-align: right; }
+
+/* Flow log */
+.flow-log { display: flex; flex-direction: column; gap: 0; min-height: 400px; max-height: 500px; overflow-y: auto; }
+.flow-empty {
+  display: flex; align-items: center; justify-content: center;
+  height: 400px; color: var(--text-muted); font-size: 0.85rem;
+  flex-direction: column; gap: 8px;
+}
+.flow-empty-icon { font-size: 2rem; opacity: 0.3; }
+.flow-entry {
+  display: grid; grid-template-columns: 70px 1fr;
+  gap: 10px; padding: 8px 0; align-items: start;
+  border-bottom: 1px solid var(--gridline);
+  font-size: 0.78rem;
+  animation: fadeSlideIn 0.3s ease;
+}
+.flow-entry:last-child { border-bottom: none; }
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: none; }
+}
+.flow-time { color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.flow-msg { color: var(--text-secondary); word-break: break-word; line-height: 1.5; }
+.flow-msg strong { color: var(--text-primary); font-weight: 600; }
+.flow-msg .pass-label { color: var(--status-good-text); font-weight: 700; }
+.flow-msg .fail-label { color: var(--status-critical); font-weight: 700; }
+
+/* JSON inspector */
+.inspector-card { margin-bottom: 28px; }
+.inspector-tabs { display: flex; gap: 0; border-bottom: 1px solid var(--gridline); }
+.inspector-tab {
+  padding: 10px 20px; font-size: 0.78rem; font-weight: 600;
+  color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent;
+  transition: all 0.15s; background: none; border-top: none; border-left: none; border-right: none;
+}
+.inspector-tab.active { color: var(--cat-1); border-bottom-color: var(--cat-1); }
+.json-view {
+  background: var(--surface-inset); border: 1px solid var(--gridline);
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm); padding: 16px 20px; font-size: 0.78rem;
+  white-space: pre-wrap; word-break: break-word;
+  min-height: 200px; max-height: 400px; overflow-y: auto;
+  color: var(--text-secondary); line-height: 1.7;
+}
+.json-view .jk { color: var(--cat-1); }
+.json-view .js { color: var(--cat-3); }
+.json-view .jn { color: var(--cat-2); }
+.json-view .jb { color: var(--cat-5); }
+
+/* Report card */
+.report-card { display: none; margin-bottom: 28px; }
+.report-card.visible { display: block; }
+.report-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; }
+@media (max-width: 900px) { .report-grid { grid-template-columns: 1fr; } }
+.report-accuracy {
+  text-align: center; padding: 32px;
+}
+.report-accuracy .big-num { font-size: 3.5rem; font-weight: 800; line-height: 1; }
+.report-accuracy .big-label { font-size: 0.8rem; color: var(--text-muted); margin-top: 8px; }
+.report-stat-row { display: flex; flex-direction: column; gap: 12px; }
+.report-stat-item {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 8px 0; border-bottom: 1px solid var(--gridline);
+}
+.report-stat-item:last-child { border-bottom: none; }
+.report-stat-item .rs-label { font-size: 0.8rem; color: var(--text-muted); }
+.report-stat-item .rs-value { font-size: 0.9rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* Packet animation */
+.arch-arrow .packet {
+  display: inline-block; width: 10px; height: 10px;
+  border-radius: 50%; background: var(--cat-1);
+  animation: moveRight 0.6s ease forwards;
+  box-shadow: 0 0 8px rgba(42,120,214,0.4);
+}
+.arch-arrow .packet.reverse {
+  animation: moveLeft 0.6s ease forwards;
+  background: var(--cat-3);
+  box-shadow: 0 0 8px rgba(27,175,122,0.4);
+}
+@keyframes moveRight {
+  0% { transform: translateX(-16px); opacity: 0; }
+  30% { opacity: 1; }
+  100% { transform: translateX(16px); opacity: 0; }
+}
+@keyframes moveLeft {
+  0% { transform: translateX(16px); opacity: 0; }
+  30% { opacity: 1; }
+  100% { transform: translateX(-16px); opacity: 0; }
+}
+
+.spinner {
+  display: inline-block; width: 16px; height: 16px;
+  border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff;
+  border-radius: 50%; animation: spin 0.6s linear infinite;
+}
+.btn-secondary .spinner { border-color: var(--baseline); border-top-color: var(--text-primary); }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+@media (max-width: 600px) {
+  .shell { padding: 16px; }
+  .topbar { padding: 0 16px; }
+  .stats { grid-template-columns: 1fr 1fr; }
+  .arch-row { flex-direction: column; align-items: center; }
+  .arch-arrow { transform: rotate(90deg); min-width: auto; min-height: 40px; }
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-logo">E</div>
+  <h1>MCP Evaluation Console</h1>
+  <span class="badge">Part 5</span>
+  <div class="topbar-right">
+    <div class="topbar-status" id="topbar-status">
+      <span class="dot" id="status-dot"></span>
+      <span id="status-text">Disconnected</span>
+    </div>
+    <button class="theme-btn" onclick="toggleTheme()">Theme</button>
+  </div>
+</div>
+
+<div class="shell">
+
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-label">Test Cases</div>
+      <div class="stat-value" id="stat-total">--</div>
+      <div class="stat-sub" id="stat-total-sub">No suite loaded</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Passed</div>
+      <div class="stat-value good" id="stat-passed">0</div>
+      <div class="stat-sub" id="stat-passed-sub">--</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Failed</div>
+      <div class="stat-value crit" id="stat-failed">0</div>
+      <div class="stat-sub" id="stat-failed-sub">--</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Accuracy</div>
+      <div class="stat-value" id="stat-accuracy">--</div>
+      <div class="stat-sub" id="stat-accuracy-sub">--</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Avg Latency</div>
+      <div class="stat-value" id="stat-latency">--</div>
+      <div class="stat-sub">Per tool call</div>
+    </div>
+  </div>
+
+  <div class="arch-card">
+    <h2>Evaluation Pipeline</h2>
+    <div class="arch-row">
+      <div class="arch-node" id="node-golden">
+        <div class="node-icon">&#128203;</div>
+        <div class="node-label">Data Source</div>
+        <div class="node-title">Golden Dataset</div>
+        <div class="node-port mono">JSON test cases</div>
+      </div>
+      <div class="arch-arrow" id="arrow-load">
+        <span class="arrow-label">load</span>
+        &rarr;
+      </div>
+      <div class="arch-node" id="node-eval">
+        <div class="node-icon">&#9745;</div>
+        <div class="node-label">Test Runner</div>
+        <div class="node-title">Eval Console</div>
+        <div class="node-port mono">compare &amp; report</div>
+      </div>
+      <div class="arch-arrow" id="arrow-mcp">
+        <span class="arrow-label">MCP</span>
+        &rarr;
+      </div>
+      <div class="arch-node" id="node-server">
+        <div class="node-icon">&#9881;</div>
+        <div class="node-label">MCP Server</div>
+        <div class="node-title">Quarkus</div>
+        <div class="node-port mono">:8080/mcp</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls-bar">
+    <span class="section-label">Eval Steps</span>
+    <select class="suite-select" id="suite-select">
+      <option value="tool-accuracy">tool-accuracy</option>
+      <option value="validation-boundary">validation-boundary</option>
+      <option value="workflow-regression">workflow-regression</option>
+    </select>
+    <button class="btn btn-primary" id="btn-init" onclick="stepInit()">
+      <span class="step-num">1</span> Initialize
+    </button>
+    <button class="btn btn-secondary" id="btn-load" onclick="stepLoadSuite()" disabled>
+      <span class="step-num">2</span> Load Suite
+    </button>
+    <button class="btn btn-success" id="btn-run" onclick="stepRunEval()" disabled>
+      <span class="step-num">3</span> Run Evaluation
+    </button>
+    <button class="btn btn-secondary" id="btn-report" onclick="stepReport()" disabled>
+      <span class="step-num">4</span> View Report
+    </button>
+    <button class="btn btn-outline" id="btn-reset" onclick="resetAll()">Reset</button>
+  </div>
+
+  <div class="main-grid">
+    <div class="card">
+      <div class="card-header">
+        <h2>Test Results</h2>
+        <span class="card-badge" id="results-badge">0 cases</span>
+      </div>
+      <div class="card-body" style="max-height:500px">
+        <div id="results-area">
+          <div class="flow-empty">
+            <div class="flow-empty-icon">&#9745;</div>
+            Click <strong>Initialize</strong> then <strong>Load Suite</strong> to begin.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h2>Execution Log</h2>
+        <span class="card-badge" id="log-count">0 entries</span>
+      </div>
+      <div class="card-body">
+        <div class="flow-log" id="flow-log">
+          <div class="flow-empty">
+            <div class="flow-empty-icon">&#9678;</div>
+            Evaluation events appear here.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card inspector-card">
+    <div class="card-header">
+      <h2>Inspector</h2>
+      <span class="card-badge mono" id="inspector-label">--</span>
+      <div style="margin-left:auto">
+        <button class="inspector-tab active" id="tab-request" onclick="showTab('request')">Request</button>
+        <button class="inspector-tab" id="tab-response" onclick="showTab('response')">Response</button>
+        <button class="inspector-tab" id="tab-expected" onclick="showTab('expected')">Expected</button>
+      </div>
+    </div>
+    <div class="json-view mono" id="json-view">Select a test case to inspect its details.</div>
+  </div>
+
+  <div class="card report-card" id="report-card">
+    <div class="card-header">
+      <h2>Evaluation Report</h2>
+      <span class="card-badge" id="report-badge">--</span>
+    </div>
+    <div class="card-body">
+      <div class="report-grid">
+        <div class="report-accuracy">
+          <div class="big-num" id="report-accuracy-num">--</div>
+          <div class="big-label">Accuracy</div>
+        </div>
+        <div class="report-stat-row">
+          <h3 style="font-size:0.8rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em">Results</h3>
+          <div class="report-stat-item"><span class="rs-label">Total cases</span><span class="rs-value" id="rpt-total">--</span></div>
+          <div class="report-stat-item"><span class="rs-label">Passed</span><span class="rs-value" style="color:var(--status-good-text)" id="rpt-passed">--</span></div>
+          <div class="report-stat-item"><span class="rs-label">Failed</span><span class="rs-value" style="color:var(--status-critical)" id="rpt-failed">--</span></div>
+          <div class="report-stat-item"><span class="rs-label">Suite</span><span class="rs-value" id="rpt-suite">--</span></div>
+        </div>
+        <div class="report-stat-row">
+          <h3 style="font-size:0.8rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em">Latency</h3>
+          <div class="report-stat-item"><span class="rs-label">p50</span><span class="rs-value" id="rpt-p50">--</span></div>
+          <div class="report-stat-item"><span class="rs-label">p95</span><span class="rs-value" id="rpt-p95">--</span></div>
+          <div class="report-stat-item"><span class="rs-label">p99</span><span class="rs-value" id="rpt-p99">--</span></div>
+          <div class="report-stat-item"><span class="rs-label">Max</span><span class="rs-value" id="rpt-max">--</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const MCP = 'http://localhost:8080/mcp';
+const HEADERS = { 'Content-Type': 'application/json', 'Accept': 'application/json, text/event-stream' };
+
+let rpcId = 0;
+let logCount = 0;
+let suite = null;
+let testCases = [];
+let results = [];
+let inspectorData = {};
+let activeTab = 'request';
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+function now() { return new Date().toLocaleTimeString('en-US', { hour12: false }); }
+
+function toggleTheme() {
+  const cur = document.documentElement.getAttribute('data-theme');
+  document.documentElement.setAttribute('data-theme', cur === 'dark' ? 'light' : 'dark');
+}
+
+function setConnected(on, label) {
+  document.getElementById('status-dot').className = 'dot ' + (on ? 'on' : 'off');
+  document.getElementById('status-text').textContent = label || (on ? 'Connected' : 'Disconnected');
+}
+
+async function mcpCall(method, params = {}) {
+  const body = { jsonrpc: '2.0', id: ++rpcId, method, params };
+  const res = await fetch(MCP, { method: 'POST', headers: HEADERS, body: JSON.stringify(body) });
+  const text = await res.text();
+  if (text.includes('data: ')) {
+    const lines = text.split('\n').filter(l => l.startsWith('data: '));
+    return { request: body, response: JSON.parse(lines[lines.length - 1].substring(6)) };
+  }
+  return { request: body, response: JSON.parse(text) };
+}
+
+function addLog(msg) {
+  const log = document.getElementById('flow-log');
+  const empty = log.querySelector('.flow-empty');
+  if (empty) empty.remove();
+  logCount++;
+  const entry = document.createElement('div');
+  entry.className = 'flow-entry';
+  entry.innerHTML = `<span class="flow-time mono">[${now()}]</span><span class="flow-msg">${msg}</span>`;
+  log.prepend(entry);
+  document.getElementById('log-count').textContent = logCount + ' entries';
+}
+
+function showJson(obj, method) {
+  const view = document.getElementById('json-view');
+  if (method) document.getElementById('inspector-label').textContent = method;
+  const json = JSON.stringify(obj, null, 2);
+  view.innerHTML = json
+    .replace(/("(?:[^"\\]|\\.)*")(\s*:)/g, '<span class="jk">$1</span>$2')
+    .replace(/:\s*("(?:[^"\\]|\\.)*")/g, ': <span class="js">$1</span>')
+    .replace(/:\s*(\d+(?:\.\d+)?)/g, ': <span class="jn">$1</span>')
+    .replace(/:\s*(true|false|null)/g, ': <span class="jb">$1</span>');
+}
+
+function showTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll('.inspector-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  if (inspectorData[tab]) showJson(inspectorData[tab], inspectorData.label || '--');
+  else document.getElementById('json-view').textContent = 'No data for this tab.';
+}
+
+function animateArrow(id, reverse) {
+  const arrow = document.getElementById(id);
+  arrow.classList.add(reverse ? 'pass' : 'active');
+  const pkt = document.createElement('span');
+  pkt.className = 'packet' + (reverse ? ' reverse' : '');
+  arrow.appendChild(pkt);
+  setTimeout(() => { pkt.remove(); arrow.classList.remove('active', 'pass'); }, 700);
+}
+
+function setNodeState(id, state) {
+  const el = document.getElementById(id);
+  el.classList.remove('active', 'pass', 'fail');
+  if (state) el.classList.add(state);
+}
+
+function updateStats() {
+  const passed = results.filter(r => r.passed).length;
+  const failed = results.filter(r => r.passed === false).length;
+  const total = testCases.length;
+  const ran = passed + failed;
+
+  document.getElementById('stat-passed').textContent = passed;
+  document.getElementById('stat-passed-sub').textContent = ran > 0 ? `${Math.round(passed/ran*100)}% of executed` : '--';
+  document.getElementById('stat-failed').textContent = failed;
+  document.getElementById('stat-failed-sub').textContent = failed > 0 ? 'Needs investigation' : ran > 0 ? 'All passing' : '--';
+
+  if (ran > 0) {
+    const acc = Math.round(passed / ran * 1000) / 10;
+    document.getElementById('stat-accuracy').textContent = acc + '%';
+    document.getElementById('stat-accuracy').className = 'stat-value ' + (acc >= 100 ? 'good' : acc >= 80 ? 'warn' : 'crit');
+    document.getElementById('stat-accuracy-sub').textContent = `${passed}/${ran} passed`;
+  }
+
+  const latencies = results.filter(r => r.latency > 0).map(r => r.latency);
+  if (latencies.length > 0) {
+    const avg = Math.round(latencies.reduce((a, b) => a + b, 0) / latencies.length);
+    document.getElementById('stat-latency').textContent = avg + 'ms';
+    document.getElementById('stat-latency').className = 'stat-value ' + (avg < 100 ? 'good' : avg < 500 ? 'warn' : 'crit');
+  }
+}
+
+function parseContent(response) {
+  const content = response.result?.content;
+  if (!content || !content.length) return null;
+  if (content.length === 1) {
+    try { return JSON.parse(content[0].text); } catch { return content[0]; }
+  }
+  return content.map(c => { try { return JSON.parse(c.text); } catch { return c; } });
+}
+
+function compareFields(actual, expected) {
+  for (const key of Object.keys(expected)) {
+    const ev = expected[key];
+    const av = actual?.[key];
+    if (av === undefined) return 'Missing field: ' + key;
+    if (typeof ev === 'number') {
+      if (Number(av) !== ev) return `Field ${key}: expected ${ev}, got ${av}`;
+    } else if (String(av) !== String(ev)) {
+      return `Field ${key}: expected ${ev}, got ${av}`;
+    }
+  }
+  return null;
+}
+
+function renderResultsTable() {
+  const area = document.getElementById('results-area');
+  let html = '<table class="results-table"><thead><tr><th></th><th>Case ID</th><th>Tool</th><th>Description</th><th style="text-align:right">Latency</th></tr></thead><tbody>';
+  for (let i = 0; i < testCases.length; i++) {
+    const tc = testCases[i];
+    const r = results[i];
+    let statusHtml, statusClass = '';
+    if (!r) {
+      statusHtml = '<span class="status-icon status-pending">&#8212;</span>';
+    } else if (r.passed) {
+      statusHtml = '<span class="status-icon status-pass">&#10003;</span>';
+      statusClass = '';
+    } else {
+      statusHtml = '<span class="status-icon status-fail">&#10007;</span>';
+      statusClass = '';
+    }
+    const lat = r ? r.latency + 'ms' : '--';
+    html += `<tr class="${statusClass}" onclick="inspectCase(${i})" id="case-row-${i}">
+      <td>${statusHtml}</td>
+      <td class="case-id mono">${esc(tc.id)}</td>
+      <td class="tool-name mono">${esc(tc.tool)}</td>
+      <td>${esc(tc.description || '')}</td>
+      <td class="latency-val mono">${lat}</td>
+    </tr>`;
+  }
+  html += '</tbody></table>';
+  area.innerHTML = html;
+  document.getElementById('results-badge').textContent = testCases.length + ' cases';
+}
+
+function inspectCase(idx) {
+  document.querySelectorAll('.results-table tr').forEach(tr => tr.classList.remove('selected'));
+  const row = document.getElementById('case-row-' + idx);
+  if (row) row.classList.add('selected');
+
+  const tc = testCases[idx];
+  const r = results[idx];
+  inspectorData = {
+    label: tc.id,
+    request: { method: 'tools/call', params: { name: tc.tool, arguments: tc.arguments } },
+    response: r?.response || null,
+    expected: tc.expect || (tc.expectError ? { expectError: true, errorContains: tc.errorContains } : tc.expectCount != null ? { expectCount: tc.expectCount } : null)
+  };
+  showTab(activeTab);
+}
+
+// Step 1: Initialize
+async function stepInit() {
+  resetAll(true);
+  setConnected(false, 'Connecting...');
+  const btn = document.getElementById('btn-init');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Connecting...';
+
+  try {
+    setNodeState('node-eval', 'active');
+    addLog('Connecting to MCP server at <strong>:8080</strong>...');
+    await delay(300);
+    animateArrow('arrow-mcp', false);
+    await delay(400);
+    setNodeState('node-server', 'active');
+
+    const init = await mcpCall('initialize', {
+      protocolVersion: '2025-03-26', capabilities: {},
+      clientInfo: { name: 'eval-console', version: '1.0' }
+    });
+
+    const serverName = init.response.result?.serverInfo?.name || 'unknown';
+    const version = init.response.result?.serverInfo?.version || '';
+    addLog(`Session established: <strong>${esc(serverName)}</strong> v${esc(version)}`);
+
+    animateArrow('arrow-mcp', true);
+    await delay(300);
+
+    addLog('Discovering registered tools...');
+    animateArrow('arrow-mcp', false);
+    await delay(300);
+
+    const toolsRes = await mcpCall('tools/list');
+    const tools = toolsRes.response.result?.tools || [];
+
+    animateArrow('arrow-mcp', true);
+    await delay(200);
+
+    addLog(`Found <strong>${tools.length} tools</strong>: ${tools.map(t => '<strong class="mono">' + esc(t.name) + '</strong>').join(', ')}`);
+
+    setNodeState('node-eval', 'pass');
+    setNodeState('node-server', 'pass');
+    setConnected(true, serverName + ' v' + version);
+
+    showJson(init.response, 'initialize');
+    document.getElementById('btn-load').disabled = false;
+  } catch (err) {
+    addLog(`<span class="fail-label">ERROR</span> Connection failed: ${esc(err.message)}`);
+    setConnected(false, 'Failed');
+    setNodeState('node-eval', 'fail');
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<span class="step-num">1</span> Initialize';
+}
+
+// Step 2: Load Suite
+async function stepLoadSuite() {
+  const btn = document.getElementById('btn-load');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Loading...';
+
+  const suiteName = document.getElementById('suite-select').value;
+  addLog(`Loading suite: <strong>${esc(suiteName)}</strong>...`);
+
+  setNodeState('node-golden', 'active');
+  animateArrow('arrow-load', false);
+  await delay(400);
+  setNodeState('node-eval', 'active');
+
+  try {
+    const res = await fetch(`golden/${suiteName}.json`);
+    suite = await res.json();
+
+    testCases = [];
+    results = [];
+
+    if (suite.cases) {
+      for (const c of suite.cases) testCases.push(c);
+    }
+    if (suite.workflows) {
+      for (const wf of suite.workflows) {
+        for (const step of wf.steps) {
+          testCases.push({
+            ...step,
+            id: wf.id + '/' + step.id,
+            description: step.description || wf.description + ' - ' + step.id
+          });
+        }
+      }
+    }
+
+    animateArrow('arrow-load', true);
+    await delay(300);
+
+    setNodeState('node-golden', 'pass');
+    setNodeState('node-eval', 'pass');
+
+    addLog(`Loaded <strong>${testCases.length} test cases</strong> from ${esc(suite.name)}: ${esc(suite.description || '')}`);
+
+    document.getElementById('stat-total').textContent = testCases.length;
+    document.getElementById('stat-total').className = 'stat-value blue';
+    document.getElementById('stat-total-sub').textContent = suite.name;
+
+    renderResultsTable();
+    document.getElementById('btn-run').disabled = false;
+  } catch (err) {
+    addLog(`<span class="fail-label">ERROR</span> Failed to load suite: ${esc(err.message)}`);
+    setNodeState('node-golden', 'fail');
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<span class="step-num">2</span> Load Suite';
+}
+
+// Step 3: Run Evaluation
+async function stepRunEval() {
+  const btn = document.getElementById('btn-run');
+  btn.disabled = true;
+  results = [];
+
+  const suiteName = document.getElementById('suite-select').value;
+  addLog(`Starting evaluation of <strong>${testCases.length}</strong> cases...`);
+
+  const extractions = {};
+
+  for (let i = 0; i < testCases.length; i++) {
+    const tc = testCases[i];
+    btn.innerHTML = `<span class="spinner"></span> Running ${i + 1}/${testCases.length}...`;
+
+    setNodeState('node-eval', 'active');
+    setNodeState('node-server', 'active');
+    animateArrow('arrow-mcp', false);
+
+    addLog(`Running <strong class="mono">${esc(tc.id)}</strong> (${esc(tc.tool)})...`);
+
+    const resolvedArgs = {};
+    for (const [k, v] of Object.entries(tc.arguments || {})) {
+      let val = String(v);
+      for (const [ek, ev] of Object.entries(extractions)) {
+        val = val.replace('${' + ek + '}', ev);
+      }
+      resolvedArgs[k] = val;
+    }
+
+    const start = performance.now();
+    let passed = false;
+    let error = null;
+    let response = null;
+
+    try {
+      const res = await mcpCall('tools/call', { name: tc.tool, arguments: resolvedArgs });
+      response = res.response;
+      const latency = Math.round(performance.now() - start);
+
+      animateArrow('arrow-mcp', true);
+
+      if (response.error) {
+        if (tc.expectError) {
+          const msg = response.error.message || '';
+          if (!tc.errorContains || msg.includes(tc.errorContains)) {
+            passed = true;
+          } else {
+            error = 'Error message does not contain: ' + tc.errorContains;
+          }
+        } else {
+          error = 'Unexpected error: ' + (response.error.message || JSON.stringify(response.error));
+        }
+      } else {
+        const content = response.result?.content || [];
+        const isError = content.length > 0 && content[0].isError;
+
+        if (tc.expectError) {
+          if (isError) {
+            const errText = content[0].text || '';
+            if (!tc.errorContains || errText.includes(tc.errorContains)) {
+              passed = true;
+            } else {
+              error = 'Error text does not contain: ' + tc.errorContains;
+            }
+          } else {
+            error = 'Expected error but got success';
+          }
+        } else {
+          const actual = parseContent(response);
+
+          if (tc.expectCount != null) {
+            const count = Array.isArray(actual) ? actual.length : 1;
+            if (count === tc.expectCount) {
+              passed = true;
+            } else {
+              error = `Expected ${tc.expectCount} items, got ${count}`;
+            }
+          } else if (tc.expect) {
+            const mismatch = compareFields(actual, tc.expect);
+            if (mismatch) {
+              error = mismatch;
+            } else {
+              passed = true;
+            }
+          } else {
+            passed = true;
+          }
+
+          if (passed && tc.extractField && tc.extractAs && actual) {
+            const val = actual[tc.extractField];
+            if (val !== undefined) extractions[tc.extractAs] = String(val);
+          }
+        }
+      }
+
+      results[i] = { passed, latency, response, error };
+
+    } catch (err) {
+      const latency = Math.round(performance.now() - start);
+      if (tc.expectError) {
+        passed = true;
+        results[i] = { passed: true, latency, response: { error: err.message }, error: null };
+      } else {
+        results[i] = { passed: false, latency, response: null, error: 'Exception: ' + err.message };
+      }
+    }
+
+    if (results[i].passed) {
+      addLog(`<span class="pass-label">PASS</span> ${esc(tc.id)} <span class="mono">(${results[i].latency}ms)</span>`);
+    } else {
+      addLog(`<span class="fail-label">FAIL</span> ${esc(tc.id)}: ${esc(results[i].error)}`);
+    }
+
+    renderResultsTable();
+    updateStats();
+    await delay(150);
+  }
+
+  const passCount = results.filter(r => r.passed).length;
+  setNodeState('node-eval', passCount === testCases.length ? 'pass' : 'fail');
+  setNodeState('node-server', 'pass');
+
+  addLog(`Evaluation complete: <strong>${passCount}/${testCases.length}</strong> passed`);
+
+  btn.disabled = false;
+  btn.innerHTML = '<span class="step-num">3</span> Run Evaluation';
+  document.getElementById('btn-report').disabled = false;
+}
+
+// Step 4: View Report
+function stepReport() {
+  const card = document.getElementById('report-card');
+  card.classList.add('visible');
+
+  const passed = results.filter(r => r.passed).length;
+  const failed = results.filter(r => !r.passed).length;
+  const total = results.length;
+  const accuracy = total > 0 ? Math.round(passed / total * 1000) / 10 : 0;
+
+  const accEl = document.getElementById('report-accuracy-num');
+  accEl.textContent = accuracy + '%';
+  accEl.style.color = accuracy >= 100 ? 'var(--status-good-text)' : accuracy >= 80 ? 'var(--cat-4)' : 'var(--status-critical)';
+
+  document.getElementById('rpt-total').textContent = total;
+  document.getElementById('rpt-passed').textContent = passed;
+  document.getElementById('rpt-failed').textContent = failed;
+  document.getElementById('rpt-suite').textContent = suite?.name || '--';
+
+  const latencies = results.filter(r => r.latency > 0).map(r => r.latency).sort((a, b) => a - b);
+  if (latencies.length > 0) {
+    const p = (pct) => latencies[Math.min(Math.ceil(pct / 100 * latencies.length) - 1, latencies.length - 1)];
+    document.getElementById('rpt-p50').textContent = p(50) + 'ms';
+    document.getElementById('rpt-p95').textContent = p(95) + 'ms';
+    document.getElementById('rpt-p99').textContent = p(99) + 'ms';
+    document.getElementById('rpt-max').textContent = latencies[latencies.length - 1] + 'ms';
+  }
+
+  document.getElementById('report-badge').textContent = accuracy + '% accuracy';
+  addLog('Report generated. Scroll down to view the full evaluation report.');
+  card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function resetAll(keepLog) {
+  rpcId = 0; logCount = 0; suite = null; testCases = []; results = [];
+  inspectorData = {}; activeTab = 'request';
+
+  ['node-golden', 'node-eval', 'node-server'].forEach(id => setNodeState(id, null));
+  setConnected(false);
+
+  document.getElementById('stat-total').textContent = '--';
+  document.getElementById('stat-total').className = 'stat-value';
+  document.getElementById('stat-total-sub').textContent = 'No suite loaded';
+  document.getElementById('stat-passed').textContent = '0';
+  document.getElementById('stat-passed-sub').textContent = '--';
+  document.getElementById('stat-failed').textContent = '0';
+  document.getElementById('stat-failed-sub').textContent = '--';
+  document.getElementById('stat-accuracy').textContent = '--';
+  document.getElementById('stat-accuracy').className = 'stat-value';
+  document.getElementById('stat-accuracy-sub').textContent = '--';
+  document.getElementById('stat-latency').textContent = '--';
+  document.getElementById('stat-latency').className = 'stat-value';
+
+  document.getElementById('btn-load').disabled = true;
+  document.getElementById('btn-run').disabled = true;
+  document.getElementById('btn-report').disabled = true;
+  document.getElementById('report-card').classList.remove('visible');
+
+  if (!keepLog) {
+    document.getElementById('results-area').innerHTML =
+      '<div class="flow-empty"><div class="flow-empty-icon">&#9745;</div>Click <strong>Initialize</strong> then <strong>Load Suite</strong> to begin.</div>';
+    document.getElementById('flow-log').innerHTML =
+      '<div class="flow-empty"><div class="flow-empty-icon">&#9678;</div>Evaluation events appear here.</div>';
+    document.getElementById('json-view').textContent = 'Select a test case to inspect its details.';
+    document.getElementById('inspector-label').textContent = '--';
+    document.getElementById('log-count').textContent = '0 entries';
+    document.getElementById('results-badge').textContent = '0 cases';
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,74 @@
+{
+  "name": "workflow-regression",
+  "description": "Verify multi-step agent workflows produce correct chained results",
+  "workflows": [
+    {
+      "id": "customer-debug-workflow",
+      "description": "Debug customer: lookup status, check region health, verify SLA",
+      "steps": [
+        {
+          "id": "lookup-customer",
+          "tool": "getCustomerStatus",
+          "arguments": {"customerId": "CUST-4091"},
+          "expect": {"status": "ACTIVE", "primaryRegion": "US-EAST-1"},
+          "extractField": "primaryRegion",
+          "extractAs": "region"
+        },
+        {
+          "id": "check-region-health",
+          "tool": "getZoneHealthLogs",
+          "arguments": {"zoneId": "${region}"},
+          "expectCount": 6
+        },
+        {
+          "id": "verify-sla",
+          "tool": "getSLACompliance",
+          "arguments": {"serviceId": "api-gateway"},
+          "expect": {"compliancePct": 99.97, "violationCount": 0}
+        }
+      ]
+    },
+    {
+      "id": "customer-audit-workflow",
+      "description": "Audit customer: lookup status, pull audit trail, check for denied events",
+      "steps": [
+        {
+          "id": "lookup-customer",
+          "tool": "getCustomerStatus",
+          "arguments": {"customerId": "CUST-4091"},
+          "expect": {"status": "ACTIVE"}
+        },
+        {
+          "id": "pull-audit-trail",
+          "tool": "getAuditTrail",
+          "arguments": {"customerId": "CUST-4091"},
+          "expectCount": 5
+        }
+      ]
+    },
+    {
+      "id": "multi-region-health-check",
+      "description": "Check health across all customer regions",
+      "steps": [
+        {
+          "id": "check-us-east",
+          "tool": "getZoneHealthLogs",
+          "arguments": {"zoneId": "US-EAST-1"},
+          "expectCount": 6
+        },
+        {
+          "id": "check-eu-west",
+          "tool": "getZoneHealthLogs",
+          "arguments": {"zoneId": "EU-WEST-1"},
+          "expectCount": 6
+        },
+        {
+          "id": "check-ap-south",
+          "tool": "getZoneHealthLogs",
+          "arguments": {"zoneId": "AP-SOUTH-1"},
+          "expectCount": 6
+        }
+      ]
+    }
+  ]
+}
