@@ -15,6 +15,67 @@ updates:
         patterns:
           - "io.quarkiverse.mcp*"
 
+  - package-ecosystem: "maven"
+    directory: "/part1-quarkus-mcp"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "part-1"
+    groups:
+      quarkus:
+        patterns:
+          - "io.quarkus*"
+      mcp-server:
+        patterns:
+          - "io.quarkiverse.mcp*"
+
+  - package-ecosystem: "maven"
+    directory: "/part2-agentgateway/extmcp-guardrail"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "part-2"
+    groups:
+      quarkus:
+        patterns:
+          - "io.quarkus*"
+
+  - package-ecosystem: "maven"
+    directory: "/part4-multi-agent"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "part-4"
+    groups:
+      quarkus:
+        patterns:
+          - "io.quarkus*"
+      a2a-sdk:
+        patterns:
+          - "org.a2aproject*"
+      langchain4j:
+        patterns:
+          - "io.quarkiverse.langchain4j*"
+
+  - package-ecosystem: "maven"
+    directory: "/part5-evaluation"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "part-5"
+    groups:
+      quarkus:
+        patterns:
+          - "io.quarkus*"
+
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
