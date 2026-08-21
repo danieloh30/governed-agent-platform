@@ -764,6 +764,6 @@ This 5-part series built a complete governed AI agent infrastructure:
 | 2 | [Security proxy with auth and guardrails](../part2-agentgateway/tutorial.md) | agentgateway JWT, RBAC, ExtMCP |
 | 3 | [End-to-end distributed tracing](../part3-observability/tutorial.md) | OpenTelemetry + Jaeger |
 | 4 | [Multi-agent orchestration with governance](../part4-multi-agent/tutorial.md) | A2A protocol + AGENTS.md |
-| 5 | Automated evaluation and regression testing | Golden datasets + MCP eval runner |
+| 5 | [Automated evaluation and regression testing](../part5-evaluation/tutorial.md) | Golden datasets + MCP eval runner |
 
 Each layer addresses a different production concern — correctness, security, observability, orchestration, and now continuous verification. Together they provide the governance framework that platform engineers need to safely deploy autonomous AI agents against enterprise infrastructure.
