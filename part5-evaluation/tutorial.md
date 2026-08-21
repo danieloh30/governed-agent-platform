@@ -2,6 +2,14 @@
 
 > **TL;DR** — Build an automated evaluation framework that uses golden datasets to verify MCP tool accuracy, validate Bean Validation boundaries, and catch regressions in multi-step agent workflows — all runnable from CI/CD.
 
+> **Enterprise context — Acme FinServ.** A SOC 2 control is only real if it *keeps working*.
+> Acme's auditors don't just want to see that the `@Pattern` validation boundary (Part 1) or the
+> HITL gate (Part 4) exist today — they want evidence the controls **can't silently regress**.
+> This part turns that into **continuous control validation**: golden datasets that fail the CI
+> build the moment a refactor relaxes a validation constraint or changes a governed tool's output.
+> The `validation-boundary` suite is, in effect, an automated auditor that runs on every pull
+> request.
+
 ## The Core Problem
 
 In [Part 1](../part1-quarkus-mcp/tutorial.md) we built a Quarkus MCP tool server with Jakarta Bean Validation. In [Part 2](../part2-agentgateway/tutorial.md) we secured it with agentgateway. In [Part 3](../part3-observability/tutorial.md) we added distributed tracing. In [Part 4](../part4-multi-agent/tutorial.md) we orchestrated multi-agent workflows with A2A. The architecture works, it is secure, and it is observable — but how do you know it stays correct across code changes?
@@ -173,84 +181,62 @@ The `extractField` and `extractAs` fields enable variable passing between steps.
 
 ## Step 2: Building the MCP Eval Client
 
-The eval client connects to the MCP server using the same JSON-RPC protocol that Goose and agentgateway use. We use `java.net.http.HttpClient` — no external HTTP library needed:
+The eval client needs to speak the MCP wire protocol — JSON-RPC over Streamable HTTP, the same transport Goose and agentgateway use. We *could* hand-roll that with `java.net.http.HttpClient`: build the JSON-RPC envelope, manage an incrementing request id, send an `initialize` handshake, and parse responses that arrive as either plain JSON or Server-Sent Events (`data:`-prefixed lines). That's ~60 lines of protocol plumbing that has nothing to do with evaluation.
+
+Instead we reuse the **managed `McpClient`** from `quarkus-langchain4j-mcp` — the exact extension Part 4 introduced for agent-to-tool calls. The transport, handshake, and SSE-vs-JSON handling all disappear into the extension:
 
 ```java
 @ApplicationScoped
 public class McpEvalClient {
 
-    @ConfigProperty(name = "eval.mcp.endpoint",
-                    defaultValue = "http://localhost:8080/mcp")
-    String mcpEndpoint;
+    @Inject
+    @McpClientName("mcp-under-test")
+    McpClient mcpClient;
 
     @Inject
     ObjectMapper mapper;
 
-    private final HttpClient http = HttpClient.newHttpClient();
-    private final AtomicInteger rpcId = new AtomicInteger(0);
-
-    public JsonNode callTool(String name, Map<String, Object> arguments)
+    public String callTool(String toolName, Map<String, Object> arguments)
             throws Exception {
-        ObjectNode params = mapper.createObjectNode();
-        params.put("name", name);
-        params.set("arguments", mapper.valueToTree(arguments));
-        return mcpCall("tools/call", params);
+        String argsJson = mapper.writeValueAsString(arguments);
+        var result = mcpClient.executeTool(
+                ToolExecutionRequest.builder()
+                        .name(toolName)
+                        .arguments(argsJson)
+                        .build());
+        return result.resultText();
     }
 
-    private JsonNode mcpCall(String method, JsonNode params) throws Exception {
-        ObjectNode body = mapper.createObjectNode();
-        body.put("jsonrpc", "2.0");
-        body.put("id", rpcId.incrementAndGet());
-        body.put("method", method);
-
-        if ("initialize".equals(method)) {
-            ObjectNode initParams = mapper.createObjectNode();
-            initParams.put("protocolVersion", "2025-03-26");
-            initParams.putObject("capabilities");
-            initParams.putObject("clientInfo")
-                    .put("name", "eval-runner")
-                    .put("version", "1.0");
-            body.set("params", initParams);
-        } else {
-            body.set("params", params);
+    public JsonNode callToolAsJson(String toolName, Map<String, Object> arguments)
+            throws Exception {
+        String text = callTool(toolName, arguments);
+        if (text == null || text.isBlank()) {
+            return mapper.createObjectNode();
         }
-
-        var request = HttpRequest.newBuilder()
-                .uri(URI.create(mcpEndpoint))
-                .header("Content-Type", "application/json")
-                .header("Accept", "application/json, text/event-stream")
-                .POST(HttpRequest.BodyPublishers.ofString(
-                        mapper.writeValueAsString(body)))
-                .build();
-
-        var response = http.send(request,
-                HttpResponse.BodyHandlers.ofString());
-        String responseBody = response.body();
-
-        // Handle both JSON and SSE response formats
-        if (responseBody.contains("data: ")) {
-            String data = responseBody.lines()
-                    .filter(l -> l.startsWith("data: "))
-                    .reduce((a, b) -> b)
-                    .map(l -> l.substring(6))
-                    .orElse(responseBody);
-            return mapper.readTree(data);
+        try {
+            return mapper.readTree(text);
+        } catch (Exception e) {
+            return mapper.valueToTree(Map.of("text", text));
         }
-        return mapper.readTree(responseBody);
+    }
+
+    public int getToolCount() {
+        return mcpClient.listTools().size();
     }
 }
 ```
 
-The key design decision is the SSE handling at the bottom. MCP over Streamable HTTP can return responses as plain JSON or as Server-Sent Events (with `data:` prefix lines). When the eval runner connects directly to Part 1's Quarkus server on `:8080`, it gets JSON. When it connects through agentgateway on `:3000`, it gets SSE. The client handles both transparently — extract the last `data:` line if present, otherwise parse the body as JSON.
+The whole client is now ~35 lines and contains **zero** protocol code — `mcpClient.executeTool(...)` handles the JSON-RPC envelope, the `initialize` handshake, and the SSE/JSON response formats transparently. The only Jackson we keep is for the eval-specific concern of turning tool output into a `JsonNode` we can assert against. This is the same boilerplate-reduction lesson from Parts 1–4, applied to the test harness itself: let the extension own the wire protocol.
 
-The `mcpEndpoint` is configurable via `application.properties`, so you can point the eval runner at any MCP-compatible endpoint:
+The client is configured declaratively in `application.properties` — no endpoint parsing code, just point the named client at any MCP-compatible server:
 
 ```properties
-# Direct to Part 1
-eval.mcp.endpoint=http://localhost:8080/mcp
+# The MCP server under test (Part 1 directly)
+quarkus.langchain4j.mcp.mcp-under-test.transport-type=streamable-http
+quarkus.langchain4j.mcp.mcp-under-test.url=http://localhost:8080/mcp
 
-# Through agentgateway (Part 2)
-# eval.mcp.endpoint=http://localhost:3000/mcp
+# Through agentgateway (Part 2) — just change the URL:
+# quarkus.langchain4j.mcp.mcp-under-test.url=http://localhost:3000/mcp
 ```
 
 ## Step 3: Implementing the Evaluation Engine
@@ -611,8 +597,9 @@ quarkus.http.port=8083
 quarkus.http.cors=true
 quarkus.http.cors.origins=/.*/
 
-# MCP server to evaluate
-eval.mcp.endpoint=http://localhost:8080/mcp
+# Managed MCP client (quarkus-langchain4j-mcp) — the server under test
+quarkus.langchain4j.mcp.mcp-under-test.transport-type=streamable-http
+quarkus.langchain4j.mcp.mcp-under-test.url=http://localhost:8080/mcp
 ```
 
 ## Step 5: Running the Interactive Demo
@@ -742,6 +729,21 @@ jobs:
 | **Workflow regression testing** | Multi-step agent workflows with variable extraction catch integration breakages |
 | **CI/CD integration** | REST API + exit-code script enables automated regression gates |
 | **Latency tracking** | P50/P95/P99/max latency per suite detects performance regressions |
+
+### The Business Case (Acme FinServ)
+
+For a platform director or CISO, the value isn't "we have tests" — it's what each control costs
+when it *isn't* automated. The suites map directly to avoided business risk:
+
+| Control (suite) | Manual cost today | Automated cost | Business impact |
+|-----------------|-------------------|----------------|-----------------|
+| `validation-boundary` | A relaxed `@Pattern` is discovered via a production PII/card-data leak → PCI/GDPR incident + audit finding | Fails the PR in seconds | Turns a potential breach into a red CI check |
+| `tool-accuracy` | An agent makes a wrong decision on a silently-changed field (`ENTERPRISE_TIER` → `ENTERPRISE`); found by a customer | Caught on every commit | Protects downstream agent decisions and customer trust |
+| `workflow-regression` | A broken multi-step workflow surfaces in production support tickets | Caught before merge | Reduces incident volume and MTTD |
+| All suites (audit evidence) | Auditor asks "prove the controls still work" → engineers scramble to produce evidence | Every run is timestamped evidence | Cuts SOC 2 audit-prep hours; controls are *continuously* attested |
+
+The one-time cost is writing the golden datasets; the recurring cost is seconds of CI time.
+The avoided cost is a single compliance incident.
 
 ### Production Considerations
 

@@ -11,17 +11,14 @@ import org.a2aproject.sdk.spec.Message;
 import org.a2aproject.sdk.spec.Part;
 import org.a2aproject.sdk.spec.TextPart;
 import org.a2aproject.sdk.spec.UnsupportedOperationError;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 
 @ApplicationScoped
 public class AgentExecutorProducer {
-
-    private static final Logger LOG = LoggerFactory.getLogger(AgentExecutorProducer.class);
 
     @Inject
     WorkflowEngine engine;
@@ -44,7 +41,7 @@ public class AgentExecutorProducer {
             try {
                 String messageText = extractText(context.getMessage());
                 String taskId = context.getTaskId();
-                LOG.info("A2A task received: id={}, message='{}'", taskId, messageText);
+                Log.infof("A2A task received: id=%s, message='%s'", taskId, messageText);
 
                 if (context.getTask() != null) {
                     var currentState = context.getTask().status().state();
@@ -58,42 +55,42 @@ public class AgentExecutorProducer {
 
                 switch (task.getState()) {
                     case FAILED -> {
-                        LOG.info("Task {} blocked by governance", taskId);
+                        Log.infof("Task %s blocked by governance", taskId);
                         emitter.fail(agentMessage(emitter, task.getLastAgentMessage()));
                     }
                     case INPUT_REQUIRED -> {
-                        LOG.info("Task {} requires HITL approval", taskId);
+                        Log.infof("Task %s requires HITL approval", taskId);
                         emitter.startWork();
                         emitter.requiresInput(agentMessage(emitter, task.getLastAgentMessage()));
                     }
                     case COMPLETED -> {
-                        LOG.info("Task {} auto-approved and completed", taskId);
+                        Log.infof("Task %s auto-approved and completed", taskId);
                         emitter.startWork();
                         emitter.addArtifact(List.of(new TextPart(task.getLastAgentMessage())));
                         emitter.complete();
                     }
                     default -> {
-                        LOG.warn("Task {} in unexpected state: {}", taskId, task.getState());
+                        Log.warnf("Task %s in unexpected state: %s", taskId, task.getState());
                         emitter.fail(agentMessage(emitter, "Unexpected task state: " + task.getState()));
                     }
                 }
             } catch (A2AError e) {
                 throw e;
             } catch (Exception e) {
-                LOG.error("Error processing A2A task", e);
+                Log.error("Error processing A2A task", e);
                 throw new InternalError("Processing failed: " + e.getMessage());
             }
         }
 
         private void handleHitlFollowUp(String taskId, String messageText, AgentEmitter emitter) throws A2AError {
             if (messageText.toUpperCase().contains("APPROVED")) {
-                LOG.info("Task {} approved via A2A", taskId);
+                Log.infof("Task %s approved via A2A", taskId);
                 TaskInstance task = engine.approveTask(taskId);
                 emitter.startWork();
                 emitter.addArtifact(List.of(new TextPart(task.getLastAgentMessage())));
                 emitter.complete();
             } else {
-                LOG.info("Task {} rejected via A2A", taskId);
+                Log.infof("Task %s rejected via A2A", taskId);
                 engine.rejectTask(taskId, messageText);
                 emitter.fail(agentMessage(emitter, "Task rejected: " + messageText));
             }
@@ -102,7 +99,7 @@ public class AgentExecutorProducer {
         @Override
         public void cancel(RequestContext context, AgentEmitter emitter) throws A2AError {
             String taskId = context.getTaskId();
-            LOG.info("Task {} cancel requested", taskId);
+            Log.infof("Task %s cancel requested", taskId);
             try {
                 engine.cancelTask(taskId);
                 emitter.cancel();

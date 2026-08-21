@@ -2,6 +2,14 @@
 
 > **TL;DR** — Add W3C Trace Context propagation across Goose, agentgateway, and Quarkus to turn opaque agentic tool loops into fully observable distributed traces in Jaeger.
 
+> **Enterprise context — Acme FinServ.** **SOC 2 CC7 (system monitoring)** requires that Acme
+> can detect and *investigate* anomalous activity. When an agent-driven workflow touches customer
+> data at 2 AM, "we have logs somewhere" is not an answer an auditor accepts. The distributed
+> trace built in this part is the **forensic evidence trail**: a single trace ID that ties the
+> Goose prompt to every agentgateway policy decision and every Quarkus tool call, so a post-incident
+> review can reconstruct exactly which agent did what, in what order, and how long each governed
+> hop took.
+
 ## The Core Problem
 
 In [Part 1](https://dzone.com/articles/building-governed-mcp-tool-services-with-quarkus-and-goose) we built a Quarkus MCP tool server. In [Part 2](../part2-agentgateway/tutorial.md) we secured it with agentgateway's JWT authentication, RBAC, and ExtMCP guardrails. The architecture works — but when something goes wrong in production, you're flying blind.

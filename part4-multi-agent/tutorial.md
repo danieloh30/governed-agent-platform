@@ -2,6 +2,16 @@
 
 > **TL;DR** — Bridge Goose agent interactions with Quarkus Flow state machines governed by AGENTS.md rules and integrated via the Agent2Agent (A2A) protocol — the Linux Foundation standard for multi-agent interoperability — to enforce human-in-the-loop approvals on high-risk enterprise workflows.
 
+> **Enterprise context — Acme FinServ.** Parts 1–3 governed Acme's *customer-service* tools.
+> This part governs the higher-risk **platform and financial operations** the same team owns —
+> `migrate-schema`, `deploy-production`, and `process-refund` — where an ungoverned agent could
+> alter a production database or move money. This is a **change-management / SOX-style controls**
+> problem: high-impact changes require a documented, approved, auditable gate. The AGENTS.md
+> policy plus the human-in-the-loop (HITL) approval step *is* that control. Note the
+> `process-refund` example enforces a **$1,000 approval threshold** — a real financial-authority
+> limit — so Sofia (SRE) can auto-run low-risk operations while anything above the line pauses
+> for a named human approver.
+
 ## The Core Problem
 
 In [Part 1](../part1-quarkus-mcp/tutorial.md) we built a Quarkus MCP tool server. In [Part 2](../part2-agentgateway/tutorial.md) we secured it with agentgateway. In [Part 3](../part3-observability/tutorial.md) we added distributed tracing. The architecture handles single-request tool calls well — but enterprise processes are rarely single-step.

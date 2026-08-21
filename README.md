@@ -2,6 +2,35 @@
 
 A multi-part tutorial series for platform engineers building governed AI agent infrastructure with Java.
 
+## The Business Case: Acme FinServ
+
+Every part of this series follows one company so the technology stays tied to a real business problem.
+
+> **Acme FinServ** is a mid-size B2B payments platform: ~200 engineers, ~5,000 enterprise
+> customers, **SOC 2 Type II** certified, **PCI-DSS** in scope for its refund and settlement
+> flows, and **GDPR**-bound for EU customer data (hence the `EU-WEST-1` region that appears in
+> the sample data). The platform team is rolling out the **Goose** AI agent to 50+ engineers
+> and wants to expose internal customer-service and operations tooling to AI agents —
+> **without losing the audit posture, access controls, and change-management discipline that
+> its compliance certifications require.**
+
+That last sentence is the whole series. An AI agent that can call `getAuditTrail`,
+`process-refund`, or `deploy-production` is powerful — and, ungoverned, an audit finding
+waiting to happen. Each part adds one layer of governance and maps it to the compliance driver
+that makes it non-optional:
+
+| Part | Governance layer | Enterprise driver |
+|------|------------------|-------------------|
+| 1 | Input validation on every tool argument | **PCI/GDPR** input integrity — the boundary that stops malformed or injected PII/card data |
+| 2 | JWT auth + RBAC per tool | **SOC 2 CC6** access control — least privilege for *non-human* (agent) identities |
+| 3 | End-to-end distributed tracing | **SOC 2 CC7** monitoring — the evidence trail for post-incident forensics |
+| 4 | AGENTS.md policy + HITL approval gates | **SOX-style change management** — documented controls on high-risk operations |
+| 5 | Golden-dataset regression evaluation | **Continuous control validation** — proof the controls never silently regress |
+
+The personas who show up across the parts: **Maya**, a platform engineer rolling out Goose;
+**Sofia**, an SRE who runs `deploy-production`; and **Priya**, an external SOC 2 auditor who
+needs read-only access to audit trails and nothing else.
+
 ## Tutorial Series
 
 | Part | Title | Directory | What You Build |

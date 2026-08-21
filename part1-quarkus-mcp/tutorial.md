@@ -2,6 +2,15 @@
 
 > **TL;DR** — Build governed, cloud-native Java MCP tool services for Goose agents using Quarkus LangChain4j, Java 25, and Jakarta Bean Validation.
 
+> **Enterprise context — Acme FinServ.** Throughout this series we govern the AI-agent
+> tooling for *Acme FinServ*, a SOC 2 Type II–certified B2B payments platform that is PCI-DSS
+> in scope for its refund flows and GDPR-bound for EU customer data. Maya, a platform engineer,
+> is exposing internal customer-service tools to Goose. In this part, the Bean Validation
+> constraints (`@Pattern`, `@Size`, `@NotNull`) on each tool argument are not cosmetic — they
+> are the **PCI/GDPR input-integrity boundary** that stops a hallucinated or injected customer
+> ID from reaching business logic that touches cardholder and PII data. Part 5 later
+> regression-tests this exact boundary in CI.
+
 ## The Core Problem
 
 Autonomous AI coding agents like Goose go far beyond simple code autocompletion. Built in Rust for speed and portability, Goose runs on your local machine, inspects files, runs terminal commands, and uses tools over the Model Context Protocol (MCP) to automate complex engineering tasks.
@@ -29,7 +38,7 @@ The solution is to build a stateless **MCP Tool Server** in Java using Quarkus. 
 │  ┌──────────────────────────────────────────────────┐  │
 │  │  @Tool Annotations → Auto-registered MCP tools   │  │
 │  │  @ToolArg + Bean Validation → Input hardening    │  │
-│  │  Reactive SmallRye Mutiny → Non-blocking I/O     │  │
+│  │  Java records → Zero-config JSON output          │  │
 │  └──────────────────────────────────────────────────┘  │
 │  - GraalVM Native Image Ready                          │
 │  - OpenTelemetry Instrumented (Part 3)                 │
@@ -43,7 +52,7 @@ The flow has three actors:
 
 - **Goose Agent (Client):** Executes on the developer machine, orchestrating LLM tool loops via MCP. Goose discovers tools automatically and decides which to call based on the developer's natural-language prompt.
 - **MCP HTTP Transport:** Goose sends structured tool calls to the Quarkus backend as HTTP POST requests using standardized MCP methods (`initialize`, `tools/list`, `tools/call`). The Streamable HTTP transport supports both request-response and server-sent events.
-- **Quarkus Microservice:** Validates every parameter with Jakarta Bean Validation, executes reactive business logic via SmallRye Mutiny, and returns structured JSON to Goose.
+- **Quarkus Microservice:** Validates every parameter with Jakarta Bean Validation, runs the tool logic, and returns Java records that Quarkus serializes to structured JSON for Goose with zero mapping code. (Tools can return a plain type for synchronous work, or a Mutiny `Uni<T>` when a tool needs non-blocking I/O — here the data is in-memory, so we keep the signatures simple.)
 
 ## Step 1: Configuring Dependencies in Quarkus
 
@@ -102,13 +111,13 @@ public class CustomerServiceTools {
 
     @Tool(description = "Retrieve the current account status, service tier, "
         + "and primary deployment region for a given customer.")
-    public Uni<CustomerStatusResponse> getCustomerStatus(
+    public CustomerStatusResponse getCustomerStatus(
             @ToolArg(description = "Customer ID formatted as CUST-XXXX")
             @NotNull
             @Pattern(regexp = "^CUST-[0-9]{4,8}$")
             String customerId) {
 
-        CustomerStatusResponse response = switch (customerId) {
+        return switch (customerId) {
             case "CUST-4091" -> new CustomerStatusResponse(
                 "CUST-4091", "ACTIVE", "ENTERPRISE_TIER", "US-EAST-1");
             case "CUST-2187" -> new CustomerStatusResponse(
@@ -118,35 +127,34 @@ public class CustomerServiceTools {
             default -> new CustomerStatusResponse(
                 customerId, "NOT_FOUND", "UNKNOWN", "UNKNOWN");
         };
-        return Uni.createFrom().item(response);
     }
 
     @Tool(description = "Retrieve recent health-check logs and diagnostic "
         + "metrics for a specified availability zone.")
-    public Uni<List<String>> getZoneHealthLogs(
+    public List<String> getZoneHealthLogs(
             @ToolArg(description = "Zone identifier, e.g., US-EAST-1")
             @Size(max = 20)
             String zoneId) {
 
-        return Uni.createFrom().item(List.of(
+        return List.of(
             "[" + zoneId + "] CPU utilization: 42% (healthy)",
             "[" + zoneId + "] Memory pressure: 31% (normal)",
             "[" + zoneId + "] Network I/O: 1.2 Gbps ingress / 0.8 Gbps egress",
             "[" + zoneId + "] Disk IOPS: 12,400 read / 8,300 write (within SLA)",
             "[" + zoneId + "] Active connections: 18,230 (capacity: 50,000)",
             "[" + zoneId + "] Last incident: none in past 72 hours"
-        ));
+        );
     }
 
     @Tool(description = "Track the current status, item count, "
         + "and estimated delivery for an enterprise order.")
-    public Uni<OrderStatusResponse> getOrderStatus(
+    public OrderStatusResponse getOrderStatus(
             @ToolArg(description = "Order ID formatted as ORD-XXXXXXXX")
             @NotNull
             @Pattern(regexp = "^ORD-[0-9]{8}$")
             String orderId) {
 
-        OrderStatusResponse response = switch (orderId) {
+        return switch (orderId) {
             case "ORD-20240815" -> new OrderStatusResponse(
                 "ORD-20240815", "SHIPPED", 12, "$48,750.00",
                 "2024-08-22", "US-EAST-1");
@@ -159,18 +167,17 @@ public class CustomerServiceTools {
             default -> new OrderStatusResponse(
                 orderId, "NOT_FOUND", 0, "$0.00", "N/A", "UNKNOWN");
         };
-        return Uni.createFrom().item(response);
     }
 
     @Tool(description = "Retrieve SLA compliance metrics including uptime, "
         + "latency, and violation count for a service.")
-    public Uni<SLAComplianceResponse> getSLACompliance(
+    public SLAComplianceResponse getSLACompliance(
             @ToolArg(description = "Service identifier, e.g., api-gateway, auth-service")
             @NotNull
             @Size(max = 40)
             String serviceId) {
 
-        SLAComplianceResponse response = switch (serviceId) {
+        return switch (serviceId) {
             case "api-gateway" -> new SLAComplianceResponse(
                 "api-gateway", 99.97, "45ms", 99.99, 0, "2024-Q3");
             case "auth-service" -> new SLAComplianceResponse(
@@ -182,18 +189,17 @@ public class CustomerServiceTools {
             default -> new SLAComplianceResponse(
                 serviceId, 0.0, "N/A", 0.0, -1, "N/A");
         };
-        return Uni.createFrom().item(response);
     }
 
     @Tool(description = "Retrieve the security audit trail for a customer, "
         + "showing recent access and configuration events.")
-    public Uni<List<AuditEvent>> getAuditTrail(
+    public List<AuditEvent> getAuditTrail(
             @ToolArg(description = "Customer ID formatted as CUST-XXXX")
             @NotNull
             @Pattern(regexp = "^CUST-[0-9]{4,8}$")
             String customerId) {
 
-        List<AuditEvent> events = "CUST-4091".equals(customerId)
+        return "CUST-4091".equals(customerId)
             ? List.of(
                 new AuditEvent("2024-08-17T09:14:00Z", "admin@acme.com",
                     "LOGIN", "console", "SUCCESS"),
@@ -207,7 +213,6 @@ public class CustomerServiceTools {
                     "LOGIN", "console", "DENIED"))
             : List.of(new AuditEvent(
                 "N/A", "N/A", "NO_RECORDS", customerId, "NOT_FOUND"));
-        return Uni.createFrom().item(events);
     }
 }
 ```
@@ -317,7 +322,7 @@ Prompt Goose:
 |---|---|
 | **MCP tool discovery** | `@Tool` annotations auto-register methods as MCP endpoints with JSON schemas |
 | **Input hardening** | Jakarta Bean Validation (`@Pattern`, `@NotNull`, `@Size`) rejects malformed input before business logic |
-| **Reactive execution** | SmallRye Mutiny `Uni` return types enable non-blocking I/O |
+| **Zero-config JSON** | Tools return Java records; Quarkus/Jackson serialize them to MCP JSON with no mapping code (return a Mutiny `Uni<T>` only when a tool needs non-blocking I/O) |
 | **Streamable HTTP** | `quarkus-mcp-server-http` provides JSON-RPC over HTTP with SSE support |
 | **Zero boilerplate** | No hand-written JSON-RPC parsing, schema generation, or HTTP routing |
 

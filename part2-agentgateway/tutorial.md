@@ -2,6 +2,15 @@
 
 **TL;DR:** Deploy agentgateway as a security proxy between Goose AI agents and Quarkus MCP servers to enforce JWT auth, RBAC, and tool-poisoning guardrails.
 
+> **Enterprise context — Acme FinServ.** With 50+ engineers about to run Goose, Acme's security
+> team needs to answer a **SOC 2 CC6 (logical access control)** requirement: *least privilege
+> for non-human identities*. An AI agent is an identity too, and it must not have blanket access
+> to every tool. The RBAC roles in this part map to real people: **Sofia** (SRE, `operator`) can
+> call operational tools; a read-only dashboard service (`viewer`) can see status but not audit
+> data; and **Priya**, an external SOC 2 auditor (`auditor`), gets `getAuditTrail` and
+> `getSLACompliance` — and nothing else. That last mapping is a textbook **segregation-of-duties**
+> control an auditor will explicitly look for.
+
 In [Part 1](https://dzone.com/articles/building-governed-mcp-tool-services-with-quarkus-and-goose) of this series, we built a Quarkus-based MCP tool server and connected it to the Goose AI agent over Streamable HTTP. The tools worked, the demo was clean, and everything ran on `localhost`. But the moment you imagine 50 developers running Goose on their laptops, all hitting the same set of backend MCP servers, the architecture starts to crack. Who authenticated that tool call? Which role authorized the `getAuditTrail` invocation? What stops a poisoned tool name from injecting payloads into your backend?
 
 This article answers those questions by placing [agentgateway](https://agentgateway.dev/) — the Linux Foundation's open-source proxy for agentic AI traffic — between Goose clients and the Quarkus MCP microservices we built in Part 1.
@@ -210,6 +219,18 @@ Each rule is a CEL expression that evaluates to `true` (allow) or `false` (deny)
 | `viewer` | `getCustomerStatus`, `getZoneHealthLogs`, `getSLACompliance` | `getOrderStatus`, `getAuditTrail` |
 | `auditor` | `getAuditTrail`, `getSLACompliance` | `getCustomerStatus`, `getZoneHealthLogs`, `getOrderStatus` |
 | No role | None | All |
+
+These aren't abstract labels — at Acme FinServ they map to real people and a real
+segregation-of-duties story:
+
+| Persona | Role | Why this scope |
+|---------|------|----------------|
+| **Sofia** — SRE, on-call for the platform | `operator` | Needs to drive operational tools during incidents; full access is justified and logged. |
+| **Acme Status Dashboard** — an internal read-only service | `viewer` | Shows customers and health at a glance; must never read `getOrderStatus` or `getAuditTrail` (PII/financial). |
+| **Priya** — *external* SOC 2 auditor | `auditor` | Reviews the audit trail and SLA posture only. Giving her `getCustomerStatus` would *violate* least privilege — an auditor reading live customer data is itself a finding. |
+
+The `auditor` scope is the one a SOC 2 assessor will scrutinize: it proves the audit function
+is *separated* from the operational function, and that access is granted by need, not convenience.
 
 agentgateway also auto-filters `tools/list` responses — if a `viewer` calls `tools/list`, they only see the three tools they're authorized to invoke. The agent never even learns that `getAuditTrail` exists.
 
