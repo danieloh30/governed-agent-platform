@@ -50,10 +50,10 @@ agent-card.json    │  └─────────────────�
 │         Quarkus Eval Runner (:8083)                 │──MCP──▶  Quarkus MCP  │
 │  ┌───────────────────────────────────────────────┐  │ :8080 │  Server       │
 │  │ Golden Datasets                               │  │       └───────────────┘
-│  │  tool-accuracy · validation-boundary           │  │
-│  │  workflow-regression                           │  │
-│  │ Eval Engine (McpEvalClient + ResultComparator) │  │
-│  │ REST API: GET /eval/suites POST /eval/run/{s}  │  │
+│  │  tool-accuracy · validation-boundary          │  │
+│  │  workflow-regression                          │  │
+│  │ Eval Engine (McpEvalClient + ResultComparator)│  │
+│  │ REST API: GET /eval/suites POST /eval/run/{s} │  │
 │  └───────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────┘
 ```
