@@ -645,8 +645,9 @@ function onConfigChange() {
 function esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
 
 function toggleTheme() {
-  const cur = document.documentElement.getAttribute('data-theme');
-  document.documentElement.setAttribute('data-theme', cur === 'dark' ? 'light' : 'dark');
+  const explicit = document.documentElement.getAttribute('data-theme');
+  const current = explicit || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  document.documentElement.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark');
 }
 
 function updateStats() {
