@@ -123,21 +123,21 @@ done
 echo ""
 
 # ── Summary ──
-W=60
+W=67
 border=$(printf '%*s' "$W" '' | tr ' ' '-')
 echo "+${border}+"
 printf "| %-$(( W - 2 ))s |\n" "All services running"
 echo "+${border}+"
 printf "| %-$(( W - 2 ))s |\n" ""
-printf "| %-$(( W - 2 ))s |\n" "Quarkus MCP Server : http://localhost:8080/mcp"
-printf "| %-$(( W - 2 ))s |\n" "Eval Runner API    : http://localhost:8083/eval"
+printf "| %-$(( W - 2 ))s |\n" "Quarkus MCP Server  : http://localhost:8080/mcp"
+printf "| %-$(( W - 2 ))s |\n" "Eval Runner API     : http://localhost:8083/eval"
 SPA_URL="http://localhost:${SPA_PORT}/index.html"
-printf "| %-$(( W - 2 ))s |\n" "Evaluation Console : $SPA_URL"
+printf "| %-$(( W - 2 ))s |\n" "Evaluation Console  : $SPA_URL"
 printf "| %-$(( W - 2 ))s |\n" ""
 printf "| %-$(( W - 2 ))s |\n" "Golden suites:"
-printf "| %-$(( W - 2 ))s |\n" "  tool-accuracy        — Tool output verification"
-printf "| %-$(( W - 2 ))s |\n" "  validation-boundary  — Bean Validation edge cases"
-printf "| %-$(( W - 2 ))s |\n" "  workflow-regression  — Multi-step workflow tests"
+printf "| %-$(( W - 2 ))s |\n" "  tool-accuracy       - Tool output verification"
+printf "| %-$(( W - 2 ))s |\n" "  validation-boundary - Bean Validation edge cases"
+printf "| %-$(( W - 2 ))s |\n" "  workflow-regression - Multi-step workflow tests"
 printf "| %-$(( W - 2 ))s |\n" ""
 printf "| %-$(( W - 2 ))s |\n" "Run from CLI:"
 printf "| %-$(( W - 2 ))s |\n" "  curl -X POST localhost:8083/eval/run/tool-accuracy"
