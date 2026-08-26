@@ -7,6 +7,10 @@
 
 A five-part Java tutorial for platform engineers covering tool security, observability, human approval, and continuous evaluation. Goose provides the interactive agent client used throughout the labs.
 
+> **📚 Read the complete tutorial at [danieloh30.github.io/governed-agent-platform](https://danieloh30.github.io/governed-agent-platform/)**
+>
+> Browse the guided learning path, search every chapter, and use the production-readiness reference from the published documentation site.
+
 ## The Business Case: Acme FinServ
 
 Every part of this series follows one company so the technology stays tied to a real business problem.
@@ -38,7 +42,7 @@ needs read-only access to audit trails and nothing else.
 
 ## Tutorial Series
 
-The GitHub Pages-ready documentation lives in [`docs/`](docs/). Start with the [site home](docs/index.md), follow the [tutorial learning path](docs/tutorials/), or jump to the [enterprise production-readiness guide](docs/enterprise/production-readiness.md).
+The documentation source lives in [`docs/`](docs/). Start from the **[published site home](https://danieloh30.github.io/governed-agent-platform/)**, follow the **[tutorial learning path](https://danieloh30.github.io/governed-agent-platform/tutorials/)**, or jump to the **[enterprise production-readiness guide](https://danieloh30.github.io/governed-agent-platform/enterprise/production-readiness/)**.
 
 | Part | Title | Directory | What You Build |
 |------|-------|-----------|---------------|
