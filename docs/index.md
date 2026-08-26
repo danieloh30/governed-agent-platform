@@ -13,7 +13,7 @@ hide:
 <p class="hero__lead">Design a governed Java agent platform one control at a time—with MCP, A2A, Quarkus, agentgateway, OpenTelemetry, human approval, and continuous evaluation.</p>
 
 [Start the tutorials](tutorials/index.md){ .md-button .md-button--primary }
-[View on GitHub](https://github.com/danieloh30/governed-agent-platform){ .md-button }
+[View on GitHub](https://github.com/danieloh30/governed-agent-platform){ .md-button target="_blank" rel="noopener noreferrer" }
 </section>
 
 <div class="stat-strip">
