@@ -46,22 +46,21 @@ Without these guardrails, autonomous agents operate in a governance vacuum — t
 The fix combines three standards into a governed multi-agent architecture:
 
 ```mermaid
-%%{init: {'look':'handDrawn','theme':'neutral','themeVariables': {'lineColor':'#4A4035'}}}%%
 flowchart LR
-    G([Goose client]) -->|Discover agent card| CARD[Public agent card]
-    G -->|A2A SendMessage :8082| FLOW
-    FLOW -->|MCP :8080| MCP([Quarkus MCP server<br/>customer-tools])
+    G([Goose client]) -->|Discover agent card| CARD["Public agent card"]
+    G -->|A2A SendMessage :8082| EXEC
 
-    subgraph FLOW[Quarkus A2A flow]
-        EXEC[A2A AgentExecutor]
-        GOV[AGENTS.md governance]
-        HITL[HITL approval gate]
+    subgraph QFLOW["Quarkus A2A flow"]
+        EXEC["A2A AgentExecutor"]
+        GOV["AGENTS.md governance"]
+        HITL["HITL approval gate"]
         EXEC --> GOV --> HITL
     end
 
-    CARD -.-> FLOW
+    HITL -->|MCP :8080| MCP(["Quarkus MCP server<br/>customer-tools"])
+    CARD -.-> EXEC
     style G fill:#D4E6F1,stroke:#2E6B8A
-    style FLOW fill:#F5F5F0,stroke:#8B8070
+    style QFLOW fill:#F5F5F0,stroke:#8B8070
     style CARD fill:#E8E0F0,stroke:#6B5B8A
     style MCP fill:#D8F0D8,stroke:#3D7A3D
 ```
@@ -236,7 +235,6 @@ Notice the conditional logic for `process-refund` — governance rules can inclu
 Each A2A task flows through a state machine with six possible states:
 
 ```mermaid
-%%{init: {'look':'handDrawn','theme':'neutral','themeVariables': {'lineColor':'#4A4035'}}}%%
 stateDiagram-v2
     [*] --> SUBMITTED
     SUBMITTED --> WORKING
