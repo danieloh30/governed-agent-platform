@@ -12,8 +12,15 @@ function openLinksInNewTab() {
       return;
     }
 
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
+    const destination = new URL(href, window.location.href);
+
+    if (destination.origin !== window.location.origin) {
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+    } else {
+      link.removeAttribute("target");
+      link.removeAttribute("rel");
+    }
   });
 }
 
