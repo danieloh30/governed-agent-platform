@@ -1,0 +1,211 @@
+:root {
+  --md-primary-fg-color: #273c8f;
+  --md-primary-fg-color--light: #4961bd;
+  --md-primary-fg-color--dark: #192860;
+  --md-accent-fg-color: #00897b;
+  --gap-border: color-mix(in srgb, var(--md-default-fg-color) 14%, transparent);
+}
+
+[data-md-color-scheme="slate"] {
+  --md-hue: 225;
+  --md-default-bg-color: #0d1220;
+  --md-default-bg-color--light: #141b2e;
+  --gap-border: rgba(255, 255, 255, 0.12);
+}
+
+.md-header {
+  background: linear-gradient(110deg, #172554 0%, #273c8f 58%, #00695c 140%);
+  box-shadow: 0 2px 14px rgba(15, 23, 42, 0.24);
+}
+
+.md-tabs {
+  background-color: #192860;
+}
+
+.md-grid {
+  max-width: 90rem;
+}
+
+.md-typeset {
+  font-size: 0.78rem;
+  line-height: 1.72;
+}
+
+.md-typeset h1 {
+  color: var(--md-default-fg-color);
+  font-weight: 750;
+  letter-spacing: -0.035em;
+  line-height: 1.15;
+}
+
+.md-typeset h2 {
+  border-bottom: 1px solid var(--gap-border);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  padding-bottom: 0.35rem;
+}
+
+.md-typeset h3 {
+  font-weight: 700;
+}
+
+.md-typeset code {
+  border-radius: 0.25rem;
+}
+
+.md-typeset pre > code {
+  border-radius: 0.55rem;
+}
+
+.md-typeset table:not([class]) {
+  border: 1px solid var(--gap-border);
+  border-radius: 0.55rem;
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.05);
+  overflow: hidden;
+}
+
+.md-typeset table:not([class]) th {
+  background: color-mix(in srgb, var(--md-primary-fg-color) 10%, var(--md-default-bg-color));
+  font-weight: 700;
+}
+
+.md-typeset blockquote {
+  border-left-color: var(--md-accent-fg-color);
+  color: var(--md-default-fg-color--light);
+}
+
+.hero {
+  background:
+    radial-gradient(circle at 87% 18%, rgba(45, 212, 191, 0.2), transparent 28%),
+    linear-gradient(135deg, #111d49 0%, #273c8f 58%, #075e54 130%);
+  border-radius: 1rem;
+  color: #fff;
+  margin: 0 0 2rem;
+  overflow: hidden;
+  padding: clamp(2rem, 6vw, 4.5rem);
+  position: relative;
+  box-shadow: 0 18px 46px rgba(23, 37, 84, 0.25);
+}
+
+.hero__eyebrow {
+  color: #99f6e4;
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.12em;
+  margin: 0 0 0.8rem;
+  text-transform: uppercase;
+}
+
+.hero h1 {
+  color: #fff;
+  font-size: clamp(2rem, 5vw, 3.65rem);
+  margin: 0;
+  max-width: 16ch;
+}
+
+.hero__lead {
+  color: rgba(255, 255, 255, 0.84);
+  font-size: clamp(0.9rem, 2vw, 1.1rem);
+  margin: 1.2rem 0 1.7rem;
+  max-width: 46rem;
+}
+
+.hero .md-button {
+  border-color: rgba(255, 255, 255, 0.78);
+  color: #fff;
+  margin: 0.25rem 0.35rem 0.25rem 0;
+}
+
+.hero .md-button--primary {
+  background: #fff;
+  border-color: #fff;
+  color: #192860;
+}
+
+.hero .md-button:hover {
+  background: #99f6e4;
+  border-color: #99f6e4;
+  color: #10243e;
+}
+
+.stat-strip {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(4, 1fr);
+  margin: -0.7rem 0 2.25rem;
+}
+
+.stat {
+  border-left: 3px solid var(--md-accent-fg-color);
+  padding: 0.35rem 0.75rem;
+}
+
+.stat strong,
+.stat span {
+  display: block;
+}
+
+.stat strong {
+  font-size: 1.25rem;
+}
+
+.stat span {
+  color: var(--md-default-fg-color--light);
+  font-size: 0.68rem;
+}
+
+.path-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 1.2rem 0 2.5rem;
+}
+
+.path-card {
+  background: color-mix(in srgb, var(--md-default-bg-color) 96%, var(--md-primary-fg-color));
+  border: 1px solid var(--gap-border);
+  border-radius: 0.75rem;
+  color: var(--md-default-fg-color) !important;
+  display: block;
+  padding: 1.15rem;
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.path-card:hover {
+  border-color: var(--md-accent-fg-color);
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.12);
+  transform: translateY(-3px);
+}
+
+.path-card__icon {
+  color: var(--md-primary-fg-color);
+  font-size: 1.25rem;
+}
+
+.path-card strong {
+  display: block;
+  font-size: 0.9rem;
+  margin: 0.4rem 0 0.25rem;
+}
+
+.path-card span:last-child {
+  color: var(--md-default-fg-color--light);
+  display: block;
+  font-size: 0.7rem;
+  line-height: 1.5;
+}
+
+@media screen and (max-width: 48rem) {
+  .path-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-strip {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .hero {
+    border-radius: 0.7rem;
+    padding: 2rem 1.35rem;
+  }
+}

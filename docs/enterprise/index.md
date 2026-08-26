@@ -19,7 +19,7 @@ The five labs demonstrate individual controls. A real deployment also needs dura
 | Approval | Demo admin endpoint | Authenticated approver identity, separation of duties, reason, expiry, replay prevention |
 | Evaluation | Deterministic golden files | Versioned datasets, environment matrix, policy negative tests, trend and release thresholds |
 
-Read the [production-readiness guide](production-readiness/) for a concrete architecture, trust boundaries, failure modes, and a staged backlog.
+Read the [production-readiness guide](production-readiness.md) for a concrete architecture, trust boundaries, failure modes, and a staged backlog.
 
 ## Recommended technical deep-dive labs
 

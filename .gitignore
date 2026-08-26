@@ -39,3 +39,6 @@ build/
 
 ### agentgateway ###
 base-costs.json
+
+### MkDocs ###
+site/

@@ -6,7 +6,7 @@ permalink: /tutorials/05-evaluation/
 
 # Part 5: Automated Agent Evaluation and Regression Testing for MCP Tool Services
 
-[Tutorial home](../) · [Run the example](../../part5-evaluation/) · [Enterprise deep dives](../../enterprise/)
+[Tutorial home](index.md) · [Run the example](https://github.com/danieloh30/governed-agent-platform/tree/main/part5-evaluation) · [Enterprise deep dives](../enterprise/index.md)
 
 > **Lab contract:** You will run deterministic golden cases against a local MCP server. A release program should also execute through the gateway, cover identity and tenant matrices, test policy denial and dependency failure, version dataset provenance, detect sensitive telemetry, and require a reviewed waiver when a threshold is overridden.
 
@@ -22,7 +22,7 @@ permalink: /tutorials/05-evaluation/
 
 ## The Core Problem
 
-In [Part 1](../01-governed-mcp-tools/) we built a Quarkus MCP tool server with Jakarta Bean Validation. In [Part 2](../02-agentgateway-security/) we secured it with agentgateway. In [Part 3](../03-observability/) we added distributed tracing. In [Part 4](../04-multi-agent-governance/) we orchestrated multi-agent workflows with A2A. The architecture works, it is secure, and it is observable — but how do you know it stays correct across code changes?
+In [Part 1](01-governed-mcp-tools.md) we built a Quarkus MCP tool server with Jakarta Bean Validation. In [Part 2](02-agentgateway-security.md) we secured it with agentgateway. In [Part 3](03-observability.md) we added distributed tracing. In [Part 4](04-multi-agent-governance.md) we orchestrated multi-agent workflows with A2A. The architecture works, it is secure, and it is observable — but how do you know it stays correct across code changes?
 
 Manual testing with Goose catches obvious breakages. Ask it to debug a customer, and if the tool throws an exception, you will notice. But manual testing has structural gaps that compound as the codebase grows:
 
@@ -773,10 +773,10 @@ This 5-part series built a complete governed AI agent infrastructure:
 
 | Part | What We Built | Key Technology |
 |------|--------------|----------------|
-| 1 | [MCP tool server with input hardening](../01-governed-mcp-tools/) | Quarkus `@Tool` + Jakarta Bean Validation |
-| 2 | [Security proxy with auth and guardrails](../02-agentgateway-security/) | agentgateway JWT, RBAC, ExtMCP |
-| 3 | [End-to-end distributed tracing](../03-observability/) | OpenTelemetry + Jaeger |
-| 4 | [Multi-agent orchestration with governance](../04-multi-agent-governance/) | A2A protocol + AGENTS.md |
-| 5 | [Automated evaluation and regression testing](../05-evaluation/) | Golden datasets + MCP eval runner |
+| 1 | [MCP tool server with input hardening](01-governed-mcp-tools.md) | Quarkus `@Tool` + Jakarta Bean Validation |
+| 2 | [Security proxy with auth and guardrails](02-agentgateway-security.md) | agentgateway JWT, RBAC, ExtMCP |
+| 3 | [End-to-end distributed tracing](03-observability.md) | OpenTelemetry + Jaeger |
+| 4 | [Multi-agent orchestration with governance](04-multi-agent-governance.md) | A2A protocol + AGENTS.md |
+| 5 | [Automated evaluation and regression testing](05-evaluation.md) | Golden datasets + MCP eval runner |
 
 Each layer addresses a different production concern — correctness, security, observability, orchestration, and now continuous verification. Together they provide the governance framework that platform engineers need to safely deploy autonomous AI agents against enterprise infrastructure.

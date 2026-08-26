@@ -138,9 +138,9 @@ Each demo SPA provides guided steps that walk through the key concepts of that p
 
 ## Documentation Deployment
 
-The documentation is live at **[danieloh30.github.io/governed-agent-platform](https://danieloh30.github.io/governed-agent-platform/)**. GitHub Pages automatically publishes the `docs/` directory from the `main` branch with HTTPS enabled.
+The documentation is live at **[danieloh30.github.io/governed-agent-platform](https://danieloh30.github.io/governed-agent-platform/)**. A GitHub Actions workflow builds the Material for MkDocs site from `docs/` and deploys it to GitHub Pages with HTTPS enabled.
 
-To change the publishing source, open **Settings → Pages**. The checked-in Minima configuration requires no custom Pages workflow.
+The navigation, theme, and extensions are configured in `mkdocs.yml`; custom presentation styles live in `docs/stylesheets/extra.css`.
 
 ## Project Structure
 

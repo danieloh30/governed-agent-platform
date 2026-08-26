@@ -5,7 +5,7 @@ permalink: /enterprise/production-readiness/
 
 # Production readiness: from lab controls to an enterprise platform
 
-[Enterprise deep dives](../) · [Tutorials](../../tutorials/)
+[Enterprise deep dives](index.md) · [Tutorials](../tutorials/index.md)
 
 ## Define the trust boundaries
 

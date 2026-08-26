@@ -6,7 +6,7 @@ permalink: /tutorials/03-observability/
 
 # Part 3: End-to-End Tracing and Observability Across Goose, agentgateway, and Quarkus
 
-[Tutorial home](../) · [Run the example](../../part3-observability/) · [Enterprise deep dives](../../enterprise/)
+[Tutorial home](index.md) · [Run the example](https://github.com/danieloh30/governed-agent-platform/tree/main/part3-observability) · [Enterprise deep dives](../enterprise/index.md)
 
 > **Lab contract:** You will correlate MCP calls in a local Jaeger instance. Before production, define an attribute allowlist, redact PII and secrets, choose head or tail sampling by risk, secure the collector, set retention by data class, and alert from service-level signals—not from traces alone.
 
@@ -22,7 +22,7 @@ permalink: /tutorials/03-observability/
 
 ## The Core Problem
 
-In [Part 1](../01-governed-mcp-tools/) we built a Quarkus MCP tool server. In [Part 2](../02-agentgateway-security/) we secured it with agentgateway's JWT authentication, RBAC, and ExtMCP guardrails. The architecture works — but when something goes wrong in production, you're flying blind.
+In [Part 1](01-governed-mcp-tools.md) we built a Quarkus MCP tool server. In [Part 2](02-agentgateway-security.md) we secured it with agentgateway's JWT authentication, RBAC, and ExtMCP guardrails. The architecture works — but when something goes wrong in production, you're flying blind.
 
 Agentic workflows are fundamentally different from traditional request-response APIs. A single user prompt like *"Debug customer CUST-4091"* triggers a multi-round-trip loop:
 
@@ -326,4 +326,4 @@ The entire stack runs locally with a single `./start-all.sh` command and produce
 
 With tracing in place, you can now see every MCP tool call flowing through the system. In Part 4, we will move beyond single-agent tool calls to **multi-agent orchestration** — using the [Agent-to-Agent (A2A) protocol](https://github.com/a2aproject/a2a-spec) to coordinate autonomous agents that can delegate work, enforce governance via `AGENTS.md`, and call back into our MCP tool services.
 
-- **[Part 4: Multi-Agent Orchestration with A2A Protocol](../04-multi-agent-governance/)**
+- **[Part 4: Multi-Agent Orchestration with A2A Protocol](04-multi-agent-governance.md)**

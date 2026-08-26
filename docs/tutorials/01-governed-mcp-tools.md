@@ -6,7 +6,7 @@ permalink: /tutorials/01-governed-mcp-tools/
 
 # Part 1: Building Governed MCP Tool Services with Quarkus LangChain4j and Goose
 
-[Tutorial home](../) · [Run the example](../../part1-quarkus-mcp/) · [Enterprise deep dives](../../enterprise/)
+[Tutorial home](index.md) · [Run the example](https://github.com/danieloh30/governed-agent-platform/tree/main/part1-quarkus-mcp) · [Enterprise deep dives](../enterprise/index.md)
 
 > **Lab contract:** You will expose five read-only, in-memory tools and enforce syntactic input constraints at the MCP boundary. Production systems must also authorize the caller, enforce business invariants, isolate tenants, protect downstream credentials, and avoid returning unrestricted customer data. Parts 2–5 add several—but not all—of those controls.
 
@@ -336,4 +336,4 @@ Prompt Goose:
 
 The MCP server we built gives Goose validated access to enterprise tools — but it is wide open. Any client that can reach `:8080` can call any tool with any arguments. When hundreds of developers run local Goose agents against shared backend microservices, this creates security and governance risks.
 
-**[Part 2: Securing and Scaling Goose-to-Java Agent Traffic with agentgateway](../02-agentgateway-security/)** introduces [agentgateway](https://agentgateway.dev/) — the Linux Foundation data plane proxy — to sit between Goose and Quarkus. We will configure OAuth2/OIDC authentication, fine-grained tool-level RBAC with CEL expressions, and ExtMCP guardrails to harden the enterprise AI infrastructure.
+**[Part 2: Securing and Scaling Goose-to-Java Agent Traffic with agentgateway](02-agentgateway-security.md)** introduces [agentgateway](https://agentgateway.dev/) — the Linux Foundation data plane proxy — to sit between Goose and Quarkus. We will configure OAuth2/OIDC authentication, fine-grained tool-level RBAC with CEL expressions, and ExtMCP guardrails to harden the enterprise AI infrastructure.

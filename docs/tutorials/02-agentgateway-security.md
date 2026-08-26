@@ -6,7 +6,7 @@ permalink: /tutorials/02-agentgateway-security/
 
 # Part 2: Securing and Scaling Goose-to-Java Agent Traffic With agentgateway
 
-[Tutorial home](../) · [Run the example](../../part2-agentgateway/) · [Enterprise deep dives](../../enterprise/)
+[Tutorial home](index.md) · [Run the example](https://github.com/danieloh30/governed-agent-platform/tree/main/part2-agentgateway) · [Enterprise deep dives](../enterprise/index.md)
 
 > **Lab contract:** You will prove authentication, per-tool authorization, and metadata inspection with local configuration. The sample token and static policy are not production identity. Use an external OIDC issuer, short-lived credentials, strict issuer/audience checks, key rotation, deny-by-default policy, and tenant-aware negative tests in a deployed environment.
 

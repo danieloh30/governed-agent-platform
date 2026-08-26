@@ -6,7 +6,7 @@ permalink: /tutorials/04-multi-agent-governance/
 
 # Part 4: Multi-Agent Orchestration — Pairing Goose with Quarkus Flow State Machines
 
-[Tutorial home](../) · [Run the example](../../part4-multi-agent/) · [Enterprise deep dives](../../enterprise/)
+[Tutorial home](index.md) · [Run the example](https://github.com/danieloh30/governed-agent-platform/tree/main/part4-multi-agent) · [Enterprise deep dives](../enterprise/index.md)
 
 > **Lab contract:** You will explore policy categories and HITL state transitions using in-memory state and a demo approval endpoint. A production approval is a security decision: persist it durably, authenticate and authorize the approver, enforce separation of duties, bind it to an immutable request version, expire it, and make execution idempotent.
 
@@ -24,7 +24,7 @@ permalink: /tutorials/04-multi-agent-governance/
 
 ## The Core Problem
 
-In [Part 1](../01-governed-mcp-tools/) we built a Quarkus MCP tool server. In [Part 2](../02-agentgateway-security/) we secured it with agentgateway. In [Part 3](../03-observability/) we added distributed tracing. The architecture handles single-request tool calls well — but enterprise processes are rarely single-step.
+In [Part 1](01-governed-mcp-tools.md) we built a Quarkus MCP tool server. In [Part 2](02-agentgateway-security.md) we secured it with agentgateway. In [Part 3](03-observability.md) we added distributed tracing. The architecture handles single-request tool calls well — but enterprise processes are rarely single-step.
 
 Consider what happens when a developer tells Goose: *"Migrate the users table to add an email column, then deploy the updated service to production."* This triggers a chain of operations:
 
@@ -509,4 +509,4 @@ Starting from the observable architecture in Part 3, we added multi-agent orches
 
 With governance, security, tracing, and multi-agent orchestration in place, the stack is production-capable — but how do you know it stays correct across code changes? In Part 5, we will add **automated agent evaluation and regression testing** — using golden datasets to verify that MCP tool outputs, Bean Validation boundaries, and multi-step agent workflows produce correct, consistent results as the codebase evolves.
 
-- **[Part 5: Automated Agent Evaluation and Regression Testing](../05-evaluation/)**
+- **[Part 5: Automated Agent Evaluation and Regression Testing](05-evaluation.md)**
