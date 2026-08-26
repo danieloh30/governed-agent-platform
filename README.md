@@ -1,5 +1,10 @@
 # Building a Governed Enterprise Agent Platform with MCP, A2A, Quarkus, and agentgateway
 
+[![Documentation](https://img.shields.io/badge/deployment-live-2ea44f?logo=github)](https://danieloh30.github.io/governed-agent-platform/)
+[![Tests](https://github.com/danieloh30/governed-agent-platform/actions/workflows/tests.yml/badge.svg)](https://github.com/danieloh30/governed-agent-platform/actions/workflows/tests.yml)
+[![Dependabot](https://img.shields.io/badge/Dependabot-enabled-025E8C?logo=dependabot)](https://github.com/danieloh30/governed-agent-platform/security/dependabot)
+[![Auto-merge Dependabot PRs](https://github.com/danieloh30/governed-agent-platform/actions/workflows/dependabot-auto-merge.yml/badge.svg)](https://github.com/danieloh30/governed-agent-platform/actions/workflows/dependabot-auto-merge.yml)
+
 A five-part Java tutorial for platform engineers covering tool security, observability, human approval, and continuous evaluation. Goose provides the interactive agent client used throughout the labs.
 
 ## The Business Case: Acme FinServ
@@ -131,16 +136,11 @@ cd part5-evaluation && ./start-all.sh
 
 Each demo SPA provides guided steps that walk through the key concepts of that part — no Goose or LLM required.
 
-## Publish the Documentation with GitHub Pages
+## Documentation Deployment
 
-The site is ready to publish from the `docs/` directory:
+The documentation is live at **[danieloh30.github.io/governed-agent-platform](https://danieloh30.github.io/governed-agent-platform/)**. GitHub Pages automatically publishes the `docs/` directory from the `main` branch with HTTPS enabled.
 
-1. Push the changes to the repository's default branch.
-2. Open **Settings → Pages** in GitHub.
-3. Under **Build and deployment**, choose **Deploy from a branch**.
-4. Select the default branch, choose `/docs`, and save.
-
-GitHub will publish the site at `https://danieloh30.github.io/governed-agent-platform/`. The checked-in Minima configuration requires no custom Pages workflow.
+To change the publishing source, open **Settings → Pages**. The checked-in Minima configuration requires no custom Pages workflow.
 
 ## Project Structure
 
