@@ -1,6 +1,6 @@
-# Governed MCP Tool Services with Quarkus, agentgateway, and Goose
+# Building a Governed Enterprise Agent Platform with MCP, A2A, Quarkus, and agentgateway
 
-A multi-part tutorial series for platform engineers building governed AI agent infrastructure with Java.
+A five-part Java tutorial for platform engineers covering tool security, observability, human approval, and continuous evaluation. Goose provides the interactive agent client used throughout the labs.
 
 ## The Business Case: Acme FinServ
 
@@ -33,58 +33,58 @@ needs read-only access to audit trails and nothing else.
 
 ## Tutorial Series
 
+The GitHub Pages-ready documentation lives in [`docs/`](docs/). Start with the [site home](docs/index.md), follow the [tutorial learning path](docs/tutorials/), or jump to the [enterprise production-readiness guide](docs/enterprise/production-readiness.md).
+
 | Part | Title | Directory | What You Build |
 |------|-------|-----------|---------------|
-| 1 | [Building Governed MCP Tool Services with Quarkus and Goose](part1-quarkus-mcp/) | `part1-quarkus-mcp/` | Quarkus MCP server exposing enterprise tools over Streamable HTTP, connected to Goose AI agent |
-| 2 | [Securing and Scaling Goose-to-Java Agent Traffic with agentgateway](part2-agentgateway/) | `part2-agentgateway/` | agentgateway as a security proxy with JWT auth, RBAC via CEL, and ExtMCP guardrails against tool poisoning |
-| 3 | [End-to-End Tracing and Observability](part3-observability/) | `part3-observability/` | W3C Trace Context propagation across all layers with Quarkus OpenTelemetry, agentgateway tracing, and Jaeger |
-| 4 | [Multi-Agent Orchestration with A2A Protocol](part4-multi-agent/) | `part4-multi-agent/` | A2A Java SDK (`@PublicAgentCard` + `AgentExecutor`) with AGENTS.md governance, HITL approval gates, and MCP tool delegation to Part 1 |
-| 5 | [Automated Agent Evaluation and Regression Testing](part5-evaluation/) | `part5-evaluation/` | Golden datasets, MCP eval runner with accuracy/latency/validation testing, CI/CD integration |
+| 1 | [Building Governed MCP Tool Services with Quarkus and Goose](docs/tutorials/01-governed-mcp-tools.md) | `part1-quarkus-mcp/` | Quarkus MCP server exposing enterprise tools over Streamable HTTP, connected to Goose AI agent |
+| 2 | [Securing and Scaling Goose-to-Java Agent Traffic with agentgateway](docs/tutorials/02-agentgateway-security.md) | `part2-agentgateway/` | agentgateway as a security proxy with JWT auth, RBAC via CEL, and ExtMCP guardrails against tool poisoning |
+| 3 | [End-to-End Tracing and Observability](docs/tutorials/03-observability.md) | `part3-observability/` | W3C Trace Context propagation across all layers with Quarkus OpenTelemetry, agentgateway tracing, and Jaeger |
+| 4 | [Multi-Agent Orchestration with A2A Protocol](docs/tutorials/04-multi-agent-governance.md) | `part4-multi-agent/` | A2A Java SDK (`@PublicAgentCard` + `AgentExecutor`) with AGENTS.md governance, HITL approval gates, and MCP tool delegation to Part 1 |
+| 5 | [Automated Agent Evaluation and Regression Testing](docs/tutorials/05-evaluation.md) | `part5-evaluation/` | Golden datasets, MCP eval runner with accuracy/latency/validation testing, CI/CD integration |
 
 ## Architecture
 
-```
-                    Part 2                              Part 1
-┌──────────┐       ┌───────────────────┐       ┌─────────────────────┐
-│  Goose   │──MCP──▶  agentgateway     │──MCP──▶  Quarkus MCP Server │
-│  Client  │ :3000 │  ┌─────────────┐  │ :8080 │  (customer-tools)   │
-└──────────┘       │  │ JWT AuthN   │  │       └──────────┬──────────┘
-                   │  │ RBAC AuthZ  │  │                  │
-                   │  │ ExtMCP      │  │       ┌──────────┴──────────┐
-                   │  │ Guardrails  │  │──gRPC─▶  ExtMCP Guardrail   │
-                   │  └─────────────┘  │ :9001 │  (Quarkus gRPC)     │
-                   └────────┬──────────┘       └─────────────────────┘
-                            │                             │
-                            │ Part 3                      │
-                            │ OTLP gRPC                   │ OTLP HTTP
-                            ▼                             ▼
-                   ┌──────────────────────────────────────────────────┐
-                   │              Jaeger (OTLP Collector)             │
-                   │           :16686 (UI) / :4317 / :4318            │
-                   └──────────────────────────────────────────────────┘
+```mermaid
+%%{init: {'look':'handDrawn','theme':'neutral','themeVariables': {'lineColor':'#4A4035'}}}%%
+flowchart LR
+    G([Goose client]) -->|MCP :3000| AG
+    G -->|A2A :8082| FLOW
+    AG -->|MCP :8080| MCP([Part 1<br/>Quarkus MCP tools])
+    AG -->|gRPC :9001| GR([ExtMCP guardrail])
+    FLOW -->|MCP :8080| MCP
+    EVAL -->|MCP :8080| MCP
+    AG -->|OTLP gRPC| J[(Jaeger collector)]
+    MCP -->|OTLP HTTP| J
 
-                    Part 4                                        Part 1
-┌──────────┐       ┌─────────────────────────────────────────┐       ┌───────────────┐
-│  Goose   │──A2A──▶  Quarkus A2A Flow Server                │──MCP──▶  Quarkus MCP  │
-│  Client  │ :8082 │  ┌───────────────────────────────────┐  │ :8080 │  Server       │
-└──────────┘       │  │ @PublicAgentCard (A2A Java SDK)   │  │       └───────────────┘
-       ▲           │  │ AgentExecutor + McpToolClient     │  │
-       │           │  │ AGENTS.md Governance              │  │
-/.well-known/      │  │ HITL Approval Gate                │  │
-agent-card.json    │  └───────────────────────────────────┘  │
-                   └─────────────────────────────────────────┘
+    subgraph AG[Part 2 · agentgateway]
+        AUTH[JWT authentication]
+        RBAC[CEL authorization]
+        GUARD[ExtMCP policy]
+        AUTH --> RBAC --> GUARD
+    end
 
-                    Part 5                                        Part 1
-┌─────────────────────────────────────────────────────┐       ┌───────────────┐
-│         Quarkus Eval Runner (:8083)                 │──MCP──▶  Quarkus MCP  │
-│  ┌───────────────────────────────────────────────┐  │ :8080 │  Server       │
-│  │ Golden Datasets                               │  │       └───────────────┘
-│  │  tool-accuracy · validation-boundary          │  │
-│  │  workflow-regression                          │  │
-│  │ Eval Engine (McpEvalClient + ResultComparator)│  │
-│  │ REST API: GET /eval/suites POST /eval/run/{s} │  │
-│  └───────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────┘
+    subgraph FLOW[Part 4 · A2A workflow]
+        EXEC[AgentExecutor]
+        GOV[AGENTS.md governance]
+        HITL[HITL approval]
+        EXEC --> GOV --> HITL
+    end
+
+    subgraph EVAL[Part 5 · evaluation runner]
+        DATA[Golden datasets]
+        RUN[Eval engine]
+        REPORT[Regression report]
+        DATA --> RUN --> REPORT
+    end
+
+    style G fill:#D4E6F1,stroke:#2E6B8A
+    style AG fill:#F5F5F0,stroke:#8B8070
+    style FLOW fill:#F5F5F0,stroke:#8B8070
+    style EVAL fill:#F5F5F0,stroke:#8B8070
+    style MCP fill:#D8F0D8,stroke:#3D7A3D
+    style GR fill:#F4D7D7,stroke:#9A4A4A
+    style J fill:#E8DCC4,stroke:#6B5B45
 ```
 
 ## Prerequisites
@@ -131,37 +131,48 @@ cd part5-evaluation && ./start-all.sh
 
 Each demo SPA provides guided steps that walk through the key concepts of that part — no Goose or LLM required.
 
+## Publish the Documentation with GitHub Pages
+
+The site is ready to publish from the `docs/` directory:
+
+1. Push the changes to the repository's default branch.
+2. Open **Settings → Pages** in GitHub.
+3. Under **Build and deployment**, choose **Deploy from a branch**.
+4. Select the default branch, choose `/docs`, and save.
+
+GitHub will publish the site at `https://danieloh30.github.io/governed-agent-platform/`. The checked-in Minima configuration requires no custom Pages workflow.
+
 ## Project Structure
 
 ```
-governed-mcp-tools/
+governed-agent-platform/
 ├── pom.xml                          # Parent POM (aggregator)
+├── docs/                            # GitHub Pages source
+│   ├── index.md                     # Documentation landing page
+│   ├── tutorials/                   # Ordered five-part learning path
+│   └── enterprise/                  # Production-readiness deep dives
 ├── part1-quarkus-mcp/               # Quarkus MCP server
 │   ├── pom.xml
 │   ├── src/main/java/               # MCP tools and models
 │   ├── src/main/resources/          # Config + server info page
 │   ├── index.html                   # MCP Console demo SPA
 │   ├── start-all.sh                 # Launches MCP server + demo SPA
-│   ├── tutorial.md                  # DZone tutorial
 │   └── goose-extension-config.yaml
 ├── part2-agentgateway/              # agentgateway security proxy
 │   ├── agentgateway/                # Config files (dev/guardrails/full)
 │   ├── extmcp-guardrail/            # Quarkus gRPC guardrail server
 │   ├── index.html                   # Interactive security console SPA
-│   ├── start-all.sh                 # Launches all services
-│   └── tutorial.md                  # DZone tutorial
+│   └── start-all.sh                 # Launches all services
 ├── part3-observability/             # Distributed tracing
 │   ├── agentgateway/                # Config files with tracing enabled
 │   ├── compose.yml                  # Jaeger all-in-one
-│   ├── start-all.sh                 # Launches Jaeger + all services
-│   └── tutorial.md                  # DZone tutorial
+│   └── start-all.sh                 # Launches Jaeger + all services
 ├── part4-multi-agent/               # A2A multi-agent orchestration
 │   ├── pom.xml
 │   ├── src/main/java/               # A2A endpoint, workflow engine, governance
 │   ├── src/main/resources/AGENTS.md # Governance rules
 │   ├── index.html                   # A2A Console SPA
-│   ├── start-all.sh                 # Launches A2A Flow server
-│   └── tutorial.md                  # DZone tutorial
+│   └── start-all.sh                 # Launches A2A Flow server
 └── part5-evaluation/                # Automated eval and regression testing
     ├── pom.xml
     ├── src/main/java/               # Eval engine, MCP client, REST API
@@ -170,6 +181,5 @@ governed-mcp-tools/
     │   ├── validation-boundary.json
     │   └── workflow-regression.json
     ├── index.html                   # Evaluation Console SPA
-    ├── start-all.sh                 # Launches MCP server + eval runner
-    └── tutorial.md                  # DZone tutorial
+    └── start-all.sh                 # Launches MCP server + eval runner
 ```

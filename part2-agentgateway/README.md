@@ -1,19 +1,29 @@
 # Part 2: Securing and Scaling Goose-to-Java Agent Traffic with agentgateway
 
+**Long-form guide:** [Part 2 tutorial](../docs/tutorials/02-agentgateway-security.md)
+
 This directory contains the companion demo for Part 2 of the series. It deploys [agentgateway](https://agentgateway.dev) (Linux Foundation) as a security proxy between Goose AI Agent clients and the Quarkus MCP tool server from Part 1.
 
 ## Architecture
 
-```
-┌──────────┐       ┌───────────────────┐       ┌─────────────────────┐
-│  Goose   │──MCP──▶  agentgateway     │──MCP──▶  Quarkus MCP Server │
-│  Client  │ :3000 │  ┌─────────────┐  │ :8080 │  (customer-tools)   │
-└──────────┘       │  │ JWT AuthN   │  │       └─────────────────────┘
-                   │  │ RBAC AuthZ  │  │
-                   │  │ ExtMCP      │  │       ┌─────────────────────┐
-                   │  │ Guardrails  │  │──gRPC─▶  ExtMCP Guardrail   │
-                   │  └─────────────┘  │ :9001 │  (header sanitizer) │
-                   └───────────────────┘       └─────────────────────┘
+```mermaid
+%%{init: {'look':'handDrawn','theme':'neutral','themeVariables': {'lineColor':'#4A4035'}}}%%
+flowchart LR
+    G([Goose client]) -->|MCP :3000| AG
+    AG -->|MCP :8080| MCP([Quarkus MCP server<br/>customer-tools])
+    AG -->|gRPC :9001| GR([ExtMCP guardrail<br/>header sanitizer])
+
+    subgraph AG[agentgateway]
+        AUTH[JWT authentication]
+        RBAC[CEL tool authorization]
+        EXT[ExtMCP guardrails]
+        AUTH --> RBAC --> EXT
+    end
+
+    style G fill:#D4E6F1,stroke:#2E6B8A
+    style AG fill:#F5F5F0,stroke:#8B8070
+    style MCP fill:#D8F0D8,stroke:#3D7A3D
+    style GR fill:#F4D7D7,stroke:#9A4A4A
 ```
 
 ## Prerequisites

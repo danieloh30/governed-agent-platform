@@ -1,21 +1,30 @@
 # Part 5: Automated Agent Evaluation and Regression Testing
 
+**Long-form guide:** [Part 5 tutorial](../docs/tutorials/05-evaluation.md)
+
 This directory contains the companion demo for Part 5 of the series. It provides an automated evaluation framework that uses golden datasets to verify MCP tool accuracy, Bean Validation boundaries, and multi-step agent workflows — all runnable from CI/CD.
 
 ## Architecture
 
-```
-                                                        Part 1
-┌─────────────────────────────────────────────────────┐       ┌──────────────────────┐
-│         Quarkus Eval Runner (:8083)                 │──MCP──▶  Quarkus MCP Server  │
-│  ┌───────────────────────────────────────────────┐  │ :8080 │  (customer-tools)    │
-│  │ Golden Datasets                               │  │       └──────────────────────┘
-│  │  tool-accuracy · validation-boundary          │  │
-│  │  workflow-regression                          │  │
-│  │ Eval Engine (McpEvalClient + ResultComparator)│  │
-│  │ REST API: /eval/suites · /eval/run/{suite}    │  │
-│  └───────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────┘
+```mermaid
+%%{init: {'look':'handDrawn','theme':'neutral','themeVariables': {'lineColor':'#4A4035'}}}%%
+flowchart LR
+    DATA[(Golden datasets)] --> RUN
+    API([Eval REST API :8083]) --> RUN
+    RUN -->|MCP :8080| MCP([Quarkus MCP server<br/>customer-tools])
+    RUN --> REPORT([Accuracy, latency,<br/>and case results])
+
+    subgraph RUN[Evaluation engine]
+        CLIENT[McpEvalClient]
+        COMPARE[Result comparator]
+        CLIENT --> COMPARE
+    end
+
+    style DATA fill:#E8E0F0,stroke:#6B5B8A
+    style API fill:#D4E6F1,stroke:#2E6B8A
+    style RUN fill:#F5F5F0,stroke:#8B8070
+    style MCP fill:#D8F0D8,stroke:#3D7A3D
+    style REPORT fill:#E8DCC4,stroke:#6B5B45
 ```
 
 ## Prerequisites

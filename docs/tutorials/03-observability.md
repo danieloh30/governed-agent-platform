@@ -1,4 +1,14 @@
+---
+title: "Part 3: End-to-End Observability"
+description: Propagate W3C trace context and inspect MCP calls across the stack.
+permalink: /tutorials/03-observability/
+---
+
 # Part 3: End-to-End Tracing and Observability Across Goose, agentgateway, and Quarkus
+
+[Tutorial home](../) · [Run the example](../../part3-observability/) · [Enterprise deep dives](../../enterprise/)
+
+> **Lab contract:** You will correlate MCP calls in a local Jaeger instance. Before production, define an attribute allowlist, redact PII and secrets, choose head or tail sampling by risk, secure the collector, set retention by data class, and alert from service-level signals—not from traces alone.
 
 > **TL;DR** — Add W3C Trace Context propagation across Goose, agentgateway, and Quarkus to turn opaque agentic tool loops into fully observable distributed traces in Jaeger.
 
@@ -12,7 +22,7 @@
 
 ## The Core Problem
 
-In [Part 1](https://dzone.com/articles/building-governed-mcp-tool-services-with-quarkus-and-goose) we built a Quarkus MCP tool server. In [Part 2](../part2-agentgateway/tutorial.md) we secured it with agentgateway's JWT authentication, RBAC, and ExtMCP guardrails. The architecture works — but when something goes wrong in production, you're flying blind.
+In [Part 1](../01-governed-mcp-tools/) we built a Quarkus MCP tool server. In [Part 2](../02-agentgateway-security/) we secured it with agentgateway's JWT authentication, RBAC, and ExtMCP guardrails. The architecture works — but when something goes wrong in production, you're flying blind.
 
 Agentic workflows are fundamentally different from traditional request-response APIs. A single user prompt like *"Debug customer CUST-4091"* triggers a multi-round-trip loop:
 
@@ -29,17 +39,18 @@ This creates **black holes in telemetry dashboards** — the exact gap that auto
 
 The fix is standard distributed tracing, applied to the MCP transport layer:
 
-```
-┌──────────┐       ┌───────────────────┐       ┌─────────────────────┐
-│  Goose   │──MCP──▶  agentgateway     │──MCP──▶  Quarkus MCP Server │
-│  Client  │       │  (trace export)   │       │  (quarkus-otel)     │
-└──────────┘       └────────┬──────────┘       └──────────┬──────────┘
-                            │ OTLP gRPC                   │ OTLP HTTP
-                            ▼                             ▼
-                   ┌──────────────────────────────────────────────────┐
-                   │              Jaeger (OTLP Collector)             │
-                   │              http://localhost:16686              │
-                   └──────────────────────────────────────────────────┘
+```mermaid
+%%{init: {'look':'handDrawn','theme':'neutral','themeVariables': {'lineColor':'#4A4035'}}}%%
+flowchart LR
+    G([Goose client]) -->|MCP + traceparent| AG([agentgateway])
+    AG -->|MCP + traceparent| MCP([Quarkus MCP server<br/>OpenTelemetry])
+    AG -->|OTLP gRPC| J[(Jaeger collector<br/>:4317 / UI :16686)]
+    MCP -->|OTLP HTTP| J
+
+    style G fill:#D4E6F1,stroke:#2E6B8A
+    style AG fill:#E8E0F0,stroke:#6B5B8A
+    style MCP fill:#D8F0D8,stroke:#3D7A3D
+    style J fill:#E8DCC4,stroke:#6B5B45
 ```
 
 - **agentgateway** exports spans for every proxied MCP request and propagates `traceparent` headers to the backend.
@@ -315,4 +326,4 @@ The entire stack runs locally with a single `./start-all.sh` command and produce
 
 With tracing in place, you can now see every MCP tool call flowing through the system. In Part 4, we will move beyond single-agent tool calls to **multi-agent orchestration** — using the [Agent-to-Agent (A2A) protocol](https://github.com/a2aproject/a2a-spec) to coordinate autonomous agents that can delegate work, enforce governance via `AGENTS.md`, and call back into our MCP tool services.
 
-- **[Part 4: Multi-Agent Orchestration with A2A Protocol](../part4-multi-agent/tutorial.md)**
+- **[Part 4: Multi-Agent Orchestration with A2A Protocol](../04-multi-agent-governance/)**

@@ -1,20 +1,23 @@
 # Part 3: End-to-End Tracing and Observability Across Goose, agentgateway, and Quarkus
 
+**Long-form guide:** [Part 3 tutorial](../docs/tutorials/03-observability.md)
+
 This directory contains the companion demo for Part 3 of the series. It adds distributed tracing across all three layers — Goose (client), agentgateway (proxy), and Quarkus (backend) — using W3C Trace Context propagation and Jaeger.
 
 ## Architecture
 
-```
-┌──────────┐       ┌───────────────────┐       ┌─────────────────────┐
-│  Goose   │──MCP──▶  agentgateway     │──MCP──▶  Quarkus MCP Server │
-│  Client  │ :3000 │  (trace export)   │ :8080 │  (quarkus-otel)     │
-└──────────┘       └────────┬──────────┘       └──────────┬──────────┘
-                            │ OTLP gRPC                   │ OTLP HTTP
-                            ▼                             ▼
-                   ┌──────────────────────────────────────────────────┐
-                   │              Jaeger (OTLP Collector)             │
-                   │              http://localhost:16686              │
-                   └──────────────────────────────────────────────────┘
+```mermaid
+%%{init: {'look':'handDrawn','theme':'neutral','themeVariables': {'lineColor':'#4A4035'}}}%%
+flowchart LR
+    G([Goose client]) -->|MCP + traceparent| AG([agentgateway])
+    AG -->|MCP + traceparent| MCP([Quarkus MCP server<br/>OpenTelemetry])
+    AG -->|OTLP gRPC| J[(Jaeger collector<br/>:4317 / UI :16686)]
+    MCP -->|OTLP HTTP| J
+
+    style G fill:#D4E6F1,stroke:#2E6B8A
+    style AG fill:#E8E0F0,stroke:#6B5B8A
+    style MCP fill:#D8F0D8,stroke:#3D7A3D
+    style J fill:#E8DCC4,stroke:#6B5B45
 ```
 
 ## Prerequisites

@@ -1,4 +1,14 @@
+---
+title: "Part 2: Agent Gateway Security"
+description: Add agent identity, tool-level authorization, and MCP guardrails.
+permalink: /tutorials/02-agentgateway-security/
+---
+
 # Part 2: Securing and Scaling Goose-to-Java Agent Traffic With agentgateway
+
+[Tutorial home](../) · [Run the example](../../part2-agentgateway/) · [Enterprise deep dives](../../enterprise/)
+
+> **Lab contract:** You will prove authentication, per-tool authorization, and metadata inspection with local configuration. The sample token and static policy are not production identity. Use an external OIDC issuer, short-lived credentials, strict issuer/audience checks, key rotation, deny-by-default policy, and tenant-aware negative tests in a deployed environment.
 
 **TL;DR:** Deploy agentgateway as a security proxy between Goose AI agents and Quarkus MCP servers to enforce JWT auth, RBAC, and tool-poisoning guardrails.
 
@@ -19,11 +29,12 @@ This article answers those questions by placing [agentgateway](https://agentgate
 
 When Goose (or any MCP client) connects directly to a backend MCP server, every tool call is a point-to-point trust relationship:
 
-```
-┌──────────┐         ┌─────────────────────┐
-│  Goose   │──MCP──▶ │  Quarkus MCP Server │
-│  Client  │  :8080  │  (customer-tools)   │
-└──────────┘         └─────────────────────┘
+```mermaid
+%%{init: {'look':'handDrawn','theme':'neutral','themeVariables': {'lineColor':'#4A4035'}}}%%
+flowchart LR
+    G([Goose client]) -->|Direct MCP :8080| MCP([Quarkus MCP server<br/>customer-tools])
+    style G fill:#D4E6F1,stroke:#2E6B8A
+    style MCP fill:#F4D7D7,stroke:#9A4A4A
 ```
 
 This works for demos. It breaks in production for three reasons:
@@ -36,16 +47,24 @@ This works for demos. It breaks in production for three reasons:
 
 agentgateway is a Rust-based proxy purpose-built for AI agent traffic. It understands the MCP protocol natively — it doesn't just forward HTTP; it parses JSON-RPC envelopes, manages MCP sessions, and applies policies at the *tool-call* level. Here is the architecture we're building:
 
-```
-┌──────────┐       ┌───────────────────┐       ┌─────────────────────┐
-│  Goose   │──MCP──▶  agentgateway     │──MCP──▶  Quarkus MCP Server │
-│  Client  │ :3000 │  ┌─────────────┐  │ :8080 │  (customer-tools)   │
-└──────────┘       │  │ JWT AuthN   │  │       └─────────────────────┘
-                   │  │ RBAC AuthZ  │  │
-                   │  │ ExtMCP      │  │       ┌─────────────────────┐
-                   │  │ Guardrails  │  │──gRPC─▶  ExtMCP Guardrail   │
-                   │  └─────────────┘  │ :9001 │  (header sanitizer) │
-                   └───────────────────┘       └─────────────────────┘
+```mermaid
+%%{init: {'look':'handDrawn','theme':'neutral','themeVariables': {'lineColor':'#4A4035'}}}%%
+flowchart LR
+    G([Goose client]) -->|MCP :3000| AG
+    AG -->|MCP :8080| MCP([Quarkus MCP server<br/>customer-tools])
+    AG -->|gRPC :9001| GR([ExtMCP guardrail<br/>header sanitizer])
+
+    subgraph AG[agentgateway control plane]
+        AUTH[JWT authentication]
+        RBAC[CEL tool authorization]
+        EXT[ExtMCP guardrails]
+        AUTH --> RBAC --> EXT
+    end
+
+    style G fill:#D4E6F1,stroke:#2E6B8A
+    style AG fill:#F5F5F0,stroke:#8B8070
+    style MCP fill:#D8F0D8,stroke:#3D7A3D
+    style GR fill:#F4D7D7,stroke:#9A4A4A
 ```
 
 Goose connects to agentgateway on port 3000. agentgateway validates the JWT, checks the caller's roles against tool-level RBAC rules, passes the call through an ExtMCP guardrail server that sanitizes headers and blocks poisoning attempts, and only then forwards the clean request to the Quarkus backend on port 8080.

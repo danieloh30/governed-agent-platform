@@ -1,5 +1,7 @@
 # Building Governed MCP Tool Services with Quarkus and Goose (Part 1)
 
+**Long-form guide:** [Part 1 tutorial](../docs/tutorials/01-governed-mcp-tools.md)
+
 This project demonstrates how to expose a Quarkus-based Java microservice as a **stateless Model Context Protocol (MCP) server** that the [Goose AI Agent](https://block.github.io/goose/) can discover and invoke over Streamable HTTP.
 
 ![Building Governed MCP Tool Services with Quarkus and Goose](assets/images/mcp_goose_part1.png)

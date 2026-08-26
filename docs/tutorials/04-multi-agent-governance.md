@@ -1,4 +1,14 @@
+---
+title: "Part 4: Multi-Agent Governance"
+description: Orchestrate A2A tasks with policy decisions and human approval.
+permalink: /tutorials/04-multi-agent-governance/
+---
+
 # Part 4: Multi-Agent Orchestration — Pairing Goose with Quarkus Flow State Machines
+
+[Tutorial home](../) · [Run the example](../../part4-multi-agent/) · [Enterprise deep dives](../../enterprise/)
+
+> **Lab contract:** You will explore policy categories and HITL state transitions using in-memory state and a demo approval endpoint. A production approval is a security decision: persist it durably, authenticate and authorize the approver, enforce separation of duties, bind it to an immutable request version, expire it, and make execution idempotent.
 
 > **TL;DR** — Bridge Goose agent interactions with Quarkus Flow state machines governed by AGENTS.md rules and integrated via the Agent2Agent (A2A) protocol — the Linux Foundation standard for multi-agent interoperability — to enforce human-in-the-loop approvals on high-risk enterprise workflows.
 
@@ -14,7 +24,7 @@
 
 ## The Core Problem
 
-In [Part 1](../part1-quarkus-mcp/tutorial.md) we built a Quarkus MCP tool server. In [Part 2](../part2-agentgateway/tutorial.md) we secured it with agentgateway. In [Part 3](../part3-observability/tutorial.md) we added distributed tracing. The architecture handles single-request tool calls well — but enterprise processes are rarely single-step.
+In [Part 1](../01-governed-mcp-tools/) we built a Quarkus MCP tool server. In [Part 2](../02-agentgateway-security/) we secured it with agentgateway. In [Part 3](../03-observability/) we added distributed tracing. The architecture handles single-request tool calls well — but enterprise processes are rarely single-step.
 
 Consider what happens when a developer tells Goose: *"Migrate the users table to add an email column, then deploy the updated service to production."* This triggers a chain of operations:
 
@@ -35,16 +45,25 @@ Without these guardrails, autonomous agents operate in a governance vacuum — t
 
 The fix combines three standards into a governed multi-agent architecture:
 
-```
-                                                              Part 1
-┌──────────┐              ┌──────────────────────────────┐    ┌──────────────────┐
-│  Goose   │──A2A──────── ▶  Quarkus A2A Flow (:8082)    │    │ Quarkus MCP      │
-│  Client  │  SendMessage │  ┌────────────────────────┐  │    │ Server (:8080)   │
-└──────────┘              │  │ A2A SDK (AgentExecutor)│  │──MCP──▶ customer-tools│
-       ▲                  │  │ AGENTS.md Governance   │  │    └──────────────────┘
-       │                  │  │ HITL Approval Gate     │  │
-  /.well-known/           │  └────────────────────────┘  │
-  agent-card.json         └──────────────────────────────┘
+```mermaid
+%%{init: {'look':'handDrawn','theme':'neutral','themeVariables': {'lineColor':'#4A4035'}}}%%
+flowchart LR
+    G([Goose client]) -->|Discover agent card| CARD[Public agent card]
+    G -->|A2A SendMessage :8082| FLOW
+    FLOW -->|MCP :8080| MCP([Quarkus MCP server<br/>customer-tools])
+
+    subgraph FLOW[Quarkus A2A flow]
+        EXEC[A2A AgentExecutor]
+        GOV[AGENTS.md governance]
+        HITL[HITL approval gate]
+        EXEC --> GOV --> HITL
+    end
+
+    CARD -.-> FLOW
+    style G fill:#D4E6F1,stroke:#2E6B8A
+    style FLOW fill:#F5F5F0,stroke:#8B8070
+    style CARD fill:#E8E0F0,stroke:#6B5B8A
+    style MCP fill:#D8F0D8,stroke:#3D7A3D
 ```
 
 - **A2A (Agent2Agent)** — the Linux Foundation standard for multi-agent interoperability. Goose discovers the Quarkus backend via an Agent Card and delegates tasks using JSON-RPC over HTTP. The A2A Java SDK (`@PublicAgentCard` + `AgentExecutor`) handles protocol compliance automatically.
@@ -216,17 +235,18 @@ Notice the conditional logic for `process-refund` — governance rules can inclu
 
 Each A2A task flows through a state machine with six possible states:
 
-```
-┌───────────┐     ┌─────────┐     ┌────────────────┐     ┌───────────┐
-│ SUBMITTED │────▶│ WORKING │────▶│ INPUT_REQUIRED │────▶│ COMPLETED │
-└───────────┘     └────┬────┘     └───────┬────────┘     └───────────┘
-                       │                  │
-                       ▼                  ▼
-                  ┌────────┐         ┌────────┐
-                  │ FAILED │         │ FAILED │
-                  └────────┘         └────────┘
-                (governance          (rejected by
-                 blocked)             human)
+```mermaid
+%%{init: {'look':'handDrawn','theme':'neutral','themeVariables': {'lineColor':'#4A4035'}}}%%
+stateDiagram-v2
+    [*] --> SUBMITTED
+    SUBMITTED --> WORKING
+    WORKING --> INPUT_REQUIRED: approval required
+    INPUT_REQUIRED --> WORKING: approved
+    INPUT_REQUIRED --> FAILED: rejected / expired
+    WORKING --> COMPLETED: auto-approved or executed
+    WORKING --> FAILED: governance blocked / execution error
+    COMPLETED --> [*]
+    FAILED --> [*]
 ```
 
 The `WorkflowEngine` manages this lifecycle:
@@ -489,4 +509,4 @@ Starting from the observable architecture in Part 3, we added multi-agent orches
 
 With governance, security, tracing, and multi-agent orchestration in place, the stack is production-capable — but how do you know it stays correct across code changes? In Part 5, we will add **automated agent evaluation and regression testing** — using golden datasets to verify that MCP tool outputs, Bean Validation boundaries, and multi-step agent workflows produce correct, consistent results as the codebase evolves.
 
-- **[Part 5: Automated Agent Evaluation and Regression Testing](../part5-evaluation/tutorial.md)**
+- **[Part 5: Automated Agent Evaluation and Regression Testing](../05-evaluation/)**

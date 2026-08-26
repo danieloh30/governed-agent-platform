@@ -1,30 +1,46 @@
 # Part 4: Multi-Agent Orchestration with A2A Protocol
 
+**Long-form guide:** [Part 4 tutorial](../docs/tutorials/04-multi-agent-governance.md)
+
 This directory contains the companion demo for Part 4 of the series. It bridges Goose agent interactions with Quarkus Flow state machines governed by AGENTS.md rules and integrated via the Agent2Agent (A2A) protocol — the Linux Foundation standard for multi-agent interoperability.
 
 ## Architecture
 
-```
-                                                        Part 1
-┌──────────┐       ┌─────────────────────────────────────────┐       ┌──────────────────────┐
-│  Goose   │──A2A──▶  Quarkus A2A Flow Server (:8082)       │──MCP──▶  Quarkus MCP Server  │
-│  Client  │       │  ┌───────────────────────────────────┐  │ :8080 │  (customer-tools)    │
-└──────────┘       │  │ @PublicAgentCard (A2A SDK)        │  │       └──────────────────────┘
-       ▲           │  │ AgentExecutor (A2A SDK)           │  │
-       │           │  │ AGENTS.md Governance              │  │
-/.well-known/      │  │ HITL Approval Gate                │  │
-agent-card.json    │  └───────────────────────────────────┘  │
-                   └─────────────────────────────────────────┘
+```mermaid
+%%{init: {'look':'handDrawn','theme':'neutral','themeVariables': {'lineColor':'#4A4035'}}}%%
+flowchart LR
+    G([Goose client]) -->|Discover agent card| CARD[Public agent card]
+    G -->|A2A :8082| FLOW
+    FLOW -->|MCP :8080| MCP([Quarkus MCP server<br/>customer-tools])
+
+    subgraph FLOW[Quarkus A2A flow]
+        EXEC[AgentExecutor]
+        GOV[AGENTS.md policy]
+        HITL[HITL approval gate]
+        EXEC --> GOV --> HITL
+    end
+
+    CARD -.-> FLOW
+    style G fill:#D4E6F1,stroke:#2E6B8A
+    style FLOW fill:#F5F5F0,stroke:#8B8070
+    style CARD fill:#E8E0F0,stroke:#6B5B8A
+    style MCP fill:#D8F0D8,stroke:#3D7A3D
 ```
 
 ### A2A Task Lifecycle
 
-```
-submitted → working → input-required → working → completed
-                    ↘                           ↗
-                      completed (auto-approved)
-                    ↘
-                      failed (blocked / rejected)
+```mermaid
+%%{init: {'look':'handDrawn','theme':'neutral','themeVariables': {'lineColor':'#4A4035'}}}%%
+stateDiagram-v2
+    [*] --> submitted
+    submitted --> working
+    working --> input_required: approval required
+    input_required --> working: approved
+    input_required --> failed: rejected / expired
+    working --> completed: auto-approved or executed
+    working --> failed: blocked / execution error
+    completed --> [*]
+    failed --> [*]
 ```
 
 ## Prerequisites

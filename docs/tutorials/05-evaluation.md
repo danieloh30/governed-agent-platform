@@ -1,4 +1,14 @@
+---
+title: "Part 5: Evaluation and Regression Testing"
+description: Turn golden datasets into repeatable MCP control evidence.
+permalink: /tutorials/05-evaluation/
+---
+
 # Part 5: Automated Agent Evaluation and Regression Testing for MCP Tool Services
+
+[Tutorial home](../) · [Run the example](../../part5-evaluation/) · [Enterprise deep dives](../../enterprise/)
+
+> **Lab contract:** You will run deterministic golden cases against a local MCP server. A release program should also execute through the gateway, cover identity and tenant matrices, test policy denial and dependency failure, version dataset provenance, detect sensitive telemetry, and require a reviewed waiver when a threshold is overridden.
 
 > **TL;DR** — Build an automated evaluation framework that uses golden datasets to verify MCP tool accuracy, validate Bean Validation boundaries, and catch regressions in multi-step agent workflows — all runnable from CI/CD.
 
@@ -12,7 +22,7 @@
 
 ## The Core Problem
 
-In [Part 1](../part1-quarkus-mcp/tutorial.md) we built a Quarkus MCP tool server with Jakarta Bean Validation. In [Part 2](../part2-agentgateway/tutorial.md) we secured it with agentgateway. In [Part 3](../part3-observability/tutorial.md) we added distributed tracing. In [Part 4](../part4-multi-agent/tutorial.md) we orchestrated multi-agent workflows with A2A. The architecture works, it is secure, and it is observable — but how do you know it stays correct across code changes?
+In [Part 1](../01-governed-mcp-tools/) we built a Quarkus MCP tool server with Jakarta Bean Validation. In [Part 2](../02-agentgateway-security/) we secured it with agentgateway. In [Part 3](../03-observability/) we added distributed tracing. In [Part 4](../04-multi-agent-governance/) we orchestrated multi-agent workflows with A2A. The architecture works, it is secure, and it is observable — but how do you know it stays correct across code changes?
 
 Manual testing with Goose catches obvious breakages. Ask it to debug a customer, and if the tool throws an exception, you will notice. But manual testing has structural gaps that compound as the codebase grows:
 
@@ -25,25 +35,26 @@ The solution is an **evaluation framework** that treats MCP tool services like a
 
 ## Architecture
 
-```
-┌─────────────────────────────────┐        ┌─────────────────────┐
-│       Eval Runner (Part 5)      │        │  Quarkus MCP Server │
-│  ┌───────────────────────────┐  │        │  (Part 1 · :8080)   │
-│  │ Golden Datasets           │  │──MCP──▶│                     │
-│  │  tool-accuracy.json       │  │        │  @Tool endpoints    │
-│  │  validation-boundary.json │  │        │  Bean Validation    │
-│  │  workflow-regression.json │  │        │  Reactive execution │
-│  ├───────────────────────────┤  │        └─────────────────────┘
-│  │ Eval Engine               │  │
-│  │  McpEvalClient            │  │
-│  │  EvalRunner               │  │
-│  │  Result Comparator        │  │
-│  ├───────────────────────────┤  │
-│  │ REST API (:8083)          │  │
-│  │  GET  /eval/suites        │  │
-│  │  POST /eval/run/{suite}   │  │
-│  └───────────────────────────┘  │
-└─────────────────────────────────┘
+```mermaid
+%%{init: {'look':'handDrawn','theme':'neutral','themeVariables': {'lineColor':'#4A4035'}}}%%
+flowchart LR
+    DATA[(Golden datasets<br/>accuracy · validation · workflow)] --> RUN
+    API([Eval REST API :8083]) --> RUN
+    RUN -->|MCP :8080| MCP([Quarkus MCP server<br/>tools + validation])
+    RUN --> REPORT([Accuracy, latency,<br/>and case results])
+
+    subgraph RUN[Evaluation engine]
+        CLIENT[McpEvalClient]
+        EVAL[EvalRunner]
+        COMPARE[Result comparator]
+        CLIENT --> EVAL --> COMPARE
+    end
+
+    style DATA fill:#E8E0F0,stroke:#6B5B8A
+    style API fill:#D4E6F1,stroke:#2E6B8A
+    style RUN fill:#F5F5F0,stroke:#8B8070
+    style MCP fill:#D8F0D8,stroke:#3D7A3D
+    style REPORT fill:#E8DCC4,stroke:#6B5B45
 ```
 
 The Eval Runner is a standalone Quarkus application that:
@@ -762,10 +773,10 @@ This 5-part series built a complete governed AI agent infrastructure:
 
 | Part | What We Built | Key Technology |
 |------|--------------|----------------|
-| 1 | [MCP tool server with input hardening](../part1-quarkus-mcp/tutorial.md) | Quarkus `@Tool` + Jakarta Bean Validation |
-| 2 | [Security proxy with auth and guardrails](../part2-agentgateway/tutorial.md) | agentgateway JWT, RBAC, ExtMCP |
-| 3 | [End-to-end distributed tracing](../part3-observability/tutorial.md) | OpenTelemetry + Jaeger |
-| 4 | [Multi-agent orchestration with governance](../part4-multi-agent/tutorial.md) | A2A protocol + AGENTS.md |
-| 5 | [Automated evaluation and regression testing](../part5-evaluation/tutorial.md) | Golden datasets + MCP eval runner |
+| 1 | [MCP tool server with input hardening](../01-governed-mcp-tools/) | Quarkus `@Tool` + Jakarta Bean Validation |
+| 2 | [Security proxy with auth and guardrails](../02-agentgateway-security/) | agentgateway JWT, RBAC, ExtMCP |
+| 3 | [End-to-end distributed tracing](../03-observability/) | OpenTelemetry + Jaeger |
+| 4 | [Multi-agent orchestration with governance](../04-multi-agent-governance/) | A2A protocol + AGENTS.md |
+| 5 | [Automated evaluation and regression testing](../05-evaluation/) | Golden datasets + MCP eval runner |
 
 Each layer addresses a different production concern — correctness, security, observability, orchestration, and now continuous verification. Together they provide the governance framework that platform engineers need to safely deploy autonomous AI agents against enterprise infrastructure.

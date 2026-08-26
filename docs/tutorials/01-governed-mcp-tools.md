@@ -1,4 +1,14 @@
+---
+title: "Part 1: Governed MCP Tool Services"
+description: Build and harden a Quarkus MCP server, then connect it to Goose.
+permalink: /tutorials/01-governed-mcp-tools/
+---
+
 # Part 1: Building Governed MCP Tool Services with Quarkus LangChain4j and Goose
+
+[Tutorial home](../) · [Run the example](../../part1-quarkus-mcp/) · [Enterprise deep dives](../../enterprise/)
+
+> **Lab contract:** You will expose five read-only, in-memory tools and enforce syntactic input constraints at the MCP boundary. Production systems must also authorize the caller, enforce business invariants, isolate tenants, protect downstream credentials, and avoid returning unrestricted customer data. Parts 2–5 add several—but not all—of those controls.
 
 > **TL;DR** — Build governed, cloud-native Java MCP tool services for Goose agents using Quarkus LangChain4j, Java 25, and Jakarta Bean Validation.
 
@@ -25,27 +35,23 @@ The solution is to build a stateless **MCP Tool Server** in Java using Quarkus. 
 
 ## Architecture: How Goose Integrates with Quarkus MCP
 
-```
-┌────────────────────────────────────────────────────────┐
-│             Goose AI Agent (Rust Runtime)              │
-│       (Local CLI / Desktop App / ACP Server)           │
-└───────────────────────────┬────────────────────────────┘
-                            │ Model Context Protocol (MCP)
-                            │ JSON-RPC over Streamable HTTP
-                            ▼
-┌────────────────────────────────────────────────────────┐
-│            Quarkus LangChain4j MCP Server              │
-│  ┌──────────────────────────────────────────────────┐  │
-│  │  @Tool Annotations → Auto-registered MCP tools   │  │
-│  │  @ToolArg + Bean Validation → Input hardening    │  │
-│  │  Java records → Zero-config JSON output          │  │
-│  └──────────────────────────────────────────────────┘  │
-│  - GraalVM Native Image Ready                          │
-│  - OpenTelemetry Instrumented (Part 3)                 │
-└───────────────────────────┬────────────────────────────┘
-                            │ CDI / Reactive Clients
-                            ▼
-             Enterprise APIs / Databases / Dev UI
+```mermaid
+%%{init: {'look':'handDrawn','theme':'neutral','themeVariables': {'lineColor':'#4A4035'}}}%%
+flowchart TD
+    G([Goose AI agent<br/>CLI · Desktop · ACP])
+    G -->|MCP JSON-RPC<br/>Streamable HTTP| Q
+    Q -->|CDI / reactive clients| SYS([Enterprise APIs<br/>databases · dev UI])
+
+    subgraph Q[Quarkus MCP server]
+        TOOL[@Tool discovery]
+        VALIDATE[@ToolArg + Bean Validation]
+        JSON[Java records to JSON]
+        TOOL --> VALIDATE --> JSON
+    end
+
+    style G fill:#D4E6F1,stroke:#2E6B8A
+    style Q fill:#F5F5F0,stroke:#8B8070
+    style SYS fill:#D8F0D8,stroke:#3D7A3D
 ```
 
 The flow has three actors:
@@ -330,4 +336,4 @@ Prompt Goose:
 
 The MCP server we built gives Goose validated access to enterprise tools — but it is wide open. Any client that can reach `:8080` can call any tool with any arguments. When hundreds of developers run local Goose agents against shared backend microservices, this creates security and governance risks.
 
-**[Part 2: Securing and Scaling Goose-to-Java Agent Traffic with agentgateway](../part2-agentgateway/tutorial.md)** introduces [agentgateway](https://agentgateway.dev/) — the Linux Foundation data plane proxy — to sit between Goose and Quarkus. We will configure OAuth2/OIDC authentication, fine-grained tool-level RBAC with CEL expressions, and ExtMCP guardrails to harden the enterprise AI infrastructure.
+**[Part 2: Securing and Scaling Goose-to-Java Agent Traffic with agentgateway](../02-agentgateway-security/)** introduces [agentgateway](https://agentgateway.dev/) — the Linux Foundation data plane proxy — to sit between Goose and Quarkus. We will configure OAuth2/OIDC authentication, fine-grained tool-level RBAC with CEL expressions, and ExtMCP guardrails to harden the enterprise AI infrastructure.
