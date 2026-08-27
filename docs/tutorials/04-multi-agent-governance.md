@@ -46,6 +46,7 @@ Without these guardrails, autonomous agents operate in a governance vacuum — t
 The fix combines three standards into a governed multi-agent architecture:
 
 ```mermaid
+%%{init: {'look':'handDrawn','theme':'neutral','themeVariables': {'lineColor':'#4A4035'}}}%%
 flowchart LR
     G([Goose client]) -->|Discover agent card| CARD["Public agent card"]
     G -->|A2A SendMessage :8082| EXEC
@@ -235,6 +236,7 @@ Notice the conditional logic for `process-refund` — governance rules can inclu
 Each A2A task flows through a state machine with six possible states:
 
 ```mermaid
+%%{init: {'look':'handDrawn','theme':'neutral','themeVariables': {'lineColor':'#4A4035'}}}%%
 stateDiagram-v2
     [*] --> SUBMITTED
     SUBMITTED --> WORKING
