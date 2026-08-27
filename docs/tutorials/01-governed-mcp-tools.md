@@ -36,21 +36,21 @@ The solution is to build a stateless **MCP Tool Server** in Java using Quarkus. 
 ## Architecture: How Goose Integrates with Quarkus MCP
 
 ```mermaid
-%%{init: {'look':'handDrawn','theme':'neutral','themeVariables': {'lineColor':'#4A4035'}}}%%
 flowchart TD
-    G([Goose AI agent<br/>CLI · Desktop · ACP])
-    G -->|MCP JSON-RPC<br/>Streamable HTTP| Q
-    Q -->|CDI / reactive clients| SYS([Enterprise APIs<br/>databases · dev UI])
+    G(["Goose AI agent<br/>CLI · Desktop · ACP"])
 
-    subgraph Q[Quarkus MCP server]
-        TOOL[@Tool discovery]
-        VALIDATE[@ToolArg + Bean Validation]
-        JSON[Java records to JSON]
+    subgraph QMCP["Quarkus MCP server"]
+        TOOL["@Tool discovery"]
+        VALIDATE["@ToolArg + Bean Validation"]
+        JSON["Java records to JSON"]
         TOOL --> VALIDATE --> JSON
     end
 
+    G -->|"MCP JSON-RPC<br/>Streamable HTTP"| TOOL
+    JSON -->|"CDI / reactive clients"| SYS(["Enterprise APIs<br/>databases · dev UI"])
+
     style G fill:#D4E6F1,stroke:#2E6B8A
-    style Q fill:#F5F5F0,stroke:#8B8070
+    style QMCP fill:#F5F5F0,stroke:#8B8070
     style SYS fill:#D8F0D8,stroke:#3D7A3D
 ```
 
