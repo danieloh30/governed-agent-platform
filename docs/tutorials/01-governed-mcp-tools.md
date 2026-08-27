@@ -36,6 +36,7 @@ The solution is to build a stateless **MCP Tool Server** in Java using Quarkus. 
 ## Architecture: How Goose Integrates with Quarkus MCP
 
 ```mermaid
+%%{init: {'look':'handDrawn','theme':'neutral','themeVariables': {'lineColor':'#4A4035'}}}%%
 flowchart TD
     G(["Goose AI agent<br/>CLI · Desktop · ACP"])
 
