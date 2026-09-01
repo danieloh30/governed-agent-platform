@@ -7,6 +7,11 @@ permissions:
   contents: write
   pull-requests: write
 
+# Avoid simultaneous Dependabot jobs racing to update the same base branch.
+concurrency:
+  group: dependabot-auto-merge
+  cancel-in-progress: false
+
 jobs:
   auto-merge:
     runs-on: ubuntu-latest
