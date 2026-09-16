@@ -8,9 +8,11 @@ permissions:
   pull-requests: write
 
 # Avoid simultaneous Dependabot jobs racing to update the same base branch.
+# Keep queued PRs instead of replacing the single pending run during update bursts.
 concurrency:
   group: dependabot-auto-merge
   cancel-in-progress: false
+  queue: max
 
 jobs:
   auto-merge:
