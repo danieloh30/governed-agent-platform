@@ -5,7 +5,7 @@
 30-minute lab: run Agent Router **v1.1.0** against two instances of a Quarkus model simulator.
 Exercise routing, fallback, non-retryable errors, and recovery without API keys or a GPU.
 Agent Router/Envoy performs the routing; the Quarkus backends return deterministic completions.
-They do not perform inference. All application, launcher, and verification logic is Java.
+They do not perform inference. Backend, launcher, and verification logic is Java.
 
 ## Architecture
 
@@ -46,7 +46,16 @@ Envoy **1.38.1**. `start-all.sh` builds the app before launching; set `SKIP_BUIL
 an existing build. The gateway listener is unauthenticated, so use a trusted local machine;
 Quarkus backend and control endpoints bind to loopback.
 
-In a second terminal at `part6-agent-router/`:
+Open **http://localhost:18081/** for the Model Routing Console. It follows the same SPA
+layout and light/dark theme as Parts 1–5. Its standalone source is `part6-agent-router/index.html`;
+Maven packages it into this Quarkus application. No separate frontend server is needed.
+
+Use **Primary Route → Unmatched Model → Fail Over → Recover → Run All Six Checks**.
+The page shows real HTTP responses, selected backends, attempt counters, and upstream model
+names. Backend controls reproduce 400 and 503 errors; Reset restores both backends. Browser
+requests use same-origin `/lab/*` endpoints, whose Quarkus REST Client calls the real gateway.
+
+For the equivalent terminal workflow, in a second terminal at `part6-agent-router/`:
 
 ```bash
 curl -sS http://localhost:1975/v1/chat/completions \
@@ -77,6 +86,7 @@ state. The `cli` profile disables the launcher's and verifier's HTTP listeners.
 | `POST /v1/chat/completions` | Fixed OpenAI-shaped JSON response; Bean Validation checks model, messages, and non-streaming input |
 | `GET /admin` | Read backend name, mode, attempt counter, and last upstream model |
 | `POST /admin` | Set `healthy`, `unavailable` (503), or `bad-request` (400); optionally reset counters |
+| `/lab/state`, `/lab/request`, `/lab/backends/{backend}`, `/lab/reset`, `/lab/verify` | Same-origin console API; model requests always pass through Agent Router |
 | `GET /q/health/ready` | SmallRye Health readiness; remains UP during deliberately simulated provider errors |
 
 `ModelResource` handles HTTP, `ModelService` holds synchronized in-memory state, and `ModelApi`
@@ -102,6 +112,7 @@ and unsupported control modes return 400 before changing state. Bodies above 64 
 
 | File | Purpose |
 |---|---|
+| `index.html` | Self-contained Part 6 SPA, copied into Quarkus static resources at build time |
 | `config.yaml` | Route `acme-support` to primary/fallback with common upstream model `acme-model-v1` |
 | `pom.xml` | Quarkus REST/Jackson, REST Client/Jackson, Bean Validation, SmallRye Health, and endpoint tests |
 | `src/main/resources/application.properties` | Ports, backend identity, CLI profile, client timeouts |
@@ -138,6 +149,7 @@ changes modes and resets counters. Neither test layer evaluates generated answer
 
 | Symptom | Action |
 |---|---|
+| Console does not connect | Run `./start-all.sh` and open `http://localhost:18081/`; opening the HTML file directly does not start the services |
 | Missing CLI | Run `./install.sh`, or set `AIGW_BIN` to an absolute v1.1.0 executable path |
 | Missing application JAR | Run `./start-all.sh` without `SKIP_BUILD=true` |
 | Checksum mismatch | Do not run the downloaded asset; confirm the pinned release and retry |

@@ -112,24 +112,21 @@ header p { font-size: 0.85rem; color: var(--muted); }
   </div>
 
   <div class="link-row" id="links" style="display:none">
-    <a href="http://localhost:8887/index.html" class="link-primary">Open MCP Console Demo</a>
-    <a href="/q/dev-ui" class="link-secondary">Quarkus Dev UI</a>
+    <a href="/console/index.html" class="link-primary">Open MCP Console Demo</a>
+    <a id="dev-ui" href="/q/dev-ui/" class="link-secondary" hidden style="display:none">Quarkus Dev UI</a>
   </div>
+  <p id="dev-hint" style="font-size:0.8rem;color:var(--muted);margin-top:16px">Dev UI requires development mode: stop the packaged server, then run <code>./start-all.sh --dev</code> or <code>mvn quarkus:dev</code> in Part 1.</p>
 </div>
 
+<script src="/console/mcp-client.js"></script>
 <script>
 async function init() {
   try {
-    const res = await fetch('/mcp', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json, text/event-stream' },
-      body: JSON.stringify({
-        jsonrpc: '2.0', id: 1, method: 'initialize',
-        params: { protocolVersion: '2025-03-26', capabilities: {},
-                  clientInfo: { name: 'server-info', version: '1.0' } }
-      })
+    const client = new McpClient('/mcp');
+    const data = await client.send('initialize', {
+      protocolVersion: '2025-03-26', capabilities: {},
+      clientInfo: { name: 'server-info', version: '1.0' }
     });
-    const data = await res.json();
     const info = data.result || {};
     const name = info.serverInfo?.name || 'unknown';
     const version = info.serverInfo?.version || '';
@@ -139,12 +136,7 @@ async function init() {
     document.getElementById('info').textContent =
       `Protocol ${info.protocolVersion || 'unknown'} · Server: ${name} ${version}`;
 
-    const toolsRes = await fetch('/mcp', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json, text/event-stream' },
-      body: JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} })
-    });
-    const toolsData = await toolsRes.json();
+    const toolsData = await client.send('tools/list');
     const tools = toolsData.result?.tools || [];
 
     const c = document.getElementById('tools');
@@ -157,14 +149,24 @@ async function init() {
     }
 
     document.getElementById('links').style.display = 'flex';
-  } catch {
-    document.getElementById('status').textContent = 'Could not reach MCP endpoint';
+  } catch (error) {
+    document.getElementById('dot').className = 'dot pending';
+    document.getElementById('status').textContent = `MCP connection failed: ${error.message}`;
+    document.getElementById('tools').textContent = 'Tool discovery failed; reconnect after starting the server.';
   }
 }
 
 function esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
 function shorten(s, n) { return s && s.length > n ? s.slice(0, n) + '...' : s || ''; }
 
+fetch('/q/dev-ui/').then(response => {
+  if (response.ok) {
+    const link = document.getElementById('dev-ui');
+    document.getElementById('dev-hint').hidden = true;
+    link.hidden = false;
+    link.style.display = 'inline-flex';
+  }
+}).catch(() => {});
 init();
 </script>
 </body>

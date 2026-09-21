@@ -156,7 +156,8 @@ Part 6 is included in the Maven build and runs independently of the other servic
 cd part6-agent-router
 ./install.sh
 ./start-all.sh
-# In another terminal in this directory: ./smoke.sh
+# Open http://localhost:18081/ for the Part 6 SPA
+# Or, in another terminal in this directory: ./smoke.sh
 # Or, with the lab stopped: ./start-all.sh --smoke
 ```
 
@@ -210,6 +211,7 @@ governed-agent-platform/
 │   ├── index.html                   # Evaluation Console SPA
 │   └── start-all.sh                 # Launches MCP server + eval runner
 └── part6-agent-router/              # Model routing and failover
+    ├── index.html                  # Independent Part 6 SPA served by Quarkus
     ├── config.yaml                 # Pinned standalone gateway configuration
     ├── install.sh                  # Checksum-verified CLI installation
     ├── pom.xml                     # Quarkus REST, validation, health, REST Client

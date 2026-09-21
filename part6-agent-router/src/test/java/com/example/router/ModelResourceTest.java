@@ -83,6 +83,22 @@ class ModelResourceTest {
         given().get("/q/health/ready").then().statusCode(200).body("status", equalTo("UP"));
     }
 
+    @Test
+    void servesThePartSixConsole() {
+        given().get("/").then().statusCode(200).contentType("text/html")
+                .body(containsString("Model Routing Console"), containsString("Run All Six Checks"));
+    }
+
+    @Test
+    void consoleRejectsInvalidRequestsAndBackendNames() {
+        given().contentType("application/json").body("{}")
+                .post("/lab/request").then().statusCode(400);
+        given().contentType("application/json").body(new ModelApi.Control("healthy", true))
+                .post("/lab/backends/unknown").then().statusCode(404);
+        given().contentType("application/json").body("{\"mode\":\"invalid\"}")
+                .post("/lab/backends/primary").then().statusCode(400);
+    }
+
     private void control(String mode, boolean reset) {
         given().contentType("application/json").body(new ModelApi.Control(mode, reset))
                 .post("/admin").then().statusCode(200);

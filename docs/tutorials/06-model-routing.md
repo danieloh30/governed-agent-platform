@@ -10,7 +10,7 @@ permalink: /tutorials/06-model-routing/
 
 > **Lab contract:** You will send non-streaming requests through a real Agent Router to two deterministic Quarkus model backends running from the same application JAR. You will prove model matching, retry boundaries, fallback, and recovery. The stubs return fixed text and illustrative token counts; they do not perform inference or evaluate answer quality. This unauthenticated local lab does not establish production access control or guarantee that different providers produce equivalent answers.
 
-> **TL;DR** — Run two Quarkus REST model backends behind Agent Router to add the model-traffic layer to the governed platform. Use Agent Router to expose one OpenAI-compatible endpoint, select a configured model route, and retry a failed request against a fallback backend — with no API keys, GPU, or Kubernetes cluster required.
+> **TL;DR** — Use the Part 6 Model Routing Console or curl to run two Quarkus REST model backends behind Agent Router to add the model-traffic layer to the governed platform. Use Agent Router to expose one OpenAI-compatible endpoint, select a configured model route, and retry a failed request against a fallback backend — with no API keys, GPU, or Kubernetes cluster required.
 
 > **Enterprise context — Acme FinServ.** Maya has governed Acme's tools, but Goose still
 > depends on a model provider to decide what to do next. During a provider outage, Sofia's
@@ -70,7 +70,9 @@ The required exercise uses an HTTP client and two instances of one Quarkus appli
 ```mermaid
 %%{init: {'look':'handDrawn','theme':'neutral','themeVariables': {'lineColor':'#4A4035'}}}%%
 flowchart LR
-    C([curl / Quarkus REST Client]) -->|POST /v1/chat/completions :1975| AR([Agent Router])
+    UI([Part 6 SPA]) -->|Same-origin /lab/request| Q([Quarkus REST Client])
+    Q -->|POST /v1/chat/completions :1975| AR([Agent Router])
+    C([curl]) -->|POST /v1/chat/completions :1975| AR
     AR -->|First attempt| P([Quarkus primary :18081])
     AR -->|One retry after 503| F([Quarkus fallback :18082])
     T([Learner]) -.->|Set failure mode / inspect attempts| P
@@ -127,6 +129,29 @@ readiness. Logs are in `.runtime/primary.log`, `.runtime/fallback.log`, and `.ru
 Ctrl+C stops the services owned by this invocation. After a build, `SKIP_BUILD=true ./start-all.sh`
 reuses the packaged application.
 
+### Open the Model Routing Console
+
+Open **http://localhost:18081/**. Part 6 has its own SPA in `part6-agent-router/index.html`,
+using the same visual layout and theme switch as the earlier labs. Quarkus serves the page
+and its `/lab/*` API together, so there is no separate web server or browser CORS setup.
+
+Choose the console or the equivalent terminal commands below for each exercise; you do not
+need to repeat both paths. The four tutorial steps still take about 30 minutes.
+
+| Console action | What you observe |
+|---|---|
+| **Primary Route** | HTTP 200, primary response, attempts `1 / 0` |
+| **Unmatched Model** | HTTP 404, attempts `0 / 0` |
+| **Fail Over** | Primary set to 503, fallback answers 200, attempts `1 / 1` |
+| **Recover** | Healthy primary answers again, attempts `1 / 0` |
+| **Run All Six Checks** | The Java verifier checks all six cases and restores healthy state |
+
+Each guided scenario begins with fresh counters. Use **Send a Model Request** for custom
+model names and **Backend Controls** for the other failure cases. The diagram, attempt counts,
+request log, and response inspector reflect actual backend state and gateway responses.
+**Reset** restores both backends to healthy. Avoid running curl or smoke checks concurrently
+with the console's verifier because they share backend counters.
+
 ### One Quarkus Application, Two Backend Instances
 
 The supplied application uses familiar patterns from the earlier Java labs:
@@ -156,7 +181,8 @@ The launcher runs the same `target/quarkus-app/quarkus-run.jar` twice with diffe
 fallback uses `18082`/`fallback`. There is no shared mutable state between them. The launcher
 and verifier use the `cli` profile, which disables their HTTP listener.
 
-Open a second terminal at `part6-agent-router/`. Define a helper for the remaining exercises:
+Click **Primary Route** in the console. For the terminal path, open a second terminal at
+`part6-agent-router/` and define a helper for the remaining exercises:
 
 ```bash
 ask_model() {
@@ -205,7 +231,8 @@ curl -sS -w '\n' http://localhost:18081/admin
 `last_model` should be `acme-model-v1`. The `requests` counter counts model attempts, including
 failed attempts; reads of `/admin` do not increment it.
 
-Now request an unconfigured model:
+In the console, click **Unmatched Model**, or enter `acme-triage` in the Model field and click
+**Send Request**. The terminal equivalent is:
 
 ```bash
 ask_model acme-triage
@@ -219,7 +246,7 @@ This demonstrates configured route selection, not authenticated access control.
 1. Stop the launcher with Ctrl+C in the first terminal.
 2. Change only `value: acme-support` to `value: acme-triage` in `config.yaml`.
 3. Restart `./start-all.sh` and wait for readiness.
-4. Run `ask_model acme-triage` in the second terminal: expect **200**, with the same upstream
+4. Send `acme-triage` from the console request form, or run `ask_model acme-triage`: expect **200**, with the same upstream
    `acme-model-v1` model. Run `ask_model acme-support`: expect **404**.
 5. Stop the launcher, restore `value: acme-support`, and restart before continuing.
 
@@ -234,7 +261,8 @@ It allows **one retry** after the original attempt, with **one attempt per prior
 **two-second per-retry timeout**, and a **ten-second route timeout**. It retries a configured
 **503** or a connection failure. This is a deliberately small policy for a predictable lab.
 
-Set the primary stub to return 503 and clear both attempt counters:
+Click **Fail Over** in the console to set primary to 503 and send a request with fresh counters.
+For the terminal path, set the primary stub to return 503 and clear both attempt counters:
 
 ```bash
 curl -sS http://localhost:18081/admin -H 'Content-Type: application/json' \
@@ -271,7 +299,8 @@ sequenceDiagram
 
 ### When Both Backends Fail
 
-Leave the primary unavailable and fail the fallback too:
+Leave the primary unavailable. In **Backend Controls**, set fallback to **Unavailable · 503**,
+click **Apply Fallback**, then **Send Request**. Terminal equivalent:
 
 ```bash
 curl -sS http://localhost:18082/admin -H 'Content-Type: application/json' \
@@ -284,7 +313,8 @@ must handle the failure. Fallback does not create availability when all configur
 
 ### Recover and Respect the Retry Boundary
 
-Restore the fallback, but have the primary return a non-retryable 400:
+In **Backend Controls**, apply **Healthy · 200** to fallback and **Bad request · 400** to primary,
+then **Send Request**. Terminal equivalent:
 
 ```bash
 curl -sS http://localhost:18082/admin -H 'Content-Type: application/json' \
@@ -295,7 +325,7 @@ ask_model
 ```
 
 Expect **HTTP 400** and zero fallback attempts. A malformed request is not a provider outage.
-Restore the primary and send another request:
+Click **Recover** in the console, or restore the primary and send another request:
 
 ```bash
 curl -sS http://localhost:18081/admin -H 'Content-Type: application/json' \
@@ -307,7 +337,8 @@ Expect **HTTP 200** from `primary:` again.
 
 ## Step 4: Verify the Routing Contract (5 Minutes)
 
-With the original `acme-support` configuration running:
+With the original `acme-support` configuration running, click **Run All Six Checks** in the
+console. The result list comes from the same Java verifier as this terminal command:
 
 ```bash
 ./smoke.sh
@@ -352,6 +383,7 @@ the ignored `.bin/` and `.runtime/` directories for later runs.
 | Configured model selection | Exact route match and a shared upstream model contract |
 | Bounded fallback | Priorities, explicit retry triggers, and one retry |
 | Visible failure | A 503 when both backends fail; a 400 is not retried |
+| Consistent guided UI | A separate Part 6 SPA served by Quarkus, with live controls and response inspection |
 | Repeatable control evidence | Six Quarkus REST Client checks against the real gateway |
 | Java backend contracts | Quarkus endpoint tests for responses, validation, state changes, and readiness |
 

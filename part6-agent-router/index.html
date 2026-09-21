@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Model Routing Console</title>
+<style>
+:root {
+  color-scheme: light;
+  --surface-page:     #f5f5f3;
+  --surface-card:     #ffffff;
+  --surface-inset:    #f9f9f7;
+  --text-primary:     #0b0b0b;
+  --text-secondary:   #52514e;
+  --text-muted:       #898781;
+  --gridline:         #e8e7e2;
+  --baseline:         #d0cfca;
+  --border:           rgba(11,11,11,0.08);
+  --shadow-sm:        0 1px 2px rgba(0,0,0,0.05);
+  --shadow-md:        0 2px 8px rgba(0,0,0,0.08);
+  --shadow-lg:        0 4px 16px rgba(0,0,0,0.10);
+  --cat-1: #2a78d6;
+  --cat-2: #eb6834;
+  --cat-3: #1baf7a;
+  --cat-4: #eda100;
+  --cat-5: #e87ba4;
+  --status-good:      #0ca30c;
+  --status-warn:      #fab219;
+  --status-serious:   #ec835a;
+  --status-critical:  #d03b3b;
+  --status-good-bg:   rgba(12,163,12,0.08);
+  --status-good-text: #006300;
+  --status-crit-bg:   rgba(208,59,59,0.08);
+  --seq-100: #cde2fb;
+  --seq-200: #9dc5f3;
+  --seq-300: #6da7ec;
+  --seq-500: #256abf;
+  --radius: 10px;
+  --radius-sm: 6px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --surface-page: #0a0a0a; --surface-card: #161615; --surface-inset: #1e1e1c;
+    --text-primary: #f0f0ee; --text-secondary: #b0afa8; --text-muted: #7a7972;
+    --gridline: #262624; --baseline: #333331; --border: rgba(255,255,255,0.07);
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.3); --shadow-md: 0 2px 8px rgba(0,0,0,0.4);
+    --shadow-lg: 0 4px 16px rgba(0,0,0,0.5);
+    --cat-1: #4d9aee; --cat-2: #d95926; --cat-3: #24c98e;
+    --cat-4: #e5a617; --cat-5: #d55181;
+    --status-good: #2ecc40; --status-good-bg: rgba(46,204,64,0.10);
+    --status-good-text: #2ecc40; --status-crit-bg: rgba(208,59,59,0.12);
+    --seq-100: #1a4d8a; --seq-200: #2668b5; --seq-300: #4d9aee; --seq-500: #a3cdf7;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --surface-page: #0a0a0a; --surface-card: #161615; --surface-inset: #1e1e1c;
+  --text-primary: #f0f0ee; --text-secondary: #b0afa8; --text-muted: #7a7972;
+  --gridline: #262624; --baseline: #333331; --border: rgba(255,255,255,0.07);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.3); --shadow-md: 0 2px 8px rgba(0,0,0,0.4);
+  --shadow-lg: 0 4px 16px rgba(0,0,0,0.5);
+  --cat-1: #4d9aee; --cat-2: #d95926; --cat-3: #24c98e;
+  --cat-4: #e5a617; --cat-5: #d55181;
+  --status-good: #2ecc40; --status-good-bg: rgba(46,204,64,0.10);
+  --status-good-text: #2ecc40; --status-crit-bg: rgba(208,59,59,0.12);
+  --seq-100: #1a4d8a; --seq-200: #2668b5; --seq-300: #4d9aee; --seq-500: #a3cdf7;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: var(--surface-page); color: var(--text-primary);
+  line-height: 1.5; min-height: 100vh;
+}
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace; }
+
+.topbar {
+  background: var(--surface-card); border-bottom: 1px solid var(--border);
+  padding: 0 32px; height: 56px;
+  display: flex; align-items: center; gap: 16px;
+  box-shadow: var(--shadow-sm); position: sticky; top: 0; z-index: 10;
+}
+.topbar-logo {
+  width: 28px; height: 28px; border-radius: 6px;
+  background: linear-gradient(135deg, var(--cat-3), var(--cat-1));
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-weight: 700; font-size: 0.75rem;
+}
+.topbar h1 { font-size: 0.95rem; font-weight: 600; }
+.topbar .badge {
+  font-size: 0.65rem; font-weight: 600; padding: 2px 8px;
+  border-radius: 10px; background: var(--cat-3); color: #fff;
+  text-transform: uppercase; letter-spacing: 0.05em;
+}
+.topbar-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+.topbar-status {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 0.78rem; color: var(--text-muted);
+}
+.topbar-status .dot {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--baseline);
+  transition: background 0.3s;
+}
+.topbar-status .dot.on { background: var(--status-good); box-shadow: 0 0 6px rgba(12,163,12,0.4); }
+.topbar-status .dot.off { background: var(--status-critical); }
+.theme-btn {
+  background: none; border: 1px solid var(--baseline); border-radius: var(--radius-sm);
+  padding: 4px 10px; color: var(--text-secondary); cursor: pointer; font-size: 0.78rem;
+}
+
+.shell { max-width: 1400px; margin: 0 auto; padding: 28px 32px; }
+
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+@media (max-width: 900px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+.stat {
+  background: var(--surface-card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px 24px;
+  box-shadow: var(--shadow-sm); transition: box-shadow 0.2s;
+}
+.stat:hover { box-shadow: var(--shadow-md); }
+.stat-label { font-size: 0.72rem; font-weight: 500; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+.stat-value { font-size: 1.6rem; font-weight: 700; line-height: 1.2; }
+.stat-sub { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; }
+.stat-value.good { color: var(--status-good); }
+.stat-value.crit { color: var(--status-critical); }
+.stat-value.blue { color: var(--cat-1); }
+
+.arch-card {
+  background: var(--surface-card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 32px; margin-bottom: 28px;
+  box-shadow: var(--shadow-sm);
+}
+.arch-card h2 { font-size: 0.82rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 24px; }
+.arch-row {
+  display: flex; align-items: stretch; gap: 0; justify-content: center;
+}
+.arch-node {
+  background: var(--surface-inset); border: 2px solid var(--baseline);
+  border-radius: var(--radius); padding: 24px 28px; min-width: 220px;
+  text-align: center; position: relative; transition: all 0.35s;
+}
+.arch-node.active {
+  border-color: var(--cat-1);
+  box-shadow: 0 0 0 4px rgba(42,120,214,0.12), var(--shadow-md);
+}
+.arch-node.pass { border-color: var(--status-good); box-shadow: 0 0 0 4px rgba(12,163,12,0.10), var(--shadow-md); }
+.arch-node.deny { border-color: var(--status-critical); box-shadow: 0 0 0 4px rgba(208,59,59,0.10), var(--shadow-md); }
+.arch-node .node-label {
+  font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--text-muted); margin-bottom: 4px;
+}
+.arch-node .node-title { font-size: 1rem; font-weight: 600; margin-bottom: 2px; }
+.arch-node .node-port { font-size: 0.78rem; color: var(--text-muted); }
+.arch-arrow {
+  display: flex; align-items: center; padding: 0 12px;
+  color: var(--baseline); font-size: 1.4rem; min-width: 56px; justify-content: center;
+  position: relative; transition: color 0.3s;
+}
+.arch-arrow.active { color: var(--cat-1); }
+.arch-arrow.pass { color: var(--status-good); }
+.arrow-label {
+  position: absolute; top: -18px; font-size: 0.65rem; font-weight: 500;
+  color: var(--text-muted); white-space: nowrap;
+}
+
+.validation-layers { margin-top: 16px; display: flex; flex-direction: column; gap: 6px; }
+.val-layer {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 0.78rem; padding: 6px 12px; border-radius: var(--radius-sm);
+  background: var(--gridline); color: var(--text-secondary);
+  transition: all 0.3s; font-weight: 500;
+}
+.val-layer.checking { background: rgba(42,120,214,0.12); color: var(--cat-1); }
+.val-layer.passed { background: var(--status-good-bg); color: var(--status-good-text); }
+.val-layer.denied { background: var(--status-crit-bg); color: var(--status-critical); }
+.val-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--baseline); flex-shrink: 0; transition: background 0.3s;
+}
+.val-layer.checking .val-dot { background: var(--cat-1); animation: pulse 1s infinite; }
+.val-layer.passed .val-dot { background: var(--status-good); }
+.val-layer.denied .val-dot { background: var(--status-critical); }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+.controls-bar {
+  background: var(--surface-card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px 24px; margin-bottom: 28px;
+  box-shadow: var(--shadow-sm);
+  display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+}
+.controls-bar .section-label {
+  font-size: 0.72rem; font-weight: 600; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.06em; margin-right: 8px;
+}
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 10px 20px; border: none; border-radius: var(--radius-sm);
+  font-size: 0.82rem; font-weight: 600; cursor: pointer;
+  transition: all 0.15s; letter-spacing: 0.01em;
+}
+.btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
+.btn:active { transform: translateY(0); }
+.btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none; box-shadow: none; }
+.btn-primary { background: var(--cat-1); color: #fff; }
+.btn-secondary { background: var(--gridline); color: var(--text-primary); }
+.btn-danger { background: var(--status-critical); color: #fff; }
+.btn-success { background: var(--status-good); color: #fff; }
+.btn-outline { background: none; border: 1px solid var(--baseline); color: var(--text-secondary); }
+.btn .step-num {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: rgba(255,255,255,0.2); font-size: 0.7rem; font-weight: 700;
+}
+.btn-secondary .step-num { background: var(--baseline); }
+
+.main-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 28px;
+}
+@media (max-width: 900px) { .main-grid { grid-template-columns: 1fr; } }
+
+.card {
+  background: var(--surface-card); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow-sm);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.card-header {
+  padding: 18px 24px 14px;
+  border-bottom: 1px solid var(--gridline);
+  display: flex; align-items: center; gap: 10px;
+}
+.card-header h2 { font-size: 0.88rem; font-weight: 600; }
+.card-header .card-badge {
+  font-size: 0.65rem; font-weight: 600; padding: 2px 8px;
+  border-radius: 10px; background: var(--gridline); color: var(--text-muted);
+}
+.card-body { padding: 20px 24px; flex: 1; overflow-y: auto; }
+
+.flow-log { display: flex; flex-direction: column; gap: 0; min-height: 400px; }
+.flow-empty {
+  display: flex; align-items: center; justify-content: center;
+  height: 400px; color: var(--text-muted); font-size: 0.85rem;
+  flex-direction: column; gap: 8px;
+}
+.flow-empty-icon { font-size: 2rem; opacity: 0.3; }
+.flow-entry {
+  display: grid; grid-template-columns: 24px 90px 1fr;
+  gap: 10px; padding: 12px 0; align-items: start;
+  border-bottom: 1px solid var(--gridline);
+  font-size: 0.82rem;
+  animation: fadeSlideIn 0.35s ease;
+}
+.flow-entry:last-child { border-bottom: none; }
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: none; }
+}
+.flow-num {
+  width: 24px; height: 24px; border-radius: 50%;
+  background: var(--gridline); color: var(--text-muted);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.65rem; font-weight: 700; flex-shrink: 0;
+}
+.flow-tag {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 3px 10px; border-radius: 12px;
+  font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+  height: 24px;
+}
+.flow-tag.request { background: rgba(42,120,214,0.10); color: var(--cat-1); }
+.flow-tag.response { background: rgba(27,175,122,0.10); color: var(--cat-3); }
+.flow-tag.validate { background: rgba(237,161,0,0.10); color: var(--cat-4); }
+.flow-tag.error { background: var(--status-crit-bg); color: var(--status-critical); }
+.flow-msg { color: var(--text-secondary); word-break: break-word; line-height: 1.5; }
+.flow-msg strong { color: var(--text-primary); font-weight: 600; }
+
+.json-view {
+  background: var(--surface-inset); border: 1px solid var(--gridline);
+  border-radius: var(--radius-sm); padding: 16px 20px; font-size: 0.78rem;
+  white-space: pre-wrap; word-break: break-word;
+  min-height: 400px; max-height: 500px; overflow-y: auto;
+  color: var(--text-secondary); line-height: 1.7;
+}
+.json-view .jk { color: var(--cat-1); }
+.json-view .js { color: var(--cat-3); }
+.json-view .jn { color: var(--cat-2); }
+.json-view .jb { color: var(--cat-5); }
+
+.tool-section {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 28px;
+}
+@media (max-width: 900px) { .tool-section { grid-template-columns: 1fr; } }
+.tool-grid { display: flex; flex-direction: column; gap: 4px; }
+.tool-opt {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 16px; border-radius: var(--radius-sm); cursor: pointer;
+  transition: all 0.15s; font-size: 0.85rem; border: 2px solid transparent;
+}
+.tool-opt:hover { background: var(--gridline); }
+.tool-opt.selected { background: rgba(42,120,214,0.06); border-color: var(--cat-1); }
+.tool-opt .tool-icon {
+  width: 32px; height: 32px; border-radius: var(--radius-sm);
+  background: var(--gridline); display: flex; align-items: center; justify-content: center;
+  font-size: 0.75rem; color: var(--text-muted); font-weight: 700;
+}
+.tool-opt.selected .tool-icon { background: var(--cat-1); color: #fff; }
+.tool-opt .tool-name { font-weight: 600; }
+
+.param-row {
+  display: flex; align-items: center; gap: 12px; margin-top: 12px;
+}
+.param-row label {
+  font-size: 0.82rem; color: var(--text-secondary); min-width: 100px; font-weight: 500;
+}
+.param-row input {
+  flex: 1; padding: 10px 14px; border: 1px solid var(--baseline); border-radius: var(--radius-sm);
+  font-size: 0.82rem; background: var(--surface-inset); color: var(--text-primary);
+  transition: border-color 0.2s;
+}
+.param-row input:focus { outline: none; border-color: var(--cat-1); box-shadow: 0 0 0 3px rgba(42,120,214,0.1); }
+
+.spinner {
+  display: inline-block; width: 16px; height: 16px;
+  border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff;
+  border-radius: 50%; animation: spin 0.6s linear infinite;
+}
+.btn-secondary .spinner { border-color: var(--baseline); border-top-color: var(--text-primary); }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.arch-arrow .packet {
+  display: inline-block; width: 10px; height: 10px;
+  border-radius: 50%; background: var(--cat-1);
+  animation: moveRight 0.6s ease forwards;
+  box-shadow: 0 0 8px rgba(42,120,214,0.4);
+}
+.arch-arrow .packet.reverse {
+  animation: moveLeft 0.6s ease forwards;
+  background: var(--cat-3);
+  box-shadow: 0 0 8px rgba(27,175,122,0.4);
+}
+@keyframes moveRight {
+  0% { transform: translateX(-16px); opacity: 0; }
+  30% { opacity: 1; }
+  100% { transform: translateX(16px); opacity: 0; }
+}
+@keyframes moveLeft {
+  0% { transform: translateX(16px); opacity: 0; }
+  30% { opacity: 1; }
+  100% { transform: translateX(-16px); opacity: 0; }
+}
+
+@media (max-width: 600px) {
+  .shell { padding: 16px; }
+  .topbar { padding: 0 16px; }
+  .stats { grid-template-columns: 1fr 1fr; }
+  .arch-row { flex-direction: column; align-items: center; }
+  .arch-arrow { transform: rotate(90deg); min-width: auto; min-height: 40px; }
+}
+
+.intro { margin-bottom:24px; color:var(--text-secondary); font-size:.86rem; }
+.intro strong { color:var(--text-primary); }
+.arch-row { gap:12px; align-items:center; }
+.arch-node { min-width:170px; flex:1; }
+.backend-stack { display:grid; gap:12px; flex:1; }
+.backend-stack .arch-node { padding:18px; }
+.arch-arrow { min-width:30px; padding:0; }
+.request-form { display:grid; gap:12px; }
+.request-form label, .backend-controls label { display:grid; gap:5px; font-size:.8rem; color:var(--text-secondary); }
+input, textarea, select { width:100%; padding:10px 12px; border:1px solid var(--baseline); border-radius:6px; background:var(--surface-inset); color:var(--text-primary); font:inherit; }
+textarea { resize:vertical; min-height:80px; }
+.backend-controls { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.backend-controls .btn { margin-top:10px; }
+.guide { color:var(--text-secondary); font-size:.82rem; margin:-12px 0 24px; }
+#feedback { padding:12px 16px; background:var(--surface-inset); border-left:3px solid var(--cat-1); margin-bottom:24px; font-size:.85rem; }
+.check-list { padding-left:20px; font-size:.83rem; }
+.check-list li { margin:8px 0; }
+.check-pass { color:var(--status-good-text); }
+.card { min-width:0; }
+.node-port { overflow-wrap:anywhere; }
+.flow-log { min-height:180px; max-height:320px; }
+.json-view { min-height:180px; max-height:320px; }
+:focus-visible { outline:3px solid var(--cat-1); outline-offset:3px; }
+@media(max-width:900px) { .arch-row { flex-wrap:wrap; } .backend-stack { min-width:220px; } }
+@media(max-width:600px) { .topbar { height:auto; min-height:56px; padding:12px; flex-wrap:wrap; gap:8px; } .topbar h1 { font-size:.85rem; } .topbar-right { margin-left:0; } .arch-card { padding:20px; } .arch-row { flex-direction:column; } .arch-node,.backend-stack { width:100%; min-width:0; } .backend-controls { grid-template-columns:1fr; } .controls-bar .btn { flex:1 1 45%; } }
+@media(prefers-reduced-motion:reduce) { *,*::before,*::after { animation:none!important; transition:none!important; } }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-logo">Q</div><h1>Model Routing Console</h1><span class="badge">Part 6</span>
+  <div class="topbar-right"><div class="topbar-status"><span class="dot" id="status-dot"></span><span id="status-text">Checking services…</span></div><button class="theme-btn" id="theme">Theme</button></div>
+</header>
+<main class="shell">
+  <p class="intro"><strong>Acme FinServ · Model service continuity.</strong> Send real requests through Agent Router to two Quarkus model simulators. Reproduce failures, inspect bounded retries, and recover. Responses are fixed lab text; no API keys or inference required.</p>
+  <div class="stats">
+    <div class="stat"><div class="stat-label">Gateway</div><div class="stat-value" id="stat-gateway">--</div><div class="stat-sub">Agent Router · :1975</div></div>
+    <div class="stat"><div class="stat-label">Last response</div><div class="stat-value blue" id="stat-http">--</div><div class="stat-sub" id="stat-backend">No request sent</div></div>
+    <div class="stat"><div class="stat-label">Backend attempts</div><div class="stat-value" id="stat-attempts">-- / --</div><div class="stat-sub">Primary / fallback · since reset</div></div>
+    <div class="stat"><div class="stat-label">Routing checks</div><div class="stat-value" id="stat-checks">-- / 6</div><div class="stat-sub">Transport behavior, not model quality</div></div>
+  </div>
+  <section class="arch-card" aria-label="Model traffic flow">
+    <h2>Model Traffic Flow</h2>
+    <div class="arch-row">
+      <div class="arch-node" id="node-client"><div class="node-label">Client</div><div class="node-title">Quarkus REST Client</div><div class="node-port mono">Console → /lab/request</div></div>
+      <div class="arch-arrow" aria-hidden="true">→</div>
+      <div class="arch-node" id="node-router"><div class="node-label">Routing policy</div><div class="node-title">Agent Router</div><div class="node-port mono">acme-support → acme-model-v1</div><div class="node-port">One retry on 503 / connection failure</div></div>
+      <div class="arch-arrow" aria-hidden="true">→</div>
+      <div class="backend-stack">
+        <div class="arch-node" id="node-primary"><div class="node-label">Priority 0 · Quarkus :18081</div><div class="node-title">Primary</div><div class="node-port" id="primary-state">Waiting for state</div></div>
+        <div class="arch-node" id="node-fallback"><div class="node-label">Priority 1 · Quarkus :18082</div><div class="node-title">Fallback</div><div class="node-port" id="fallback-state">Waiting for state</div></div>
+      </div>
+    </div>
+  </section>
+  <nav class="controls-bar" aria-label="Guided demo steps">
+    <span class="section-label">Demo Steps</span>
+    <button class="btn btn-primary" data-scenario="primary"><span class="step-num">1</span> Primary Route</button>
+    <button class="btn btn-secondary" data-scenario="unmatched"><span class="step-num">2</span> Unmatched Model</button>
+    <button class="btn btn-danger" data-scenario="fallback"><span class="step-num">3</span> Fail Over</button>
+    <button class="btn btn-success" data-scenario="recover"><span class="step-num">4</span> Recover</button>
+    <button class="btn btn-secondary" id="verify"><span class="step-num">5</span> Run All Six Checks</button>
+    <button class="btn btn-outline" id="reset">Reset</button>
+  </nav>
+  <p class="guide">Follow the steps from left to right. Each starts with fresh counters. Use the controls below to explore 400 errors or both providers failing. Run checks without other clients changing backend state.</p>
+  <div id="feedback" role="status" aria-live="polite">Start with Primary Route to inspect the selected backend and upstream model.</div>
+  <div class="main-grid">
+    <section class="card"><div class="card-header"><h2>Send a Model Request</h2><span class="card-badge">Through Agent Router</span></div><div class="card-body">
+      <form class="request-form" id="request-form">
+        <label>Model<input id="model" value="acme-support" required maxlength="120"></label>
+        <label>Message<textarea id="message" required maxlength="4000">Summarize Acme support status.</textarea></label>
+        <button class="btn btn-primary" type="submit">Send Request</button>
+      </form>
+    </div></section>
+    <section class="card"><div class="card-header"><h2>Backend Controls</h2><button class="btn btn-outline" id="refresh">Refresh</button></div><div class="card-body">
+      <div class="backend-controls">
+        <div><label>Primary mode<select id="primary-mode"><option value="healthy">Healthy · 200</option><option value="unavailable">Unavailable · 503</option><option value="bad-request">Bad request · 400</option></select></label><button class="btn btn-secondary" data-backend="primary">Apply Primary</button></div>
+        <div><label>Fallback mode<select id="fallback-mode"><option value="healthy">Healthy · 200</option><option value="unavailable">Unavailable · 503</option><option value="bad-request">Bad request · 400</option></select></label><button class="btn btn-secondary" data-backend="fallback">Apply Fallback</button></div>
+      </div>
+      <p class="stat-sub" style="margin-top:16px">Apply changes one backend and resets its counter. Reset restores both to healthy and clears all counters.</p>
+    </div></section>
+  </div>
+  <div class="main-grid">
+    <section class="card"><div class="card-header"><h2>Request Flow</h2><span class="card-badge" id="flow-count">0 events</span></div><div class="card-body"><div class="flow-log" id="flow-log"><p class="stat-sub">No requests yet.</p></div></div></section>
+    <section class="card"><div class="card-header"><h2>Response Inspector</h2><span class="card-badge" id="response-label">No response</span></div><div class="card-body"><pre class="json-view mono" id="response">Waiting for a request…</pre></div></section>
+  </div>
+  <section class="card"><div class="card-header"><h2>Routing Verification</h2><span class="card-badge">Same checks as ./smoke.sh</span></div><div class="card-body"><ol class="check-list" id="checks"><li>Primary routing and model-name mapping</li><li>Unmatched model reaches neither backend</li><li>503 falls back exactly once</li><li>400 is not retried</li><li>Both unavailable returns 503 with bounded attempts</li><li>Recovery returns to primary</li></ol></div></section>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+let busy = false, events = 0;
+const checkNames = [...$('checks').children].map(item => item.textContent);
+function feedback(message) { $('feedback').textContent = message; }
+function inspect(body, label) { $('response').textContent = typeof body === 'string' ? body : JSON.stringify(body, null, 2); $('response-label').textContent = label; }
+function log(kind, message) {
+  if (!events) $('flow-log').replaceChildren();
+  const row = document.createElement('div'); row.className = 'flow-entry';
+  for (const [cls, text] of [['flow-num', String(++events)], ['flow-tag', kind], ['flow-msg', message]]) {
+    const span = document.createElement('span'); span.className = cls; span.textContent = text; row.append(span);
+  }
+  $('flow-log').prepend(row); $('flow-count').textContent = `${events} events`;
+  while ($('flow-log').children.length > 100) $('flow-log').lastChild.remove();
+}
+async function api(path, body, raw = false) {
+  const response = await fetch(`/lab/${path}`, { method: body === undefined ? 'GET' : 'POST',
+    headers: body === undefined ? {} : {'Content-Type':'application/json'},
+    body: body === undefined ? undefined : JSON.stringify(body), signal: AbortSignal.timeout(path === 'verify' ? 90000 : 20000) });
+  const text = await response.text(); let data;
+  try { data = JSON.parse(text); } catch { data = text; }
+  if (!raw && !response.ok) throw new Error(data?.error?.message || `HTTP ${response.status}: ${text}`);
+  return raw ? {status:response.status, body:data} : data;
+}
+async function refresh() {
+  const state = await api('state');
+  const ready = state.gatewayReady && state.primary.available && state.fallback.available;
+  $('status-dot').className = `dot ${ready ? 'on' : 'off'}`;
+  $('status-text').textContent = ready ? 'Services ready' : 'Service unavailable';
+  $('stat-gateway').textContent = state.gatewayReady ? 'Ready' : 'Offline';
+  $('stat-gateway').className = `stat-value ${state.gatewayReady ? 'good' : 'crit'}`;
+  $('stat-attempts').textContent = `${state.primary.state?.requests ?? '--'} / ${state.fallback.state?.requests ?? '--'}`;
+  for (const name of ['primary','fallback']) {
+    const backend = state[name];
+    $(name+'-state').textContent = backend.available ? `${backend.state.mode} · ${backend.state.requests} attempts · model: ${backend.state.last_model || 'none'}` : backend.error;
+    if (backend.available) $(name+'-mode').value = backend.state.mode;
+  }
+  if (!ready) feedback('A lab service is unavailable. Start ./start-all.sh in part6-agent-router, then Refresh.');
+  return state;
+}
+async function action(task) {
+  if (busy) return;
+  busy = true;
+  document.querySelectorAll('button:not(#theme), input, textarea, select').forEach(el => el.disabled = true);
+  try { await task(); }
+  catch (error) { feedback(error.message); log('ERROR', error.message); inspect({error:error.message}, 'Error'); }
+  finally {
+    try { await refresh(); } catch (error) {
+      $('status-dot').className = 'dot off'; $('status-text').textContent = 'Disconnected';
+      $('stat-gateway').textContent = 'Unknown'; $('stat-attempts').textContent = '-- / --';
+      feedback('Cannot reach the Quarkus console. Start ./start-all.sh and open http://localhost:18081/.');
+    }
+    busy = false;
+    document.querySelectorAll('button, input, textarea, select').forEach(el => el.disabled = false);
+  }
+}
+async function control(backend, mode) {
+  await api(`backends/${backend}`, {mode, reset:true}); log('CONTROL', `${backend}: ${mode}; counter reset`);
+}
+async function send(model = $('model').value) {
+  for (const id of ['client','router','primary','fallback']) $('node-'+id).classList.remove('active','pass','deny');
+  $('node-client').classList.add('active'); $('node-router').classList.add('active');
+  log('REQUEST', `POST /v1/chat/completions · model ${model}`);
+  const {status,body} = await api('request', {model,stream:false,messages:[{role:'user',content:$('message').value}]}, true);
+  const content = body?.choices?.[0]?.message?.content || '';
+  const backend = ['primary','fallback'].find(name => content.startsWith(name+':'));
+  $('stat-http').textContent = `HTTP ${status}`; $('stat-backend').textContent = backend ? `Answered by ${backend}` : 'No successful completion';
+  $('node-router').classList.remove('active'); $('node-router').classList.add(status === 200 ? 'pass' : 'deny');
+  if (backend) $('node-'+backend).classList.add('pass');
+  inspect(body, `HTTP ${status}`); log('RESPONSE', `HTTP ${status}${backend ? ' · '+backend : ''}`);
+  feedback(status === 200 ? `Request answered by ${backend || 'the configured backend'}. Inspect attempt counts and the upstream model below each backend.` : `HTTP ${status}. Inspect the response and attempt counts to see the routing boundary.`);
+}
+async function reset() {
+  await api('reset', {}); $('model').value = 'acme-support';
+  $('stat-checks').textContent = '-- / 6'; $('stat-checks').className = 'stat-value';
+  [...$('checks').children].forEach((item,i) => { item.textContent = checkNames[i]; item.className = ''; });
+  for (const id of ['client','router','primary','fallback']) $('node-'+id).classList.remove('active','pass','deny');
+  $('stat-http').textContent = '--'; $('stat-backend').textContent = 'No request sent';
+  inspect({}, 'Reset'); log('RESET', 'Both backends healthy; attempt counters cleared');
+}
+document.querySelectorAll('[data-scenario]').forEach(button => button.addEventListener('click', () => action(async () => {
+  await reset();
+  if (button.dataset.scenario === 'fallback') await control('primary','unavailable');
+  $('model').value = button.dataset.scenario === 'unmatched' ? 'unconfigured-model' : 'acme-support';
+  await send();
+})));
+document.querySelectorAll('[data-backend]').forEach(button => button.addEventListener('click', () => action(async () => {
+  const name = button.dataset.backend; await control(name, $(name+'-mode').value); feedback('Mode applied. Send a request to observe the policy.');
+})));
+$('request-form').addEventListener('submit', event => { event.preventDefault(); action(() => send()); });
+$('refresh').addEventListener('click', () => action(async () => { await refresh(); feedback('Service state refreshed.'); }));
+$('reset').addEventListener('click', () => action(async () => { await reset(); feedback('Both backends are healthy. Start with Primary Route.'); }));
+$('verify').addEventListener('click', () => action(async () => {
+  $('stat-checks').textContent = 'Running…';
+  [...$('checks').children].forEach((item,i) => { item.textContent = checkNames[i]; item.className = ''; });
+  feedback('Running six routing checks. Backend modes and counters will be reset.');
+  try {
+    const report = await api('verify', {});
+    $('stat-checks').textContent = `${report.passed.length} / 6`; $('stat-checks').className = 'stat-value good';
+    [...$('checks').children].forEach((item,i) => { item.textContent = 'PASS · '+report.passed[i]; item.className = 'check-pass'; });
+    for (const id of ['client','router','primary','fallback']) $('node-'+id).classList.remove('active','pass','deny');
+    $('stat-http').textContent = '--'; $('stat-backend').textContent = 'Verification completed';
+    inspect(report, 'Routing verification'); log('VERIFY', `${report.passed.length}/6 routing checks passed`);
+    feedback('All six checks passed. Both backends are restored to healthy with counters cleared.');
+  } catch (error) { $('stat-checks').textContent = 'Failed'; $('stat-checks').className = 'stat-value crit'; throw error; }
+}));
+$('theme').addEventListener('click', () => {
+  const current = document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark':'light');
+  document.documentElement.dataset.theme = current === 'dark' ? 'light':'dark';
+});
+action(async () => { await refresh(); });
+</script>
+</body>
+</html>

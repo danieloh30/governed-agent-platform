@@ -91,6 +91,7 @@ public class LabLauncher {
             await("Agent Router readiness", Duration.ofSeconds(180),
                     () -> healthy("http://127.0.0.1:1064/health") && listening(1975));
             System.out.println("Ready: http://localhost:1975/v1/chat/completions");
+            System.out.println("Model Routing Console: http://localhost:18081/");
             System.out.println("Quarkus controls: http://localhost:18081/admin and :18082/admin");
             if (options.smoke()) {
                 checks.run();

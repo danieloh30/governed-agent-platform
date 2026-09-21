@@ -5,6 +5,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.core.Response;
 import java.net.URI;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import static com.example.router.ModelApi.*;
@@ -14,7 +15,8 @@ public class RoutingChecks {
     @RestClient
     ModelGatewayClient gateway;
 
-    public void run() throws InterruptedException {
+    public List<String> run() throws InterruptedException {
+        List<String> passed = new ArrayList<>();
         try (BackendAdminClient primary = admin(18081); BackendAdminClient fallback = admin(18082)) {
             try {
                 reset(primary, fallback, "healthy", "healthy");
@@ -34,32 +36,32 @@ public class RoutingChecks {
                 reset(primary, fallback, "healthy", "healthy");
                 answeredBy("primary");
                 counts(primary, fallback, 1, 0);
-                System.out.println("PASS primary routing and model-name mapping");
+                pass(passed, "primary routing and model-name mapping");
 
                 reset(primary, fallback, "healthy", "healthy");
                 status("unconfigured-model", 404);
                 counts(primary, fallback, 0, 0);
-                System.out.println("PASS unmatched model never reaches either backend");
+                pass(passed, "unmatched model never reaches either backend");
 
                 reset(primary, fallback, "unavailable", "healthy");
                 answeredBy("fallback");
                 counts(primary, fallback, 1, 1);
-                System.out.println("PASS primary 503 falls back exactly once");
+                pass(passed, "primary 503 falls back exactly once");
 
                 reset(primary, fallback, "bad-request", "healthy");
                 status("acme-support", 400);
                 counts(primary, fallback, 1, 0);
-                System.out.println("PASS primary 400 is not retried");
+                pass(passed, "primary 400 is not retried");
 
                 reset(primary, fallback, "unavailable", "unavailable");
                 status("acme-support", 503);
                 counts(primary, fallback, 1, 1);
-                System.out.println("PASS both unavailable returns 503 with bounded attempts");
+                pass(passed, "both unavailable returns 503 with bounded attempts");
 
                 reset(primary, fallback, "healthy", "healthy");
                 answeredBy("primary");
                 counts(primary, fallback, 1, 0);
-                System.out.println("PASS recovery returns to primary");
+                pass(passed, "recovery returns to primary");
                 System.out.println("6/6 routing checks passed; these checks do not evaluate model quality.");
             } finally {
                 // Attempt both resets even if one backend has become unreachable.
@@ -70,6 +72,12 @@ public class RoutingChecks {
                 }
             }
         }
+        return List.copyOf(passed);
+    }
+
+    private static void pass(List<String> passed, String name) {
+        passed.add(name);
+        System.out.println("PASS " + name);
     }
 
     private BackendAdminClient admin(int port) {

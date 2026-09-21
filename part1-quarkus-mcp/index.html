@@ -490,12 +490,12 @@ body {
   </div>
 </div>
 
+<script src="mcp-client.js"></script>
 <script>
-const MCP = 'http://localhost:8080/mcp';
-const HEADERS = {
-  'Content-Type': 'application/json',
-  'Accept': 'application/json, text/event-stream'
-};
+const MCP = location.pathname.startsWith('/console/')
+  ? new URL('/mcp', location.origin).href
+  : `http://${location.hostname || 'localhost'}:8080/mcp`;
+let client = new McpClient(MCP);
 
 let rpcId = 0;
 let tools = [];
@@ -532,12 +532,7 @@ async function mcpCall(method, params = {}) {
   requestCount++;
   updateStats();
 
-  const res = await fetch(MCP, {
-    method: 'POST', headers: HEADERS,
-    body: JSON.stringify({ jsonrpc: '2.0', id: ++rpcId, method, params })
-  });
-
-  return res.json();
+  return client.send(method, params);
 }
 
 function addLog(tag, tagClass, msg) {
@@ -556,7 +551,7 @@ function addLog(tag, tagClass, msg) {
 function showJson(obj, method) {
   const view = document.getElementById('json-view');
   if (method) document.getElementById('resp-method').textContent = method;
-  const json = JSON.stringify(obj, null, 2);
+  const json = JSON.stringify(obj, null, 2).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   view.innerHTML = json
     .replace(/("(?:[^"\\]|\\.)*")(\s*:)/g, '<span class="jk">$1</span>$2')
     .replace(/:\s*("(?:[^"\\]|\\.)*")/g, ': <span class="js">$1</span>')
@@ -609,8 +604,7 @@ async function stepInit() {
     setValLayer('val-tool', 'checking');
     addLog('validate', 'validate', '@Tool: scanning for registered CDI beans...');
     await delay(500);
-    setValLayer('val-tool', 'passed');
-    addLog('validate', 'validate', '@Tool: <strong>5 tools registered</strong> via LangChain4j');
+    addLog('validate', 'validate', 'Waiting for the MCP server; List Tools discovers the registered inventory.');
 
     const res = await mcpCall('initialize', {
       protocolVersion: '2025-03-26',
@@ -618,6 +612,7 @@ async function stepInit() {
       clientInfo: { name: 'demo-spa', version: '1.0' }
     });
 
+    setValLayer('val-tool', 'passed');
     showJson(res, 'initialize');
     const serverName = res.result?.serverInfo?.name || 'unknown';
     const version = res.result?.serverInfo?.version || '';
@@ -845,6 +840,7 @@ async function stepValidationTest() {
 
 function resetAll(keepLog) {
   rpcId = 0;
+  client = new McpClient(MCP);
   tools = [];
   selectedTool = null;
   requestCount = 0;

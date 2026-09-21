@@ -2,7 +2,7 @@
 
 **Long-form guide:** [Part 1 tutorial](../docs/tutorials/01-governed-mcp-tools.md)
 
-This project demonstrates how to expose a Quarkus-based Java microservice as a **stateless Model Context Protocol (MCP) server** that the [Goose AI Agent](https://block.github.io/goose/) can discover and invoke over Streamable HTTP.
+This project demonstrates how to expose a Quarkus-based Java microservice as a **Model Context Protocol (MCP) tool server** that the [Goose AI Agent](https://block.github.io/goose/) can discover and invoke over Streamable HTTP.
 
 ![Building Governed MCP Tool Services with Quarkus and Goose](assets/images/mcp_goose_part1.png)
 
@@ -23,6 +23,26 @@ mvn quarkus:dev
 ```
 
 The MCP Streamable HTTP endpoint becomes available at `http://localhost:8080/mcp`.
+
+Open `http://localhost:8080/` for the server page. It discovers all five tools using an
+initialized MCP session. **Open MCP Console Demo** opens the packaged SPA at
+`http://localhost:8080/console/index.html`; the Dev UI link appears only in development mode.
+
+For the launcher and the standalone console at `http://localhost:8887/index.html`:
+
+```bash
+./start-all.sh        # Packaged server; Dev UI is unavailable
+./start-all.sh --dev  # Development server with http://localhost:8080/q/dev-ui/
+```
+
+Run one command at a time; stop an existing server before changing modes. An optional SPA
+port follows `--dev`, for example `./start-all.sh --dev 8889`.
+
+If updating an already running lab after a browser connection failure, stop the launcher,
+start it again to pick up the server configuration, and reload the page. CORS uses
+`quarkus.http.cors.enabled=true`, allows the MCP request headers, and exposes `Mcp-Session-Id`.
+Both pages share `mcp-client.js` to initialize, preserve the session, and send the initialized
+notification before discovering tools. Dev UI is not included in a packaged production JAR.
 
 ### 2. Register with Goose
 
@@ -58,16 +78,32 @@ You can test the MCP endpoint directly without Goose. The Streamable HTTP transp
 ### Initialize the MCP Session
 
 ```bash
-curl -s http://localhost:8080/mcp \
+MCP_HEADERS=$(mktemp)
+curl -s -D "$MCP_HEADERS" http://localhost:8080/mcp \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
   -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"curl","version":"1.0"}}}' | jq .
+```
+
+Save the session header and finish initialization before listing or calling tools:
+
+```bash
+MCP_SESSION=$(awk 'tolower($1) == "mcp-session-id:" {gsub("\r", "", $2); print $2}' "$MCP_HEADERS")
+rm -f "$MCP_HEADERS"
+curl -s http://localhost:8080/mcp \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: application/json, text/event-stream' \
+  -H "Mcp-Session-Id: $MCP_SESSION" \
+  -H 'MCP-Protocol-Version: 2025-03-26' \
+  -d '{"jsonrpc":"2.0","method":"notifications/initialized"}'
 ```
 
 ### List Available Tools
 
 ```bash
 curl -s http://localhost:8080/mcp \
+  -H "Mcp-Session-Id: $MCP_SESSION" \
+  -H "MCP-Protocol-Version: 2025-03-26" \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
   -d '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' | jq .
@@ -77,6 +113,8 @@ curl -s http://localhost:8080/mcp \
 
 ```bash
 curl -s http://localhost:8080/mcp \
+  -H "Mcp-Session-Id: $MCP_SESSION" \
+  -H "MCP-Protocol-Version: 2025-03-26" \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
   -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"getCustomerStatus","arguments":{"customerId":"CUST-4091"}}}' | jq .
@@ -86,6 +124,8 @@ curl -s http://localhost:8080/mcp \
 
 ```bash
 curl -s http://localhost:8080/mcp \
+  -H "Mcp-Session-Id: $MCP_SESSION" \
+  -H "MCP-Protocol-Version: 2025-03-26" \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
   -d '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"getZoneHealthLogs","arguments":{"zoneId":"US-EAST-1"}}}' | jq .
@@ -95,6 +135,8 @@ curl -s http://localhost:8080/mcp \
 
 ```
 part1-quarkus-mcp/
+├── index.html                  # Independent console source
+├── mcp-client.js               # Shared browser MCP transport
 ├── pom.xml
 ├── goose-extension-config.yaml
 ├── README.md

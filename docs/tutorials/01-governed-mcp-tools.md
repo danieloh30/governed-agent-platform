@@ -269,7 +269,17 @@ This will:
 3. Launch a demo SPA on `:8887`
 4. Verify the MCP session is working
 
-Open `http://localhost:8887/index.html` and walk through the four demo steps:
+Open `http://localhost:8887/index.html` (or the same console served by Quarkus at
+`http://localhost:8080/console/index.html`) and walk through the four demo steps:
+
+!!! note "Quarkus Dev UI and browser sessions"
+    `./start-all.sh` runs a packaged application, which has no Dev UI. To use Dev UI,
+    stop that launcher and run `./start-all.sh --dev`, then open `http://localhost:8080/q/dev-ui/`.
+    The server landing page shows the Dev UI link only when available. The console and
+    landing page preserve the MCP session and send the initialized notification before
+    listing tools. If upgrading a running lab, restart it and reload the browser to pick
+    up the CORS and client changes.
+
 
 1. **Initialize** — Establishes an MCP session with the Quarkus server via the `initialize` JSON-RPC handshake. The flow log shows the server name, version, and protocol.
 2. **List Tools** — Sends `tools/list` to discover all 5 registered `@Tool` methods with their JSON schemas. The tool inventory panel appears below.
