@@ -71,6 +71,24 @@ Look up customer CUST-0001 and tell me what zone they are in
 Get zone health logs for US-EAST-1
 ```
 
+## Expected Responses and Troubleshooting
+
+- **Opening `/mcp` in a browser does not show a page.** It is the MCP protocol endpoint.
+  Use `http://localhost:8080/` for the server page, `http://localhost:8887/index.html` for
+  the console, or `http://localhost:8080/q/dev-ui/` in development mode. An ordinary browser
+  GET can receive HTTP 405; it does not indicate the MCP server is down.
+- **`Mcp-Session-Id header not found`** means a request arrived without the required session
+  header. Initialize the client first, then reuse the returned header on later requests.
+  If this happens while using the console, reload the page and click **Initialize** before
+  **List Tools**. After a server restart, establish a new session. A log line alone does
+  not identify the originating client.
+- **`ConstraintViolationException` with `[INVALID]`** is expected when clicking
+  **Validation Test**. The exercise deliberately violates `^CUST-[0-9]{4,8}$`; the MCP
+  extension logs the rejected invocation at ERROR level with a stack trace. This is a
+  handled tool failure, not a server crash. Use **Call Tool** with `CUST-4091` to confirm
+  normal requests still work. A connection failure is a different outcome and does not
+  prove the validation guardrail worked.
+
 ## Verifying with curl
 
 You can test the MCP endpoint directly without Goose. The Streamable HTTP transport requires the `Accept: application/json, text/event-stream` header.

@@ -286,6 +286,19 @@ Open `http://localhost:8887/index.html` (or the same console served by Quarkus a
 3. **Call Tool** — Select any tool, set parameters, and execute `tools/call`. The architecture diagram animates the request/response flow through the validation layers.
 4. **Validation Test** — Sends `getCustomerStatus` with `customerId: "INVALID"` to demonstrate Jakarta Bean Validation rejecting input that does not match `^CUST-[0-9]{4,8}$`.
 
+!!! note "Expected rejection is not a server crash"
+    **Validation Test** deliberately submits `customerId: "INVALID"`. The MCP extension
+    can log an ERROR with a `ConstraintViolationException` stack trace for this rejected
+    invocation. That is the expected demonstration of Bean Validation; the server keeps
+    running. A normal **Call Tool** request with `CUST-4091` should still succeed.
+
+!!! tip "Open the console, not the protocol endpoint"
+    `http://localhost:8080/mcp` is for MCP client requests, not an HTML page. Open
+    `http://localhost:8080/` or the console at `http://localhost:8887/index.html` instead.
+    A plain browser GET may receive HTTP 405. A missing `Mcp-Session-Id` warning means a
+    request omitted its session header; initialize the client and retain the returned
+    header on subsequent requests. Reload and reinitialize the console after a server restart.
+
 ## Step 5: Connecting Goose to Your Quarkus MCP Server
 
 Goose can be extended with any MCP server over stdio or HTTP. Configure Goose by editing its YAML configuration file or using the Goose CLI.

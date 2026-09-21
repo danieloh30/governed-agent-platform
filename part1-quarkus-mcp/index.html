@@ -440,6 +440,12 @@ body {
     <button class="btn btn-outline" id="btn-reset" onclick="resetAll()">Reset</button>
   </div>
 
+  <p style="font-size:0.82rem;color:var(--text-secondary);margin:-12px 0 24px">
+    <strong>Validation Test intentionally sends an invalid customer ID.</strong>
+    A rejection is the expected result; Quarkus may log a <code>ConstraintViolationException</code>.
+    The server remains running. Use <code>CUST-4091</code> for a successful customer lookup.
+  </p>
+
   <div class="main-grid">
     <div class="card">
       <div class="card-header">
@@ -816,7 +822,7 @@ async function stepValidationTest() {
       setValLayer('val-bean', 'denied');
       setNodeState('node-quarkus', 'deny');
       addLog('validate', 'validate', `Bean Validation: <strong style="color:var(--status-critical)">REJECTED</strong> &mdash; "INVALID" does not match ^CUST-[0-9]{4,8}$`);
-      addLog('error', 'error', 'Invalid input blocked before business logic executed');
+      addLog('response', 'response', 'Expected rejection: invalid input was blocked before business logic. The server is still running.');
     } else {
       setValLayer('val-bean', 'passed');
       setValLayer('val-exec', 'passed');
@@ -829,9 +835,9 @@ async function stepValidationTest() {
 
     showJson(res, 'tools/call (validation)');
   } catch (err) {
-    setValLayer('val-bean', 'denied');
-    setNodeState('node-quarkus', 'deny');
-    addLog('error', 'error', `Request rejected: ${esc(err.message)}`);
+    setValLayer('val-bean', null);
+    setNodeState('node-quarkus', null);
+    addLog('error', 'error', `Validation test could not complete: ${esc(err.message)}. Reconnect with Initialize; this is not proof of validation rejection.`);
   }
 
   document.getElementById('btn-validate').disabled = false;
