@@ -80,3 +80,16 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
+
+  - package-ecosystem: "maven"
+    directory: "/part6-agent-router"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "part-6"
+    groups:
+      quarkus:
+        patterns:
+          - "io.quarkus*"

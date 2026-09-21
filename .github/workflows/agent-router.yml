@@ -5,10 +5,12 @@ on:
     branches: [main]
     paths:
       - part6-agent-router/**
+      - pom.xml
       - .github/workflows/agent-router.yml
   pull_request:
     paths:
       - part6-agent-router/**
+      - pom.xml
       - .github/workflows/agent-router.yml
   workflow_dispatch:
 
@@ -21,22 +23,27 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
+      - uses: actions/setup-java@v6
         with:
-          python-version: "3.13"
+          distribution: temurin
+          java-version: "25"
+          cache: maven
       - name: Check script syntax
         run: |
-          bash -n part6-agent-router/install.sh part6-agent-router/start-all.sh
-          python3 -m py_compile part6-agent-router/lab.py part6-agent-router/smoke.py
+          bash -n part6-agent-router/install.sh part6-agent-router/start-all.sh part6-agent-router/smoke.sh
+      - name: Build and test Quarkus backends
+        run: mvn --batch-mode --no-transfer-progress -pl part6-agent-router -am verify
       - name: Install pinned Agent Router
         run: ./part6-agent-router/install.sh
       - name: Verify routing, failover, and recovery
         run: ./part6-agent-router/start-all.sh --smoke
+        env:
+          SKIP_BUILD: "true"
       - name: Upload gateway diagnostics on failure
         if: failure()
         uses: actions/upload-artifact@v6
         with:
           name: agent-router-log
-          path: part6-agent-router/.runtime/gateway.log
+          path: part6-agent-router/.runtime/*.log
           include-hidden-files: true
           if-no-files-found: ignore

@@ -1,16 +1,16 @@
 ---
 title: "Part 6: Model Routing and Failover"
-description: Route model requests and reproduce bounded provider failover with Agent Router.
+description: Route model requests and reproduce bounded provider failover with Agent Router and Quarkus.
 permalink: /tutorials/06-model-routing/
 ---
 
-# Part 6: Model Routing and Failover with Agent Router
+# Part 6: Model Routing and Failover with Agent Router and Quarkus
 
 [Tutorial home](index.md) · [Run the example](https://github.com/danieloh30/governed-agent-platform/tree/main/part6-agent-router) · [Enterprise deep dives](../enterprise/index.md)
 
-> **Lab contract:** You will send non-streaming requests through a real Agent Router to two deterministic, local model stubs. You will prove model matching, retry boundaries, fallback, and recovery. The stubs return fixed text and illustrative token counts; they do not perform inference or evaluate answer quality. This unauthenticated local lab does not establish production access control or guarantee that different providers produce equivalent answers.
+> **Lab contract:** You will send non-streaming requests through a real Agent Router to two deterministic Quarkus model backends running from the same application JAR. You will prove model matching, retry boundaries, fallback, and recovery. The stubs return fixed text and illustrative token counts; they do not perform inference or evaluate answer quality. This unauthenticated local lab does not establish production access control or guarantee that different providers produce equivalent answers.
 
-> **TL;DR** — Add the model-traffic layer to the governed platform. Use Agent Router to expose one OpenAI-compatible endpoint, select a configured model route, and retry a failed request against a fallback backend — with no API keys, GPU, or Kubernetes cluster required.
+> **TL;DR** — Run two Quarkus REST model backends behind Agent Router to add the model-traffic layer to the governed platform. Use Agent Router to expose one OpenAI-compatible endpoint, select a configured model route, and retry a failed request against a fallback backend — with no API keys, GPU, or Kubernetes cluster required.
 
 > **Enterprise context — Acme FinServ.** Maya has governed Acme's tools, but Goose still
 > depends on a model provider to decide what to do next. During a provider outage, Sofia's
@@ -65,14 +65,14 @@ division keeps each lesson focused. Model routing also differs from [Part 4's A2
 delegation](04-multi-agent-governance.md): selecting a model endpoint does not delegate a
 business workflow or grant approval to execute a tool.
 
-The required exercise replaces Goose and real models with an HTTP client and two stubs:
+The required exercise uses an HTTP client and two instances of one Quarkus application to simulate model providers:
 
 ```mermaid
 %%{init: {'look':'handDrawn','theme':'neutral','themeVariables': {'lineColor':'#4A4035'}}}%%
 flowchart LR
-    C([curl / smoke checks]) -->|POST /v1/chat/completions :1975| AR([Agent Router])
-    AR -->|First attempt| P([Primary stub :18081])
-    AR -->|One retry after 503| F([Fallback stub :18082])
+    C([curl / Quarkus REST Client]) -->|POST /v1/chat/completions :1975| AR([Agent Router])
+    AR -->|First attempt| P([Quarkus primary :18081])
+    AR -->|One retry after 503| F([Quarkus fallback :18082])
     T([Learner]) -.->|Set failure mode / inspect attempts| P
     T -.->|Set failure mode / inspect attempts| F
     style C fill:#D4E6F1,stroke:#2E6B8A
@@ -81,7 +81,7 @@ flowchart LR
     style F fill:#E8DCC4,stroke:#6B5B45
 ```
 
-The stubs never forward requests to each other. The real gateway makes every routing and retry
+The Quarkus backends return fixed completions and never forward requests to each other. The real gateway makes every routing and retry
 decision. Both backends expose the same `acme-model-v1` contract so you can isolate transport
 behavior from differences between model providers.
 
@@ -90,14 +90,14 @@ behavior from differences between model providers.
 - **Time:** 30 minutes after installation: start (5), route (10), fail over (10), verify (5).
 - **Platform:** macOS on Apple Silicon, or Linux on x86_64/ARM64. The pinned release does not
   provide a macOS Intel or native Windows binary; use a supported Linux environment there.
-- **Python 3.10+**, **Bash**, and **curl**. No additional Python packages are required.
-- Internet access for the initial CLI and Envoy downloads. Subsequent cached runs use local stubs.
+- **Java 25+**, **Maven 3.9+**, **Bash**, and **curl**. The installer uses `sha256sum` (Linux) or `shasum` (macOS); the core lab has no Python dependency.
+- Internet access for initial Maven dependencies, CLI, and Envoy downloads. Subsequent cached runs use local stubs.
 - Ports **1975**, **1064**, **18081**, and **18082** available. The runtime also uses internal
   Envoy listener ports; its startup log identifies any conflicts.
 
 Read Parts 1 and 2 for context; their services do not need to run. Parts 3–5 provide useful
 background but are not runtime prerequisites. This chapter does not change their
-startup commands, Maven modules, or provider settings.
+startup commands or provider settings. Part 6 is now a Maven module in the root build.
 
 Install the pinned CLI before the timed exercise:
 
@@ -105,6 +105,7 @@ Install the pinned CLI before the timed exercise:
 # From the repository root
 cd part6-agent-router
 ./install.sh
+mvn package -DskipTests
 ```
 
 The installer verifies the release asset's SHA-256 checksum and places the executable in
@@ -121,8 +122,39 @@ In the same terminal:
 ```
 
 Wait for `Ready: http://localhost:1975/v1/chat/completions`. Keep this terminal open. The
-launcher starts the two stubs and Agent Router, checks readiness, and records gateway logs in
-`.runtime/gateway.log`. Ctrl+C stops the services owned by this invocation.
+launcher builds the application, starts two Quarkus processes and Agent Router, and checks
+readiness. Logs are in `.runtime/primary.log`, `.runtime/fallback.log`, and `.runtime/gateway.log`.
+Ctrl+C stops the services owned by this invocation. After a build, `SKIP_BUILD=true ./start-all.sh`
+reuses the packaged application.
+
+### One Quarkus Application, Two Backend Instances
+
+The supplied application uses familiar patterns from the earlier Java labs:
+
+- **Quarkus REST and Jackson** expose `POST /v1/chat/completions` and `GET`/`POST /admin`.
+- **Bean Validation** rejects missing models, empty messages, and streaming requests before
+  recording an upstream attempt.
+- **CDI** gives each process its own `ModelService`, failure mode, and attempt counter.
+- **SmallRye Health** exposes `/q/health/ready` for startup checks. A simulated provider 503
+  leaves the process ready so the failure exercise remains under your control.
+- **Quarkus command mode and REST Client** launch the lab and verify actual gateway responses.
+
+Open `src/main/java/com/example/router/ModelResource.java`. Its completion endpoint delegates
+state changes to the service:
+
+```java
+@POST
+@Path("v1/chat/completions")
+public Response complete(@NotNull @Valid CompletionRequest request) {
+    Result result = service.complete(request);
+    return Response.status(result.status()).entity(result.body()).build();
+}
+```
+
+The launcher runs the same `target/quarkus-app/quarkus-run.jar` twice with different
+`quarkus.http.port` and `model.backend-name` values. The primary uses `18081`/`primary`; the
+fallback uses `18082`/`fallback`. There is no shared mutable state between them. The launcher
+and verifier use the `cli` profile, which disables their HTTP listener.
 
 Open a second terminal at `part6-agent-router/`. Define a helper for the remaining exercises:
 
@@ -167,7 +199,7 @@ Agent Router extracts the model name from the JSON request for route matching. C
 `acme-support`; the backend receives `acme-model-v1`. Inspect the primary stub's record:
 
 ```bash
-curl -sS http://localhost:18081/admin | python3 -m json.tool
+curl -sS -w '\n' http://localhost:18081/admin
 ```
 
 `last_model` should be `acme-model-v1`. The `requests` counter counts model attempts, including
@@ -216,8 +248,8 @@ Expect **HTTP 200** with content beginning `fallback:`. The client sent one requ
 gateway made two upstream attempts. Inspect the evidence:
 
 ```bash
-curl -sS http://localhost:18081/admin | python3 -m json.tool
-curl -sS http://localhost:18082/admin | python3 -m json.tool
+curl -sS -w '\n' http://localhost:18081/admin
+curl -sS -w '\n' http://localhost:18082/admin
 ```
 
 Each stub should report `requests: 1`. This is request-time fallback, not a demonstration of
@@ -227,8 +259,8 @@ background health checks or circuit breaking.
 sequenceDiagram
     participant C as Client
     participant R as Agent Router
-    participant P as Primary stub
-    participant F as Fallback stub
+    participant P as Quarkus primary
+    participant F as Quarkus fallback
     C->>R: One acme-support request
     R->>P: Attempt 1 (priority 0)
     P-->>R: 503 unavailable
@@ -278,10 +310,11 @@ Expect **HTTP 200** from `primary:` again.
 With the original `acme-support` configuration running:
 
 ```bash
-python3 smoke.py
+./smoke.sh
 ```
 
-The smoke checks temporarily reset and change both stubs, then restore healthy state. Run
+The Quarkus `RoutingChecks` bean uses REST Client interfaces to reset and change both backends,
+then restores healthy state. `./smoke.sh` runs this verifier in Quarkus command mode. Run
 them without other clients sending requests so attempt counts remain deterministic.
 
 | Check | Expected evidence |
@@ -297,13 +330,17 @@ Expect `6/6 routing checks passed`. A failed check produces a nonzero exit code.
 [Part 5's regression-testing approach](05-evaluation.md) to a new HTTP boundary; the existing
 MCP evaluator and its datasets remain independent.
 
+The Quarkus endpoint tests run with `mvn test` from `part6-agent-router/` and require no Agent
+Router process. They complement the six routing checks: endpoint tests validate the model
+simulator, while the command-mode verifier validates the real gateway and two running backends.
+
 Stop the launcher with Ctrl+C. For a repeatable start-test-stop run, including CI:
 
 ```bash
 ./start-all.sh --smoke
 ```
 
-The launcher cleans up its process group even when a smoke check fails. It refuses occupied
+The Java launcher cleans up its owned process trees even when a smoke check fails. It refuses occupied
 ports rather than stopping another lab. Downloaded binaries and diagnostic logs remain under
 the ignored `.bin/` and `.runtime/` directories for later runs.
 
@@ -315,7 +352,8 @@ the ignored `.bin/` and `.runtime/` directories for later runs.
 | Configured model selection | Exact route match and a shared upstream model contract |
 | Bounded fallback | Priorities, explicit retry triggers, and one retry |
 | Visible failure | A 503 when both backends fail; a 400 is not retried |
-| Repeatable control evidence | Six deterministic checks against the real gateway |
+| Repeatable control evidence | Six Quarkus REST Client checks against the real gateway |
+| Java backend contracts | Quarkus endpoint tests for responses, validation, state changes, and readiness |
 
 ### The Business Case (Acme FinServ)
 
@@ -361,6 +399,9 @@ time in addition to the estimates. Complete the core smoke checks before changin
 
 ## Further Reading
 
+- [Quarkus REST and JSON](https://quarkus.io/guides/rest-json)
+- [Quarkus REST Client](https://quarkus.io/guides/rest-client)
+- [Quarkus command mode](https://quarkus.io/guides/command-mode-reference)
 - [Agent Router at AAIF](https://aaif.io/projects/agent-router)
 - [Pinned Agent Router v1.1.0 release](https://github.com/theagentrouter/agent-router/releases/tag/v1.1.0)
 - [Standalone CLI](https://theagentrouter.ai/docs/cli/aigwrun/)

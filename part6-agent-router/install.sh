@@ -14,14 +14,15 @@ DOWNLOAD=$(mktemp "$SCRIPT_DIR/.bin/download.XXXXXX")
 trap 'rm -f "$DOWNLOAD"' EXIT
 curl --fail --location --retry 3 --connect-timeout 15 --max-time 300 \
   "https://github.com/theagentrouter/agent-router/releases/download/$VERSION/$ASSET" -o "$DOWNLOAD"
-python3 - "$DOWNLOAD" "$SHA256" <<'PY'
-import hashlib
-import pathlib
-import sys
-actual = hashlib.sha256(pathlib.Path(sys.argv[1]).read_bytes()).hexdigest()
-if actual != sys.argv[2]:
-    raise SystemExit(f"Checksum mismatch: {actual}; refusing installation")
-PY
+if command -v sha256sum >/dev/null 2>&1; then
+  ACTUAL=$(sha256sum "$DOWNLOAD")
+else
+  ACTUAL=$(shasum -a 256 "$DOWNLOAD")
+fi
+if [[ "${ACTUAL%% *}" != "$SHA256" ]]; then
+  echo "Checksum mismatch; refusing installation." >&2
+  exit 1
+fi
 chmod +x "$DOWNLOAD"
 mv "$DOWNLOAD" .bin/aigw
 .bin/aigw version

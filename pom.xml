@@ -16,6 +16,7 @@
     <module>part2-agentgateway/extmcp-guardrail</module>
     <module>part4-multi-agent</module>
     <module>part5-evaluation</module>
+    <module>part6-agent-router</module>
   </modules>
 
   <properties>

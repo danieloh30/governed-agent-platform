@@ -5,7 +5,7 @@
 [![Dependabot](https://img.shields.io/badge/Dependabot-enabled-025E8C?logo=dependabot)](https://github.com/danieloh30/governed-agent-platform/security/dependabot)
 [![Auto-merge Dependabot PRs](https://github.com/danieloh30/governed-agent-platform/actions/workflows/dependabot-auto-merge.yml/badge.svg)](https://github.com/danieloh30/governed-agent-platform/actions/workflows/dependabot-auto-merge.yml)
 
-A six-part tutorial for platform engineers covering tool security, observability, human approval, continuous evaluation, and model routing and failover. Goose provides the interactive agent client for the Java platform; Part 6 uses deterministic local model stubs to teach Agent Router in 30 minutes.
+A six-part tutorial for platform engineers covering tool security, observability, human approval, continuous evaluation, and model routing and failover. Goose provides the interactive agent client for the Java platform; Part 6 uses deterministic Quarkus model backends to teach Agent Router in 30 minutes.
 
 > **📚 Read the complete tutorial at [danieloh30.github.io/governed-agent-platform](https://danieloh30.github.io/governed-agent-platform/)**
 >
@@ -52,7 +52,7 @@ The documentation source lives in [`docs/`](docs/). Start from the **[published 
 | 3 | [End-to-End Tracing and Observability](docs/tutorials/03-observability.md) | `part3-observability/` | W3C Trace Context propagation across all layers with Quarkus OpenTelemetry, agentgateway tracing, and Jaeger |
 | 4 | [Multi-Agent Orchestration with A2A Protocol](docs/tutorials/04-multi-agent-governance.md) | `part4-multi-agent/` | A2A Java SDK (`@PublicAgentCard` + `AgentExecutor`) with AGENTS.md governance, HITL approval gates, and MCP tool delegation to Part 1 |
 | 5 | [Automated Agent Evaluation and Regression Testing](docs/tutorials/05-evaluation.md) | `part5-evaluation/` | Golden datasets, MCP eval runner with accuracy/latency/validation testing, CI/CD integration |
-| 6 | [Model Routing and Failover with Agent Router](docs/tutorials/06-model-routing.md) | `part6-agent-router/` | OpenAI-compatible routing, deterministic provider failures, bounded retries, and recovery checks (30 min) |
+| 6 | [Model Routing and Failover with Agent Router](docs/tutorials/06-model-routing.md) | `part6-agent-router/` | Quarkus model backends, OpenAI-compatible routing, bounded retries, and Java verification (30 min) |
 
 ## Architecture
 
@@ -103,7 +103,7 @@ flowchart LR
 
 ## Prerequisites
 
-The prerequisites below apply to the Java labs in Parts 1–5. Part 6 uses Python 3.10+, curl,
+Java 25+ and Maven 3.9+ also apply to Part 6, which adds curl
 and a pinned Agent Router CLI on macOS Apple Silicon or Linux x86_64/ARM64; see its
 [runbook](part6-agent-router/README.md). No provider credentials or GPU are needed for its core exercises.
 
@@ -149,14 +149,14 @@ cd part5-evaluation && ./start-all.sh
 
 Each demo SPA provides guided steps that walk through the key concepts of that part — no Goose or LLM required.
 
-Part 6 runs independently of the Maven build and other services:
+Part 6 is included in the Maven build and runs independently of the other services:
 
 ```bash
 # From the repository root; install before the timed 30-minute lab
 cd part6-agent-router
 ./install.sh
 ./start-all.sh
-# In another terminal in this directory: python3 smoke.py
+# In another terminal in this directory: ./smoke.sh
 # Or, with the lab stopped: ./start-all.sh --smoke
 ```
 
@@ -212,7 +212,9 @@ governed-agent-platform/
 └── part6-agent-router/              # Model routing and failover
     ├── config.yaml                 # Pinned standalone gateway configuration
     ├── install.sh                  # Checksum-verified CLI installation
-    ├── lab.py                      # Local model stubs and gateway lifecycle
-    ├── smoke.py                    # Routing/fallback/recovery checks
+    ├── pom.xml                     # Quarkus REST, validation, health, REST Client
+    ├── src/main/java/               # Model backends, launcher, Java verifier
+    ├── src/test/java/               # Quarkus endpoint contract tests
+    ├── smoke.sh                    # Run the Quarkus routing verifier
     └── start-all.sh                 # Launch or run with --smoke
 ```
