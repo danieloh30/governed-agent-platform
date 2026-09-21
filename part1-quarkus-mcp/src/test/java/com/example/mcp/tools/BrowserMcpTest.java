@@ -45,6 +45,13 @@ class BrowserMcpTest {
         var tools = json.readTree(listed.body()).path("result").path("tools");
         assertEquals(5, tools.size());
         assertTrue(tools.toString().contains("getCustomerStatus"));
+        var rejected = post("""
+            {"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"getCustomerStatus","arguments":{"customerId":"INVALID"}}}
+            """, session);
+        var rejection = json.readTree(rejected.body());
+        assertFalse(rejection.has("error"), "Validation must not become an internal protocol error");
+        assertTrue(rejection.path("result").path("isError").asBoolean());
+        assertTrue(rejection.path("result").path("content").get(0).path("text").asText().contains("must match"));
     }
 
     private HttpResponse<String> post(String body, String session) throws Exception {

@@ -90,11 +90,12 @@ Create a new Quarkus project or update your `pom.xml` to include the MCP server 
   <dependency>
     <groupId>io.quarkiverse.mcp</groupId>
     <artifactId>quarkus-mcp-server-http</artifactId>
-    <version>2.0.0.CR2</version>
+    <version>2.0.1</version>
   </dependency>
   <dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-hibernate-validator</artifactId>
+    <groupId>io.quarkiverse.mcp</groupId>
+    <artifactId>quarkus-mcp-server-hibernate-validator</artifactId>
+    <version>2.0.1</version>
   </dependency>
   <dependency>
     <groupId>io.quarkus</groupId>
@@ -104,7 +105,7 @@ Create a new Quarkus project or update your `pom.xml` to include the MCP server 
 </dependencies>
 ```
 
-The key dependency is `quarkus-mcp-server-http` — it provides the Streamable HTTP transport layer that listens on `/mcp` and handles the full MCP JSON-RPC lifecycle (initialize, tools/list, tools/call). The `quarkus-hibernate-validator` dependency enables Jakarta Bean Validation annotations (`@NotNull`, `@Pattern`, `@Size`) on tool parameters.
+The key dependency is `quarkus-mcp-server-http` — it provides the Streamable HTTP transport layer that listens on `/mcp` and handles the full MCP JSON-RPC lifecycle (initialize, tools/list, tools/call). The `quarkus-mcp-server-hibernate-validator` dependency enables Jakarta Bean Validation annotations (`@NotNull`, `@Pattern`, `@Size`) on tool parameters and translates rejected inputs into MCP tool errors.
 
 ## Step 2: Implementing Hardened MCP Tools
 
@@ -287,10 +288,9 @@ Open `http://localhost:8887/index.html` (or the same console served by Quarkus a
 4. **Validation Test** — Sends `getCustomerStatus` with `customerId: "INVALID"` to demonstrate Jakarta Bean Validation rejecting input that does not match `^CUST-[0-9]{4,8}$`.
 
 !!! note "Expected rejection is not a server crash"
-    **Validation Test** deliberately submits `customerId: "INVALID"`. The MCP extension
-    can log an ERROR with a `ConstraintViolationException` stack trace for this rejected
-    invocation. That is the expected demonstration of Bean Validation; the server keeps
-    running. A normal **Call Tool** request with `CUST-4091` should still succeed.
+    **Validation Test** deliberately submits `customerId: "INVALID"`. The MCP validator integration
+    returns `result.isError: true` with a concise constraint message. This demonstrates
+    Bean Validation without an internal-error stack trace; the server keeps running. A normal **Call Tool** request with `CUST-4091` should still succeed.
 
 !!! tip "Open the console, not the protocol endpoint"
     `http://localhost:8080/mcp` is for MCP client requests, not an HTML page. Open

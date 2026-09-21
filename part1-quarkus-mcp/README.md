@@ -82,12 +82,12 @@ Get zone health logs for US-EAST-1
   If this happens while using the console, reload the page and click **Initialize** before
   **List Tools**. After a server restart, establish a new session. A log line alone does
   not identify the originating client.
-- **`ConstraintViolationException` with `[INVALID]`** is expected when clicking
-  **Validation Test**. The exercise deliberately violates `^CUST-[0-9]{4,8}$`; the MCP
-  extension logs the rejected invocation at ERROR level with a stack trace. This is a
-  handled tool failure, not a server crash. Use **Call Tool** with `CUST-4091` to confirm
-  normal requests still work. A connection failure is a different outcome and does not
-  prove the validation guardrail worked.
+- **Validation rejection for `INVALID`** is expected when clicking **Validation Test**.
+  The MCP validator integration returns `result.isError: true` with the violated
+  constraint, without an internal-error stack trace. Use **Call Tool** with `CUST-4091`
+  to confirm normal requests still work. A connection failure does not prove the
+  validation guardrail worked. If an older build still prints stack traces, restart
+  the launcher to rebuild with `quarkus-mcp-server-hibernate-validator`.
 
 ## Verifying with curl
 
@@ -182,7 +182,7 @@ part1-quarkus-mcp/
 |------------|---------|
 | `io.quarkiverse.mcp:quarkus-mcp-server-http` | Quarkus MCP Server with Streamable HTTP transport |
 | `io.quarkus:quarkus-rest-jackson` | REST + Jackson JSON serialization |
-| `io.quarkus:quarkus-hibernate-validator` | Bean Validation for tool parameter sanitization |
+| `io.quarkiverse.mcp:quarkus-mcp-server-hibernate-validator` | Bean Validation for tool parameter sanitization |
 
 ## Exposed MCP Tools
 

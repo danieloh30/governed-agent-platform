@@ -48,6 +48,12 @@ This builds Part 1's MCP server and Part 5's eval runner, starts both, and runs 
 
 Open the **Evaluation Console SPA** at [http://localhost:8891/index.html](http://localhost:8891/index.html) to run evaluations interactively.
 
+Expected startup scores are **12/12**, **8/8**, and **8/8**. The validation suite deliberately sends malformed IDs and oversized values. A successful case means the server rejected the input with the expected validation message.
+
+Part 1 uses `quarkus-mcp-server-hibernate-validator` to return these rejections as concise MCP tool errors instead of internal-error stack traces. Part 5 discovers tools before calling them, checks the MCP error flag, and reconstructs Part 1's lists from newline-separated text blocks. Connection failures always fail an evaluation; they cannot count as successful validation.
+
+CI runs the golden suites against both packaged services using `python3 part5-evaluation/smoke.py` from the repository root after building them. This check also verifies CORS and the absence of missing-discovery warnings and validation stack traces.
+
 ## REST API Examples
 
 ### List available suites

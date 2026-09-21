@@ -26,3 +26,9 @@ jobs:
 
       - name: Run tests
         run: mvn --batch-mode --no-transfer-progress test
+
+      - name: Build evaluation services
+        run: mvn --batch-mode --no-transfer-progress -pl part1-quarkus-mcp,part5-evaluation -am package -DskipTests
+
+      - name: Verify golden suites against the MCP server
+        run: python3 part5-evaluation/smoke.py

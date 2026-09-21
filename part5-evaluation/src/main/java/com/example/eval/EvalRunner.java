@@ -91,7 +91,9 @@ public class EvalRunner {
             long latency = System.currentTimeMillis() - start;
             String msg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
 
-            if (evalCase.expectError()) {
+            // Transport, discovery, and parsing failures are not successful
+            // validation checks, even when a case expects a tool rejection.
+            if (evalCase.expectError() && e instanceof McpEvalClient.ToolRejectedException) {
                 if (evalCase.errorContains() == null || msg.contains(evalCase.errorContains())) {
                     return EvalResult.pass(evalCase.id(), evalCase.tool(), latency,
                             mapper.valueToTree(Map.of("error", msg)));

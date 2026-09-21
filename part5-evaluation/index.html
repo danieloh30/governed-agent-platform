@@ -530,9 +530,10 @@ body {
 
 </div>
 
+<script src="mcp-client.js"></script>
 <script>
 const MCP = 'http://localhost:8080/mcp';
-const HEADERS = { 'Content-Type': 'application/json', 'Accept': 'application/json, text/event-stream' };
+let mcpClient = new McpClient(MCP);
 
 let rpcId = 0;
 let logCount = 0;
@@ -558,14 +559,9 @@ function setConnected(on, label) {
 }
 
 async function mcpCall(method, params = {}) {
-  const body = { jsonrpc: '2.0', id: ++rpcId, method, params };
-  const res = await fetch(MCP, { method: 'POST', headers: HEADERS, body: JSON.stringify(body) });
-  const text = await res.text();
-  if (text.includes('data: ')) {
-    const lines = text.split('\n').filter(l => l.startsWith('data: '));
-    return { request: body, response: JSON.parse(lines[lines.length - 1].substring(6)) };
-  }
-  return { request: body, response: JSON.parse(text) };
+  if (method === 'initialize') mcpClient = new McpClient(MCP);
+  const response = await mcpClient.send(method, params);
+  return { request: { jsonrpc: '2.0', id: response.id, method, params }, response };
 }
 
 function addLog(msg) {
@@ -867,23 +863,14 @@ async function stepRunEval() {
       animateArrow('arrow-mcp', true);
 
       if (response.error) {
-        if (tc.expectError) {
-          const msg = response.error.message || '';
-          if (!tc.errorContains || msg.includes(tc.errorContains)) {
-            passed = true;
-          } else {
-            error = 'Error message does not contain: ' + tc.errorContains;
-          }
-        } else {
-          error = 'Unexpected error: ' + (response.error.message || JSON.stringify(response.error));
-        }
+        error = 'MCP protocol error: ' + (response.error.message || JSON.stringify(response.error));
       } else {
         const content = response.result?.content || [];
-        const isError = content.length > 0 && content[0].isError;
+        const isError = response.result?.isError === true;
 
         if (tc.expectError) {
           if (isError) {
-            const errText = content[0].text || '';
+            const errText = content.map(c => c.text || '').join('\n');
             if (!tc.errorContains || errText.includes(tc.errorContains)) {
               passed = true;
             } else {
@@ -892,6 +879,8 @@ async function stepRunEval() {
           } else {
             error = 'Expected error but got success';
           }
+        } else if (isError) {
+          error = 'Unexpected tool rejection: ' + content.map(c => c.text || '').join('\n');
         } else {
           const actual = parseContent(response);
 
@@ -924,12 +913,7 @@ async function stepRunEval() {
 
     } catch (err) {
       const latency = Math.round(performance.now() - start);
-      if (tc.expectError) {
-        passed = true;
-        results[i] = { passed: true, latency, response: { error: err.message }, error: null };
-      } else {
-        results[i] = { passed: false, latency, response: null, error: 'Exception: ' + err.message };
-      }
+      results[i] = { passed: false, latency, response: null, error: 'Exception: ' + err.message };
     }
 
     if (results[i].passed) {

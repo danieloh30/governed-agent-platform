@@ -113,6 +113,7 @@ echo ""
 
 # ── Quick eval run ──
 echo "━━━ Quick Evaluation Run ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "[eval] Validation cases deliberately send invalid inputs; correctly rejected inputs count as passes."
 for suite in tool-accuracy validation-boundary workflow-regression; do
   REPORT=$(curl -s -X POST "http://localhost:8083/eval/run/$suite" 2>/dev/null)
   ACCURACY=$(echo "$REPORT" | python3 -c "import sys,json; r=json.loads(sys.stdin.read()); print(f'{r[\"accuracy\"]:.1f}')" 2>/dev/null || echo "?")

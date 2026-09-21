@@ -207,27 +207,60 @@ public class McpEvalClient {
     @Inject
     ObjectMapper mapper;
 
-    public String callTool(String toolName, Map<String, Object> arguments)
-            throws Exception {
+    public String callTool(String toolName, Map<String, Object> arguments) throws Exception {
+        // The managed client caches discovery and refreshes it on tool-list changes.
+        mcpClient.listTools();
         String argsJson = mapper.writeValueAsString(arguments);
-        var result = mcpClient.executeTool(
+        try {
+            var result = mcpClient.executeTool(
                 ToolExecutionRequest.builder()
                         .name(toolName)
                         .arguments(argsJson)
                         .build());
-        return result.resultText();
+            if (result.isError()) {
+                throw new ToolRejectedException(result.resultText());
+            }
+            return result.resultText();
+        } catch (ToolExecutionException e) {
+            // The current client throws for isError results. Its protocol
+            // exceptions carry an error code; transport failures use other types.
+            if (e.errorCode() != null) throw e;
+            throw new ToolRejectedException(e.getMessage());
+        }
     }
 
-    public JsonNode callToolAsJson(String toolName, Map<String, Object> arguments)
-            throws Exception {
+    public JsonNode callToolAsJson(String toolName, Map<String, Object> arguments) throws Exception {
         String text = callTool(toolName, arguments);
         if (text == null || text.isBlank()) {
             return mapper.createObjectNode();
         }
+        JsonNode parsed = parseText(text);
+        if (!parsed.isTextual()) return parsed;
+
+        // Part 1 encodes list items as separate MCP text blocks. LangChain4j
+        // joins those blocks with newlines (plain log lines or JSON audit events).
+        // Strict parsing above prevents Jackson from silently keeping only the
+        // first audit event when several JSON objects arrive together.
+        var lines = text.lines().toList();
+        if (lines.size() > 1) {
+            var items = mapper.createArrayNode();
+            lines.forEach(line -> items.add(parseText(line)));
+            return items;
+        }
+        return mapper.valueToTree(Map.of("text", text));
+    }
+
+    private JsonNode parseText(String text) {
         try {
-            return mapper.readTree(text);
-        } catch (Exception e) {
-            return mapper.valueToTree(Map.of("text", text));
+            return mapper.reader().with(DeserializationFeature.FAIL_ON_TRAILING_TOKENS).readTree(text);
+        } catch (JsonProcessingException e) {
+            return mapper.getNodeFactory().textNode(text);
+        }
+    }
+
+    public static class ToolRejectedException extends Exception {
+        public ToolRejectedException(String message) {
+            super(message == null ? "MCP tool returned an error" : message);
         }
     }
 
@@ -237,7 +270,11 @@ public class McpEvalClient {
 }
 ```
 
-The whole client is now ~35 lines and contains **zero** protocol code — `mcpClient.executeTool(...)` handles the JSON-RPC envelope, the `initialize` handshake, and the SSE/JSON response formats transparently. The only Jackson we keep is for the eval-specific concern of turning tool output into a `JsonNode` we can assert against. This is the same boilerplate-reduction lesson from Parts 1–4, applied to the test harness itself: let the extension own the wire protocol.
+The managed client handles initialization and the wire protocol. Call `listTools()` before execution so the client has tool metadata; subsequent calls use its cache. Handle both `isError()` results and the client’s `ToolExecutionException` representation of tool rejections. Protocol errors and wrapped transport failures remain evaluation failures.
+
+Part 1 returns list entries as separate text blocks. The client's default extractor joins them with newlines, so this lab reconstructs those log lines and JSON audit events into arrays. Strict JSON parsing prevents silently retaining only the first audit event. This parser matches Part 1's text-only outputs; richer or multiline content needs an extractor that preserves the original block boundaries.
+
+The validation suite passes only for a tool rejection with the expected message. Transport failures always fail the case. Part 1's `quarkus-mcp-server-hibernate-validator` integration keeps the constraints active and returns concise validation messages instead of internal-error stack traces. Startup should report **12/12**, **8/8**, and **8/8**. CI also runs `part5-evaluation/smoke.py` against the real packaged services to verify all three suites.
 
 The client is configured declaratively in `application.properties` — no endpoint parsing code, just point the named client at any MCP-compatible server:
 
