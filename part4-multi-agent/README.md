@@ -112,11 +112,21 @@ curl -s -X POST http://localhost:8082/api/tasks/my-task-2/approve | jq .
 
 ## Configuration Files
 
+This is a single-user localhost lab. The A2A server binds to `localhost` and sets `a2a.authorization.required=false` because no user identity provider is configured. A2A SDK 1.3+ otherwise rejects task requests with `Task not found`. AGENTS.md operation rules, blocked operations, and HITL approval gates still run. A shared deployment needs authentication and an SDK `TaskAuthorizationProvider` before enabling required task authorization.
+
+The SPA waits for a task to complete or reach its approval gate and uses the server-generated task ID for approval and rejection. Schema migration is simulated locally; log analysis, health checks, and reports can call Part 1's MCP tools.
+
 | File | Purpose |
 |------|---------|
 | `src/main/resources/application.properties` | Quarkus HTTP port (8082), CORS, MCP server URL |
 | `src/main/resources/AGENTS.md` | Governance rules: auto-approved, HITL-required, and blocked operations |
 | `start-all.sh` | Builds Part 1 + Part 4, launches both servers, starts the SPA, generates sample tasks |
+
+## Troubleshooting
+
+If **Discover Agent** reports `Failed to fetch`, check that Part 4 is running on port 8082. The SPA on port 8889 needs CORS enabled on the backend with `quarkus.http.cors.enabled=true`; the older `quarkus.http.cors=true` setting does not enable it in the current Quarkus version.
+
+After updating the code, stop the running Part 4 launcher with **Ctrl+C**, run `./start-all.sh` again to rebuild both servers, and reload the SPA. A successful `curl` request alone does not verify browser access because browsers enforce CORS.
 
 ## Cleanup
 

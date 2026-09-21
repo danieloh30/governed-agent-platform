@@ -653,13 +653,20 @@ function resetStateMachine() {
   document.getElementById('sm-status').textContent = 'idle';
 }
 
+async function fetchJson(path, options) {
+  const res = await fetch(A2A_SERVER + path, options);
+  if (!res.ok) throw new Error(`HTTP ${res.status} from ${path}`);
+  return res.json();
+}
+
 async function a2aCall(method, params) {
-  const res = await fetch(A2A_SERVER + '/', {
+  const data = await fetchJson('/', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'A2A-Version': '1.0' },
     body: JSON.stringify({ jsonrpc: '2.0', id: ++rpcId, method, params })
   });
-  return res.json();
+  if (data.error) throw new Error(data.error.message || 'A2A request failed');
+  return data;
 }
 
 function sendMessageParams(command) {
@@ -669,8 +676,17 @@ function sendMessageParams(command) {
       role: 'ROLE_USER',
       parts: [{ text: command }]
     },
-    configuration: { returnImmediately: true }
+    // Wait for completion or the HITL gate before displaying the outcome.
+    configuration: { returnImmediately: false }
   };
+}
+
+function requireTask(response, state) {
+  const task = response.result?.task;
+  if (!task?.id || task.status?.state !== state) {
+    throw new Error(`Expected ${state}, received ${task?.status?.state || 'no task'}`);
+  }
+  return task;
 }
 
 // ── Step 1: Discover Agent ──
@@ -688,8 +704,7 @@ async function stepDiscover() {
     await delay(500);
     setNodeState('node-flow', 'active');
 
-    const res = await fetch(A2A_SERVER + '/.well-known/agent-card.json');
-    const card = await res.json();
+    const card = await fetchJson('/.well-known/agent-card.json');
 
     showJson(card, 'agent-card.json');
     const skills = card.skills || [];
@@ -707,8 +722,7 @@ async function stepDiscover() {
     await delay(400);
     setNodeState('node-agents-md', 'active');
 
-    const govRes = await fetch(A2A_SERVER + '/api/governance');
-    const gov = await govRes.json();
+    const gov = await fetchJson('/api/governance');
     addLog('governance', 'governance', `Loaded AGENTS.md governance: <strong>${Object.keys(gov.autoApproved || {}).length} auto-approved</strong>, <strong>${Object.keys(gov.requiresApproval || {}).length} HITL-required</strong>, <strong>${Object.keys(gov.blocked || {}).length} blocked</strong>`);
     await delay(300);
     setNodeState('node-agents-md', 'pass');
@@ -717,7 +731,7 @@ async function stepDiscover() {
     document.getElementById('btn-hitl').disabled = false;
     document.getElementById('btn-blocked').disabled = false;
   } catch (err) {
-    addLog('error', 'error', `Discovery failed: ${esc(err.message)}`);
+    addLog('error', 'error', `Discovery failed: ${esc(err.message)}. Restart Part 4 with <strong>./start-all.sh</strong> and reload this page. The agent on port 8082 must allow browser requests from this console.`);
     setAgentStatus(false);
     showJson({ error: err.message }, 'agent-card.json');
   }
@@ -734,7 +748,6 @@ async function stepAutoApproved() {
   resetArch();
   resetStateMachine();
 
-  const taskId = crypto.randomUUID();
   const command = 'analyze-logs --service api-gateway --timeframe 24h';
   taskCount++;
   updateStats();
@@ -772,6 +785,7 @@ async function stepAutoApproved() {
     await delay(300);
 
     const res = await a2aCall('SendMessage', sendMessageParams(command));
+    requireTask(res, 'TASK_STATE_COMPLETED');
 
     setSmPhase('sm-hitl-gate', 'pass');
     setSmPhase('sm-executing', 'active');
@@ -808,14 +822,13 @@ async function stepAutoApproved() {
 
 // ── Step 3: HITL Task ──
 async function stepHitlTask() {
+  if (currentHitlTaskId) return;
   const btn = document.getElementById('btn-hitl');
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span> Submitting...';
   resetArch();
   resetStateMachine();
 
-  const taskId = crypto.randomUUID();
-  currentHitlTaskId = taskId;
   const command = 'migrate-schema --database production --table users --changes add-column-email';
   taskCount++;
   pendingCount++;
@@ -854,6 +867,8 @@ async function stepHitlTask() {
     await delay(300);
 
     const res = await a2aCall('SendMessage', sendMessageParams(command));
+    const task = requireTask(res, 'TASK_STATE_INPUT_REQUIRED');
+    currentHitlTaskId = task.id;
 
     setSmPhase('sm-hitl-gate', 'hitl');
     setLayerState('tl-hitl', 'hitl');
@@ -864,7 +879,7 @@ async function stepHitlTask() {
     addLog('hitl', 'hitl', 'Workflow <strong>paused</strong>: awaiting human approval for schema migration on production table "users"');
 
     const panel = document.getElementById('hitl-panel');
-    document.getElementById('hitl-task-id').textContent = taskId.substring(0, 8) + '...';
+    document.getElementById('hitl-task-id').textContent = task.id.substring(0, 8) + '...';
     document.getElementById('hitl-operation').textContent = 'migrate-schema';
     document.getElementById('hitl-risk').textContent = 'HIGH';
     document.getElementById('hitl-reason').textContent = 'Database schema migrations on production tables';
@@ -894,17 +909,14 @@ async function approveTask() {
   await delay(400);
 
   try {
-    const res = await fetch(A2A_SERVER + '/api/tasks/' + taskId + '/approve', { method: 'POST' });
-    const data = await res.json();
+    const data = await fetchJson('/api/tasks/' + encodeURIComponent(taskId) + '/approve', { method: 'POST' });
 
     setSmPhase('sm-executing', 'active');
     addLog('a2a', 'a2a', 'Resuming workflow execution...');
     await delay(300);
 
-    setLayerState('tl-mcp', 'active');
-    addLog('mcp', 'a2a', 'MCP delegation: calling Part 1 tool via <strong>McpToolClient</strong> (:8080)');
+    addLog('a2a', 'a2a', 'Executing the lab’s <strong>simulated schema migration</strong>');
     await delay(400);
-    setLayerState('tl-mcp', 'pass');
 
     setSmPhase('sm-executing', 'pass');
     setSmPhase('sm-completed', 'pass');
@@ -924,6 +936,9 @@ async function approveTask() {
     addLog('response', 'response', 'Task <strong>completed</strong>: schema migration executed successfully');
   } catch (err) {
     addLog('error', 'error', `Approval failed: ${esc(err.message)}`);
+    currentHitlTaskId = taskId;
+    document.getElementById('hitl-panel').classList.add('visible');
+    document.getElementById('sm-status').textContent = 'approval failed';
   }
 }
 
@@ -936,12 +951,11 @@ async function rejectTask() {
   document.getElementById('hitl-panel').classList.remove('visible');
 
   try {
-    const res = await fetch(A2A_SERVER + '/api/tasks/' + taskId + '/reject', {
+    const data = await fetchJson('/api/tasks/' + encodeURIComponent(taskId) + '/reject', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ reason: 'Operator determined migration is not safe at this time' })
     });
-    const data = await res.json();
 
     setSmPhase('sm-hitl-gate', 'fail');
     setLayerState('tl-hitl', 'fail');
@@ -958,6 +972,9 @@ async function rejectTask() {
     addLog('error', 'error', 'Task <strong>rejected</strong>: operator determined migration is not safe');
   } catch (err) {
     addLog('error', 'error', `Rejection failed: ${esc(err.message)}`);
+    currentHitlTaskId = taskId;
+    document.getElementById('hitl-panel').classList.add('visible');
+    document.getElementById('sm-status').textContent = 'rejection failed';
   }
 }
 
@@ -969,7 +986,6 @@ async function stepBlockedTask() {
   resetArch();
   resetStateMachine();
 
-  const taskId = crypto.randomUUID();
   const command = 'drop-database --target production';
   taskCount++;
   updateStats();
@@ -1001,6 +1017,7 @@ async function stepBlockedTask() {
     await delay(600);
 
     const res = await a2aCall('SendMessage', sendMessageParams(command));
+    requireTask(res, 'TASK_STATE_FAILED');
 
     setNodeState('node-agents-md', 'fail');
     setLayerState('tl-governance', 'fail');
@@ -1057,7 +1074,7 @@ function resetAll() {
 
 async function checkAgent() {
   try {
-    await fetch(A2A_SERVER + '/.well-known/agent-card.json', { mode: 'no-cors' });
+    await fetchJson('/.well-known/agent-card.json');
     document.getElementById('stat-agent').textContent = 'Online';
     document.getElementById('stat-agent').className = 'stat-value good';
   } catch {
