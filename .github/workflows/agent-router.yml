@@ -41,7 +41,7 @@ jobs:
           SKIP_BUILD: "true"
       - name: Upload gateway diagnostics on failure
         if: failure()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: agent-router-log
           path: part6-agent-router/.runtime/*.log
