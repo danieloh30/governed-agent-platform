@@ -5,7 +5,7 @@ permalink: /enterprise/
 
 # Enterprise deep dives
 
-The five labs demonstrate individual controls. A real deployment also needs durable identity, policy lifecycle, data protection, reliability, and evidence management.
+The five core labs and optional [model-routing capstone](../tutorials/06-model-routing.md) demonstrate individual controls. A real deployment also needs durable identity, policy lifecycle, data protection, reliability, and evidence management.
 
 ## Production reference path
 
@@ -18,6 +18,7 @@ The five labs demonstrate individual controls. A real deployment also needs dura
 | Workflow state | In-memory task map | Durable state, idempotency keys, optimistic concurrency, timeout and compensation |
 | Approval | Demo admin endpoint | Authenticated approver identity, separation of duties, reason, expiry, replay prevention |
 | Evaluation | Deterministic golden files | Versioned datasets, environment matrix, policy negative tests, trend and release thresholds |
+| Model routing | Local stubs and bounded fallback | Approved providers/regions, credential management, streaming and retry tests, model-quality evaluation |
 
 Read the [production-readiness guide](production-readiness.md) for a concrete architecture, trust boundaries, failure modes, and a staged backlog.
 

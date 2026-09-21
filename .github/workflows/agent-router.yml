@@ -1,0 +1,42 @@
+name: Agent Router lab
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - part6-agent-router/**
+      - .github/workflows/agent-router.yml
+  pull_request:
+    paths:
+      - part6-agent-router/**
+      - .github/workflows/agent-router.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  routing:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - name: Check script syntax
+        run: |
+          bash -n part6-agent-router/install.sh part6-agent-router/start-all.sh
+          python3 -m py_compile part6-agent-router/lab.py part6-agent-router/smoke.py
+      - name: Install pinned Agent Router
+        run: ./part6-agent-router/install.sh
+      - name: Verify routing, failover, and recovery
+        run: ./part6-agent-router/start-all.sh --smoke
+      - name: Upload gateway diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: agent-router-log
+          path: part6-agent-router/.runtime/gateway.log
+          include-hidden-files: true
+          if-no-files-found: ignore

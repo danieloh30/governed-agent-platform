@@ -59,6 +59,9 @@ flowchart LR
 
 ## Prerequisites
 
+!!! info "Extend tracing to model requests later"
+    [Optional Part 6](06-model-routing.md#optional-follow-up-exercises) adds a model-routing lab and a separate Jaeger extension. Exporting model and MCP spans to the same collector is a starting point; a shared end-to-end trace also requires verified context propagation. Keep prompt and response capture explicitly controlled.
+
 Everything from Parts 1 and 2, plus:
 
 - **Podman** — for running Jaeger (`podman compose`)

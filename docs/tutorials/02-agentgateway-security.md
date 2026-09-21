@@ -27,6 +27,9 @@ This article answers those questions by placing [agentgateway](https://agentgate
 
 ## The Problem: Direct Agent-to-Backend Connections Don't Scale
 
+!!! info "Where model traffic fits"
+    This chapter governs MCP tool access. A model request follows a separate path: [optional Part 6](06-model-routing.md) introduces Agent Router for model selection and failover. Keep this chapter's agentgateway configuration for its JWT, CEL, and ExtMCP exercises; the new lab has independent startup and configuration.
+
 When Goose (or any MCP client) connects directly to a backend MCP server, every tool call is a point-to-point trust relationship:
 
 ```mermaid

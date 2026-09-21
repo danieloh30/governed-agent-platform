@@ -1,0 +1,117 @@
+# Agent Router v1.1.0 standalone configuration. No Kubernetes cluster required.
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: acme-models
+spec:
+  controllerName: gateway.envoyproxy.io/gatewayclass-controller
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: acme-models
+  namespace: default
+spec:
+  gatewayClassName: acme-models
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 1975
+---
+apiVersion: aigateway.envoyproxy.io/v1beta1
+kind: AIGatewayRoute
+metadata:
+  name: acme-models
+  namespace: default
+spec:
+  parentRefs:
+    - name: acme-models
+      kind: Gateway
+      group: gateway.networking.k8s.io
+  rules:
+    - matches:
+        - headers:
+            - type: Exact
+              name: x-ai-eg-model
+              value: acme-support # Exercise: change to acme-triage, then restore.
+      backendRefs:
+        - name: primary
+          priority: 0
+          modelNameOverride: acme-model-v1
+        - name: fallback
+          priority: 1
+          modelNameOverride: acme-model-v1
+      timeouts:
+        request: 10s
+---
+# One original attempt plus one retry; visit each priority at most once.
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: BackendTrafficPolicy
+metadata:
+  name: acme-fallback
+  namespace: default
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: acme-models
+  retry:
+    numAttemptsPerPriority: 1
+    numRetries: 1
+    perRetry:
+      timeout: 2s
+      backOff:
+        baseInterval: 10ms
+        maxInterval: 100ms
+    retryOn:
+      httpStatusCodes: [503]
+      triggers: [connect-failure, retriable-status-codes]
+---
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: Backend
+metadata:
+  name: primary
+  namespace: default
+spec:
+  endpoints:
+    # DNS backends produce separate clusters for priority-based failover.
+    - fqdn:
+        hostname: localhost
+        port: 18081
+---
+apiVersion: aigateway.envoyproxy.io/v1beta1
+kind: AIServiceBackend
+metadata:
+  name: primary
+  namespace: default
+spec:
+  schema:
+    name: OpenAI
+  backendRef:
+    name: primary
+    kind: Backend
+    group: gateway.envoyproxy.io
+---
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: Backend
+metadata:
+  name: fallback
+  namespace: default
+spec:
+  endpoints:
+    - fqdn:
+        hostname: localhost
+        port: 18082
+---
+apiVersion: aigateway.envoyproxy.io/v1beta1
+kind: AIServiceBackend
+metadata:
+  name: fallback
+  namespace: default
+spec:
+  schema:
+    name: OpenAI
+  backendRef:
+    name: fallback
+    kind: Backend
+    group: gateway.envoyproxy.io

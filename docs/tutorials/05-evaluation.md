@@ -769,7 +769,7 @@ The avoided cost is a single compliance incident.
 
 ## Series Recap
 
-This 5-part series built a complete governed AI agent infrastructure:
+The five-part core path demonstrated these layers of a governed AI agent platform:
 
 | Part | What We Built | Key Technology |
 |------|--------------|----------------|
@@ -780,3 +780,11 @@ This 5-part series built a complete governed AI agent infrastructure:
 | 5 | [Automated evaluation and regression testing](05-evaluation.md) | Golden datasets + MCP eval runner |
 
 Each layer addresses a different production concern — correctness, security, observability, orchestration, and now continuous verification. Together they provide the governance framework that platform engineers need to safely deploy autonomous AI agents against enterprise infrastructure.
+
+## Optional Next Step: Model Routing and Failover
+
+[Part 6: Model Routing and Failover with Agent Router](06-model-routing.md) adds a 30-minute
+lab with deterministic model stubs. Apply this chapter's testing approach to routing, fallback,
+retry boundaries, and recovery. The existing MCP suites continue to validate tool behavior;
+the new HTTP smoke checks validate model-traffic behavior. Neither set evaluates generated
+answer quality. Parts 1–5 remain runnable without Agent Router or model-provider credentials.

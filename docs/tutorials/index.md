@@ -5,7 +5,7 @@ permalink: /tutorials/
 
 # Tutorials
 
-The parts form a cumulative learning path. Part 1 is the shared tool backend; Parts 2–5 add independent platform capabilities around it.
+The parts form a cumulative learning path. Part 1 is the shared tool backend; Parts 2–5 add independent platform capabilities around it. Optional Part 6 extends the path to model routing and failover with Agent Router. Its local stubs run independently of the five core labs.
 
 | Part | Build | Time | Run from |
 |---|---|---:|---|
@@ -14,10 +14,13 @@ The parts form a cumulative learning path. Part 1 is the shared tool backend; Pa
 | [3. Observability](03-observability.md) | OpenTelemetry propagation and Jaeger traces | 25 min | `part3-observability/` |
 | [4. Multi-agent governance](04-multi-agent-governance.md) | A2A workflow states and approval gates | 35 min | `part4-multi-agent/` |
 | [5. Evaluation](05-evaluation.md) | Golden datasets and CI regression checks | 35 min | `part5-evaluation/` |
+| [6. Model routing (optional)](06-model-routing.md) | Agent Router model selection and bounded failover | 30 min | `part6-agent-router/` |
+
+Follow Parts 1–5 for the core platform, then add Part 6 to govern model traffic. All times assume prerequisites are installed; Part 6's Goose, tracing, and quota extensions have separate time estimates.
 
 ## Before you start
 
-Install Java 25+, Maven 3.9+, Goose, agentgateway, and Podman as required by the part. Build once from the repository root:
+For Parts 1–5, install Java 25+, Maven 3.9+, Goose, agentgateway, and Podman as required by the part. Build once from the repository root:
 
 ```bash
 mvn clean package -DskipTests
@@ -25,9 +28,11 @@ mvn clean package -DskipTests
 
 Every part also has a short README for commands and troubleshooting. The tutorial explains design decisions; the README is the operator runbook for the local demo.
 
+Part 6 uses Python, curl, and a pinned Agent Router CLI instead of the Maven build. Follow its [prerequisites and installation](06-model-routing.md#prerequisites) before starting the timed exercise; no real model or provider credentials are required.
+
 ## Conventions
 
 - Commands assume the repository root unless a step changes directories.
 - `localhost` ports and in-memory data are demo defaults, not deployment recommendations.
 - Example JWTs and policies are for local learning only.
-- Start each part with its `start-all.sh`, then use its browser console without requiring an LLM.
+- Start each part with its `start-all.sh`. Parts 1–5 provide browser consoles; Part 6 uses terminal exercises and automated HTTP checks. The required flows do not need an LLM.

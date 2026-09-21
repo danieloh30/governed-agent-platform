@@ -43,6 +43,8 @@ Without these guardrails, autonomous agents operate in a governance vacuum — t
 
 ## The Solution: A2A Protocol + Quarkus Flow + AGENTS.md
 
+A2A delegates a business task to an agent; [Part 6's model routing](06-model-routing.md) selects a model backend for inference. Model fallback does not replace this chapter's workflow policy or human approval gate.
+
 The fix combines three standards into a governed multi-agent architecture:
 
 ```mermaid
