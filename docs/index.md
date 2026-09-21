@@ -6,7 +6,7 @@ hide:
 ---
 
 <section class="hero" markdown>
-<p class="hero__eyebrow">Five core labs + an optional model-routing capstone</p>
+<p class="hero__eyebrow">Six-part hands-on tutorial</p>
 
 # Build agents that enterprises can trust
 
@@ -17,7 +17,7 @@ hide:
 </section>
 
 <div class="stat-strip">
-  <div class="stat"><strong>5 + 1</strong><span>core labs + optional capstone</span></div>
+  <div class="stat"><strong>6</strong><span>guided tutorials</span></div>
   <div class="stat"><strong>Java 25</strong><span>modern Quarkus stack</span></div>
   <div class="stat"><strong>MCP + A2A</strong><span>open agent protocols</span></div>
   <div class="stat"><strong>Local first</strong><span>inspect every control</span></div>
@@ -29,7 +29,7 @@ hide:
   <a class="path-card" href="tutorials/">
     <span class="path-card__icon">01</span>
     <strong>Learn the platform</strong>
-    <span>Follow the five-part core path from typed MCP tools through evaluation, then add model routing with Agent Router.</span>
+    <span>Follow the six-part path from typed MCP tools through evaluation and model routing with Agent Router.</span>
   </a>
   <a class="path-card" href="https://github.com/danieloh30/governed-agent-platform#quick-start">
     <span class="path-card__icon">▶</span>
@@ -56,7 +56,7 @@ The examples follow **Acme FinServ**, a fictional B2B payments company operating
 | [3](tutorials/03-observability.md) | Trace propagation and telemetry | End-to-end request timeline |
 | [4](tutorials/04-multi-agent-governance.md) | Workflow policy and human approval | State transitions and approval record |
 | [5](tutorials/05-evaluation.md) | Golden datasets and regression gates | Repeatable control test report |
-| [6 (optional)](tutorials/06-model-routing.md) | Model routing and bounded provider failover | Backend attempt counts and routing smoke checks |
+| [6](tutorials/06-model-routing.md) | Model routing and bounded provider failover | Backend attempt counts and routing smoke checks |
 
 !!! warning "Lab scope"
     These examples teach control mechanics. They are not a compliance certification, production identity provider, durable workflow engine, or complete threat model.

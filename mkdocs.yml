@@ -50,7 +50,7 @@ nav:
       - "3 · Observability": tutorials/03-observability.md
       - "4 · Multi-agent governance": tutorials/04-multi-agent-governance.md
       - "5 · Evaluation": tutorials/05-evaluation.md
-      - "6 · Model routing (optional)": tutorials/06-model-routing.md
+      - "6 · Model routing": tutorials/06-model-routing.md
   - Enterprise:
       - Deep dives: enterprise/index.md
       - Production readiness: enterprise/production-readiness.md

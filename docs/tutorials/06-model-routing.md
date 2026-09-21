@@ -10,7 +10,7 @@ permalink: /tutorials/06-model-routing/
 
 > **Lab contract:** You will send non-streaming requests through a real Agent Router to two deterministic, local model stubs. You will prove model matching, retry boundaries, fallback, and recovery. The stubs return fixed text and illustrative token counts; they do not perform inference or evaluate answer quality. This unauthenticated local lab does not establish production access control or guarantee that different providers produce equivalent answers.
 
-> **TL;DR** — Add an optional model-traffic layer to the governed platform. Use Agent Router to expose one OpenAI-compatible endpoint, select a configured model route, and retry a failed request against a fallback backend — with no API keys, GPU, or Kubernetes cluster required.
+> **TL;DR** — Add the model-traffic layer to the governed platform. Use Agent Router to expose one OpenAI-compatible endpoint, select a configured model route, and retry a failed request against a fallback backend — with no API keys, GPU, or Kubernetes cluster required.
 
 > **Enterprise context — Acme FinServ.** Maya has governed Acme's tools, but Goose still
 > depends on a model provider to decide what to do next. During a provider outage, Sofia's
@@ -96,7 +96,7 @@ behavior from differences between model providers.
   Envoy listener ports; its startup log identifies any conflicts.
 
 Read Parts 1 and 2 for context; their services do not need to run. Parts 3–5 provide useful
-background but are not runtime prerequisites. This optional chapter does not change their
+background but are not runtime prerequisites. This chapter does not change their
 startup commands, Maven modules, or provider settings.
 
 Install the pinned CLI before the timed exercise:
@@ -366,5 +366,6 @@ time in addition to the estimates. Complete the core smoke checks before changin
 - [Standalone CLI](https://theagentrouter.ai/docs/cli/aigwrun/)
 - [Provider fallback and retry configuration](https://theagentrouter.ai/docs/capabilities/traffic/provider-fallback/)
 
-The five-part core path remains complete on its own. This optional sixth part extends its
-governance story from tools and workflows to the model services the agent depends on.
+This completes the six-part learning path: validate tools, secure access, observe execution,
+govern workflows, test controls, and make model requests resilient. Each lab remains
+independently runnable; the follow-up exercises above are optional extensions.

@@ -5,7 +5,7 @@ permalink: /enterprise/
 
 # Enterprise deep dives
 
-The five core labs and optional [model-routing capstone](../tutorials/06-model-routing.md) demonstrate individual controls. A real deployment also needs durable identity, policy lifecycle, data protection, reliability, and evidence management.
+The six labs, including [model routing and failover](../tutorials/06-model-routing.md), demonstrate individual controls. A real deployment also needs durable identity, policy lifecycle, data protection, reliability, and evidence management.
 
 ## Production reference path
 

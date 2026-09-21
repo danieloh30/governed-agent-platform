@@ -2,7 +2,7 @@
 
 **Long-form guide:** [Part 6 tutorial](../docs/tutorials/06-model-routing.md)
 
-Optional 30-minute capstone: run Agent Router **v1.1.0** against two deterministic local model
+30-minute lab: run Agent Router **v1.1.0** against two deterministic local model
 stubs. Exercise routing, fallback, non-retryable errors, and recovery without API keys or a GPU.
 The actual Agent Router/Envoy runtime performs the routing. The stubs do not perform inference.
 

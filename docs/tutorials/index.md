@@ -5,7 +5,7 @@ permalink: /tutorials/
 
 # Tutorials
 
-The parts form a cumulative learning path. Part 1 is the shared tool backend; Parts 2–5 add independent platform capabilities around it. Optional Part 6 extends the path to model routing and failover with Agent Router. Its local stubs run independently of the five core labs.
+The six parts form a cumulative learning path. Part 1 is the shared tool backend; Parts 2–5 add independent platform capabilities around it. Part 6 completes the path with model routing and failover using Agent Router. Its local stubs run independently of the earlier labs.
 
 | Part | Build | Time | Run from |
 |---|---|---:|---|
@@ -14,9 +14,9 @@ The parts form a cumulative learning path. Part 1 is the shared tool backend; Pa
 | [3. Observability](03-observability.md) | OpenTelemetry propagation and Jaeger traces | 25 min | `part3-observability/` |
 | [4. Multi-agent governance](04-multi-agent-governance.md) | A2A workflow states and approval gates | 35 min | `part4-multi-agent/` |
 | [5. Evaluation](05-evaluation.md) | Golden datasets and CI regression checks | 35 min | `part5-evaluation/` |
-| [6. Model routing (optional)](06-model-routing.md) | Agent Router model selection and bounded failover | 30 min | `part6-agent-router/` |
+| [6. Model routing](06-model-routing.md) | Agent Router model selection and bounded failover | 30 min | `part6-agent-router/` |
 
-Follow Parts 1–5 for the core platform, then add Part 6 to govern model traffic. All times assume prerequisites are installed; Part 6's Goose, tracing, and quota extensions have separate time estimates.
+Follow Parts 1–6 to govern tools, workflows, and model traffic. All times assume prerequisites are installed; Part 6's Goose, tracing, and quota extensions have separate time estimates.
 
 ## Before you start
 

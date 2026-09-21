@@ -5,7 +5,7 @@
 [![Dependabot](https://img.shields.io/badge/Dependabot-enabled-025E8C?logo=dependabot)](https://github.com/danieloh30/governed-agent-platform/security/dependabot)
 [![Auto-merge Dependabot PRs](https://github.com/danieloh30/governed-agent-platform/actions/workflows/dependabot-auto-merge.yml/badge.svg)](https://github.com/danieloh30/governed-agent-platform/actions/workflows/dependabot-auto-merge.yml)
 
-A five-part Java tutorial for platform engineers covering tool security, observability, human approval, and continuous evaluation, with an optional 30-minute Agent Router capstone for model routing and failover. Goose provides the interactive agent client for the core platform; the capstone uses deterministic local model stubs.
+A six-part tutorial for platform engineers covering tool security, observability, human approval, continuous evaluation, and model routing and failover. Goose provides the interactive agent client for the Java platform; Part 6 uses deterministic local model stubs to teach Agent Router in 30 minutes.
 
 > **📚 Read the complete tutorial at [danieloh30.github.io/governed-agent-platform](https://danieloh30.github.io/governed-agent-platform/)**
 >
@@ -35,7 +35,7 @@ that makes it non-optional:
 | 3 | End-to-end distributed tracing | **SOC 2 CC7** monitoring — the evidence trail for post-incident forensics |
 | 4 | AGENTS.md policy + HITL approval gates | **SOX-style change management** — documented controls on high-risk operations |
 | 5 | Golden-dataset regression evaluation | **Continuous control validation** — proof the controls never silently regress |
-| 6 (optional) | Model routing + bounded fallback | **Service continuity** — reproducible provider failure and recovery checks |
+| 6 | Model routing + bounded fallback | **Service continuity** — reproducible provider failure and recovery checks |
 
 The personas who show up across the parts: **Maya**, a platform engineer rolling out Goose;
 **Sofia**, an SRE who runs `deploy-production`; and **Priya**, an external SOC 2 auditor who
@@ -52,7 +52,7 @@ The documentation source lives in [`docs/`](docs/). Start from the **[published 
 | 3 | [End-to-End Tracing and Observability](docs/tutorials/03-observability.md) | `part3-observability/` | W3C Trace Context propagation across all layers with Quarkus OpenTelemetry, agentgateway tracing, and Jaeger |
 | 4 | [Multi-Agent Orchestration with A2A Protocol](docs/tutorials/04-multi-agent-governance.md) | `part4-multi-agent/` | A2A Java SDK (`@PublicAgentCard` + `AgentExecutor`) with AGENTS.md governance, HITL approval gates, and MCP tool delegation to Part 1 |
 | 5 | [Automated Agent Evaluation and Regression Testing](docs/tutorials/05-evaluation.md) | `part5-evaluation/` | Golden datasets, MCP eval runner with accuracy/latency/validation testing, CI/CD integration |
-| 6 (optional) | [Model Routing and Failover with Agent Router](docs/tutorials/06-model-routing.md) | `part6-agent-router/` | OpenAI-compatible routing, deterministic provider failures, bounded retries, and recovery checks (30 min) |
+| 6 | [Model Routing and Failover with Agent Router](docs/tutorials/06-model-routing.md) | `part6-agent-router/` | OpenAI-compatible routing, deterministic provider failures, bounded retries, and recovery checks (30 min) |
 
 ## Architecture
 
@@ -60,7 +60,7 @@ The documentation source lives in [`docs/`](docs/). Start from the **[published 
 %%{init: {'look':'handDrawn','theme':'neutral','themeVariables': {'lineColor':'#4A4035'}}}%%
 flowchart LR
     G([Goose client]) -->|MCP :3000| AG
-    G -.->|Optional model path| AR([Part 6: Agent Router])
+    G -->|Model requests| AR([Part 6: Agent Router])
     AR --> PRIMARY([Primary model backend])
     AR --> FALLBACK([Fallback model backend])
     G -->|A2A :8082| FLOW
@@ -103,7 +103,7 @@ flowchart LR
 
 ## Prerequisites
 
-The prerequisites below apply to the core Java labs. Optional Part 6 uses Python 3.10+, curl,
+The prerequisites below apply to the Java labs in Parts 1–5. Part 6 uses Python 3.10+, curl,
 and a pinned Agent Router CLI on macOS Apple Silicon or Linux x86_64/ARM64; see its
 [runbook](part6-agent-router/README.md). No provider credentials or GPU are needed for its core exercises.
 
@@ -149,7 +149,7 @@ cd part5-evaluation && ./start-all.sh
 
 Each demo SPA provides guided steps that walk through the key concepts of that part — no Goose or LLM required.
 
-Optional Part 6 runs independently of the Maven build and other services:
+Part 6 runs independently of the Maven build and other services:
 
 ```bash
 # From the repository root; install before the timed 30-minute lab
@@ -176,7 +176,7 @@ governed-agent-platform/
 ├── pom.xml                          # Parent POM (aggregator)
 ├── docs/                            # GitHub Pages source
 │   ├── index.md                     # Documentation landing page
-│   ├── tutorials/                   # Five core labs + optional Part 6
+│   ├── tutorials/                   # Six-part learning path
 │   └── enterprise/                  # Production-readiness deep dives
 ├── part1-quarkus-mcp/               # Quarkus MCP server
 │   ├── pom.xml
@@ -209,7 +209,7 @@ governed-agent-platform/
 │   │   └── workflow-regression.json
 │   ├── index.html                   # Evaluation Console SPA
 │   └── start-all.sh                 # Launches MCP server + eval runner
-└── part6-agent-router/              # Optional model routing and failover
+└── part6-agent-router/              # Model routing and failover
     ├── config.yaml                 # Pinned standalone gateway configuration
     ├── install.sh                  # Checksum-verified CLI installation
     ├── lab.py                      # Local model stubs and gateway lifecycle
