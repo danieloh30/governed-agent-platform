@@ -210,40 +210,126 @@
   }
 }
 
-/* A paper surface keeps pastel hand-drawn diagrams readable in both palettes.
-   Material renders SVGs in a shadow root, so its theme variables must inherit
-   from this container rather than target SVG descendants. */
-.md-typeset .mermaid {
-  --md-mermaid-label-fg-color: #1f1f1f;
-  --md-mermaid-label-bg-color: #fffcf5;
-  --md-mermaid-edge-color: #4a4035;
-  --md-mermaid-node-bg-color: #d4e6f1;
-  --md-mermaid-node-fg-color: #2e6b8a;
-  --md-mermaid-sequence-actor-bg-color: #d4e6f1;
-  --md-mermaid-sequence-actor-border-color: #2e6b8a;
-  --md-mermaid-sequence-actor-fg-color: #1f1f1f;
-  --md-mermaid-sequence-actor-line-color: #6b5b45;
-  --md-mermaid-sequence-message-line-color: #4a4035;
-  --md-mermaid-sequence-message-fg-color: #1f1f1f;
+/* Paper-framed diagrams keep their own palette in both site modes. */
+.gap-diagram,
+.gap-diagram-dialog {
   color-scheme: light;
   color: #1f1f1f;
-  background: #fffcf5;
-  border: 1px solid #8b8070;
-  border-radius: 0.75rem;
-  padding: 1rem;
-  text-align: center;
-  margin: 1.5rem auto;
+  background: #fbf9f5;
+  border: 1px solid #d4cbbd;
+  border-radius: 0.6rem;
+  padding: 0.7rem;
+}
+
+.gap-diagram {
+  margin: 1.3rem 0;
   overflow-x: auto;
 }
 
-.md-typeset pre:has(.mermaid) {
+.md-typeset .gap-mermaid,
+.gap-diagram-dialog .gap-mermaid {
+  margin: 0;
+  padding: 0;
   background: transparent;
-  border: none;
-  box-shadow: none;
+  border: 0;
+  text-align: center;
+  white-space: normal;
+  font-family: Inter, sans-serif;
+}
+
+.gap-mermaid svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: auto;
+}
+
+.gap-diagram-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.5rem;
+  position: sticky;
+  left: 0;
+}
+
+.gap-diagram-toolbar button {
+  background: #fbf9f5;
+  color: #4a4035;
+  border: 1px solid #d4cbbd;
+  border-radius: 0.25rem;
+  padding: 0.35rem 0.65rem;
+  min-height: 2rem;
+  font: 600 0.65rem/1.4 Inter, sans-serif;
+  cursor: pointer;
+}
+
+.gap-diagram-toolbar button:hover {
+  background: #e8dcc4;
+}
+
+.gap-diagram-toolbar button:focus-visible {
+  outline: 3px solid #2e6b8a;
+  outline-offset: 3px;
+}
+
+.gap-diagram-dialog {
+  width: calc(100vw - 2rem);
+  height: calc(100dvh - 2rem);
+  max-width: none;
+  max-height: none;
+  margin: auto;
+  padding: 1rem;
+}
+
+.gap-diagram-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+.gap-diagram-dialog::backdrop {
+  background: rgb(13 18 32 / 80%);
+}
+
+.gap-diagram-dialog .gap-mermaid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  overflow: auto;
+}
+
+.gap-diagram-dialog svg {
+  width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.gap-diagram-error {
+  color: #b34235;
 }
 
 @media (max-width: 600px) {
-  .md-typeset .mermaid {
+  .gap-diagram {
     padding: 0.5rem;
+  }
+
+  .gap-diagram[data-direction="horizontal"] .gap-mermaid svg,
+  .gap-diagram-dialog[data-direction="horizontal"] .gap-mermaid svg {
+    min-width: 900px;
+    max-width: none;
+  }
+
+  .gap-diagram-dialog[data-direction="horizontal"] .gap-mermaid {
+    display: block;
+  }
+
+  .gap-diagram[data-direction="horizontal"]::after {
+    content: "Swipe horizontally to inspect the diagram";
+    display: block;
+    font: 500 0.6rem/1.5 Inter, sans-serif;
+    color: #4a4035;
+    margin-top: 0.5rem;
+    position: sticky;
+    left: 0;
   }
 }
