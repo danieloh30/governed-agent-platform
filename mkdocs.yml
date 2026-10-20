@@ -82,8 +82,6 @@ extra_css:
   - stylesheets/extra.css
 
 extra_javascript:
-  - https://unpkg.com/mermaid@11/dist/mermaid.min.js
-  - javascripts/render-mermaid.js
   - javascripts/repository-link.js
 
 extra:

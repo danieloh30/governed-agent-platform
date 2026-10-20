@@ -7,7 +7,7 @@ This directory contains the companion demo for Part 2 of the series. It deploys 
 ## Architecture
 
 ```mermaid
-%%{init: {'look':'handDrawn','theme':'neutral','themeVariables': {'lineColor':'#4A4035'}}}%%
+%%{init: {"look":"handDrawn","theme":"base","themeVariables":{"darkMode":false,"background":"#FFFCF5","primaryColor":"#D4E6F1","primaryBorderColor":"#2E6B8A","primaryTextColor":"#1F1F1F","secondaryColor":"#D8F0D8","secondaryTextColor":"#1F1F1F","tertiaryColor":"#E8DCC4","tertiaryTextColor":"#1F1F1F","textColor":"#1F1F1F","lineColor":"#4A4035","edgeLabelBackground":"#FFFCF5","clusterBkg":"#F5F5F0","clusterBorder":"#6B5B45","fontSize":"16px","actorBkg":"#D4E6F1","actorBorder":"#2E6B8A","actorTextColor":"#1F1F1F","actorLineColor":"#6B5B45","signalColor":"#4A4035","signalTextColor":"#1F1F1F"},"flowchart":{"nodeSpacing":35,"rankSpacing":55,"padding":18}}}%%
 flowchart LR
     G([Goose client]) -->|MCP :3000| AG
     AG -->|MCP :8080| MCP([Quarkus MCP server<br/>customer-tools])
@@ -20,10 +20,10 @@ flowchart LR
         AUTH --> RBAC --> EXT
     end
 
-    style G fill:#D4E6F1,stroke:#2E6B8A
-    style AG fill:#F5F5F0,stroke:#8B8070
-    style MCP fill:#D8F0D8,stroke:#3D7A3D
-    style GR fill:#F4D7D7,stroke:#9A4A4A
+    style G fill:#D4E6F1,stroke:#2E6B8A,color:#1F1F1F,stroke-width:2px
+    style AG fill:#F5F5F0,stroke:#8B8070,color:#1F1F1F,stroke-width:2px
+    style MCP fill:#D8F0D8,stroke:#3D7A3D,color:#1F1F1F,stroke-width:2px
+    style GR fill:#F4D7D7,stroke:#9A4A4A,color:#1F1F1F,stroke-width:2px
 ```
 
 ## Prerequisites

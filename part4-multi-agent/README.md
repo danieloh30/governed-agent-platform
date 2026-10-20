@@ -7,7 +7,7 @@ This directory contains the companion demo for Part 4 of the series. It bridges 
 ## Architecture
 
 ```mermaid
-%%{init: {'look':'handDrawn','theme':'neutral','themeVariables': {'lineColor':'#4A4035'}}}%%
+%%{init: {"look":"handDrawn","theme":"base","themeVariables":{"darkMode":false,"background":"#FFFCF5","primaryColor":"#D4E6F1","primaryBorderColor":"#2E6B8A","primaryTextColor":"#1F1F1F","secondaryColor":"#D8F0D8","secondaryTextColor":"#1F1F1F","tertiaryColor":"#E8DCC4","tertiaryTextColor":"#1F1F1F","textColor":"#1F1F1F","lineColor":"#4A4035","edgeLabelBackground":"#FFFCF5","clusterBkg":"#F5F5F0","clusterBorder":"#6B5B45","fontSize":"16px","actorBkg":"#D4E6F1","actorBorder":"#2E6B8A","actorTextColor":"#1F1F1F","actorLineColor":"#6B5B45","signalColor":"#4A4035","signalTextColor":"#1F1F1F"},"flowchart":{"nodeSpacing":35,"rankSpacing":55,"padding":18}}}%%
 flowchart LR
     G([Goose client]) -->|Discover agent card| CARD[Public agent card]
     G -->|A2A :8082| FLOW
@@ -21,16 +21,16 @@ flowchart LR
     end
 
     CARD -.-> FLOW
-    style G fill:#D4E6F1,stroke:#2E6B8A
-    style FLOW fill:#F5F5F0,stroke:#8B8070
-    style CARD fill:#E8E0F0,stroke:#6B5B8A
-    style MCP fill:#D8F0D8,stroke:#3D7A3D
+    style G fill:#D4E6F1,stroke:#2E6B8A,color:#1F1F1F,stroke-width:2px
+    style FLOW fill:#F5F5F0,stroke:#8B8070,color:#1F1F1F,stroke-width:2px
+    style CARD fill:#E8E0F0,stroke:#6B5B8A,color:#1F1F1F,stroke-width:2px
+    style MCP fill:#D8F0D8,stroke:#3D7A3D,color:#1F1F1F,stroke-width:2px
 ```
 
 ### A2A Task Lifecycle
 
 ```mermaid
-%%{init: {'look':'handDrawn','theme':'neutral','themeVariables': {'lineColor':'#4A4035'}}}%%
+%%{init: {"look":"handDrawn","theme":"base","themeVariables":{"darkMode":false,"background":"#FFFCF5","primaryColor":"#D4E6F1","primaryBorderColor":"#2E6B8A","primaryTextColor":"#1F1F1F","secondaryColor":"#D8F0D8","secondaryTextColor":"#1F1F1F","tertiaryColor":"#E8DCC4","tertiaryTextColor":"#1F1F1F","textColor":"#1F1F1F","lineColor":"#4A4035","edgeLabelBackground":"#FFFCF5","clusterBkg":"#F5F5F0","clusterBorder":"#6B5B45","fontSize":"16px","actorBkg":"#D4E6F1","actorBorder":"#2E6B8A","actorTextColor":"#1F1F1F","actorLineColor":"#6B5B45","signalColor":"#4A4035","signalTextColor":"#1F1F1F"},"flowchart":{"nodeSpacing":35,"rankSpacing":55,"padding":18}}}%%
 stateDiagram-v2
     [*] --> submitted
     submitted --> working

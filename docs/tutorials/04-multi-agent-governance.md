@@ -48,7 +48,7 @@ A2A delegates a business task to an agent; [Part 6's model routing](06-model-rou
 The fix combines three standards into a governed multi-agent architecture:
 
 ```mermaid
-%%{init: {'look':'handDrawn','theme':'neutral','themeVariables': {'lineColor':'#4A4035'}}}%%
+%%{init: {"look":"handDrawn","theme":"base","themeVariables":{"darkMode":false,"background":"#FFFCF5","primaryColor":"#D4E6F1","primaryBorderColor":"#2E6B8A","primaryTextColor":"#1F1F1F","secondaryColor":"#D8F0D8","secondaryTextColor":"#1F1F1F","tertiaryColor":"#E8DCC4","tertiaryTextColor":"#1F1F1F","textColor":"#1F1F1F","lineColor":"#4A4035","edgeLabelBackground":"#FFFCF5","clusterBkg":"#F5F5F0","clusterBorder":"#6B5B45","fontSize":"16px","actorBkg":"#D4E6F1","actorBorder":"#2E6B8A","actorTextColor":"#1F1F1F","actorLineColor":"#6B5B45","signalColor":"#4A4035","signalTextColor":"#1F1F1F"},"flowchart":{"nodeSpacing":35,"rankSpacing":55,"padding":18}}}%%
 flowchart LR
     G([Goose client]) -->|Discover agent card| CARD["Public agent card"]
     G -->|A2A SendMessage :8082| EXEC
@@ -62,10 +62,10 @@ flowchart LR
 
     HITL -->|MCP :8080| MCP(["Quarkus MCP server<br/>customer-tools"])
     CARD -.-> EXEC
-    style G fill:#D4E6F1,stroke:#2E6B8A
-    style QFLOW fill:#F5F5F0,stroke:#8B8070
-    style CARD fill:#E8E0F0,stroke:#6B5B8A
-    style MCP fill:#D8F0D8,stroke:#3D7A3D
+    style G fill:#D4E6F1,stroke:#2E6B8A,color:#1F1F1F,stroke-width:2px
+    style QFLOW fill:#F5F5F0,stroke:#8B8070,color:#1F1F1F,stroke-width:2px
+    style CARD fill:#E8E0F0,stroke:#6B5B8A,color:#1F1F1F,stroke-width:2px
+    style MCP fill:#D8F0D8,stroke:#3D7A3D,color:#1F1F1F,stroke-width:2px
 ```
 
 - **A2A (Agent2Agent)** — the Linux Foundation standard for multi-agent interoperability. Goose discovers the Quarkus backend via an Agent Card and delegates tasks using JSON-RPC over HTTP. The A2A Java SDK (`@PublicAgentCard` + `AgentExecutor`) handles protocol compliance automatically.
@@ -238,7 +238,7 @@ Notice the conditional logic for `process-refund` — governance rules can inclu
 Each A2A task flows through a state machine with six possible states:
 
 ```mermaid
-%%{init: {'look':'handDrawn','theme':'neutral','themeVariables': {'lineColor':'#4A4035'}}}%%
+%%{init: {"look":"handDrawn","theme":"base","themeVariables":{"darkMode":false,"background":"#FFFCF5","primaryColor":"#D4E6F1","primaryBorderColor":"#2E6B8A","primaryTextColor":"#1F1F1F","secondaryColor":"#D8F0D8","secondaryTextColor":"#1F1F1F","tertiaryColor":"#E8DCC4","tertiaryTextColor":"#1F1F1F","textColor":"#1F1F1F","lineColor":"#4A4035","edgeLabelBackground":"#FFFCF5","clusterBkg":"#F5F5F0","clusterBorder":"#6B5B45","fontSize":"16px","actorBkg":"#D4E6F1","actorBorder":"#2E6B8A","actorTextColor":"#1F1F1F","actorLineColor":"#6B5B45","signalColor":"#4A4035","signalTextColor":"#1F1F1F"},"flowchart":{"nodeSpacing":35,"rankSpacing":55,"padding":18}}}%%
 stateDiagram-v2
     [*] --> SUBMITTED
     SUBMITTED --> WORKING

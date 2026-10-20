@@ -44,19 +44,19 @@ contain the earlier `aigw` and `aigateway.envoyproxy.io` names.
 The platform has two distinct request paths in this teaching architecture:
 
 ```mermaid
-%%{init: {'look':'handDrawn','theme':'neutral','themeVariables': {'lineColor':'#4A4035'}}}%%
+%%{init: {"look":"handDrawn","theme":"base","themeVariables":{"darkMode":false,"background":"#FFFCF5","primaryColor":"#D4E6F1","primaryBorderColor":"#2E6B8A","primaryTextColor":"#1F1F1F","secondaryColor":"#D8F0D8","secondaryTextColor":"#1F1F1F","tertiaryColor":"#E8DCC4","tertiaryTextColor":"#1F1F1F","textColor":"#1F1F1F","lineColor":"#4A4035","edgeLabelBackground":"#FFFCF5","clusterBkg":"#F5F5F0","clusterBorder":"#6B5B45","fontSize":"16px","actorBkg":"#D4E6F1","actorBorder":"#2E6B8A","actorTextColor":"#1F1F1F","actorLineColor":"#6B5B45","signalColor":"#4A4035","signalTextColor":"#1F1F1F"},"flowchart":{"nodeSpacing":35,"rankSpacing":55,"padding":18}}}%%
 flowchart LR
     G([Goose client]) -->|Model requests| AR([Part 6: Agent Router])
     AR -->|Priority 0| P([Primary model backend])
     AR -->|Retry at priority 1| F([Fallback model backend])
     G -->|MCP tool calls| AG([Part 2: agentgateway])
     AG --> MCP([Part 1: Quarkus MCP tools])
-    style G fill:#D4E6F1,stroke:#2E6B8A
-    style AR fill:#E8E0F0,stroke:#6B5B8A
-    style AG fill:#F5F5F0,stroke:#8B8070
-    style MCP fill:#D8F0D8,stroke:#3D7A3D
-    style P fill:#D8F0D8,stroke:#3D7A3D
-    style F fill:#E8DCC4,stroke:#6B5B45
+    style G fill:#D4E6F1,stroke:#2E6B8A,color:#1F1F1F,stroke-width:2px
+    style AR fill:#E8E0F0,stroke:#6B5B8A,color:#1F1F1F,stroke-width:2px
+    style AG fill:#F5F5F0,stroke:#8B8070,color:#1F1F1F,stroke-width:2px
+    style MCP fill:#D8F0D8,stroke:#3D7A3D,color:#1F1F1F,stroke-width:2px
+    style P fill:#D8F0D8,stroke:#3D7A3D,color:#1F1F1F,stroke-width:2px
+    style F fill:#E8DCC4,stroke:#6B5B45,color:#1F1F1F,stroke-width:2px
 ```
 
 **agentgateway** continues to teach MCP identity, authorization, and guardrails. **Agent Router**
@@ -68,7 +68,7 @@ business workflow or grant approval to execute a tool.
 The required exercise uses an HTTP client and two instances of one Quarkus application to simulate model providers:
 
 ```mermaid
-%%{init: {'look':'handDrawn','theme':'neutral','themeVariables': {'lineColor':'#4A4035'}}}%%
+%%{init: {"look":"handDrawn","theme":"base","themeVariables":{"darkMode":false,"background":"#FFFCF5","primaryColor":"#D4E6F1","primaryBorderColor":"#2E6B8A","primaryTextColor":"#1F1F1F","secondaryColor":"#D8F0D8","secondaryTextColor":"#1F1F1F","tertiaryColor":"#E8DCC4","tertiaryTextColor":"#1F1F1F","textColor":"#1F1F1F","lineColor":"#4A4035","edgeLabelBackground":"#FFFCF5","clusterBkg":"#F5F5F0","clusterBorder":"#6B5B45","fontSize":"16px","actorBkg":"#D4E6F1","actorBorder":"#2E6B8A","actorTextColor":"#1F1F1F","actorLineColor":"#6B5B45","signalColor":"#4A4035","signalTextColor":"#1F1F1F"},"flowchart":{"nodeSpacing":35,"rankSpacing":55,"padding":18}}}%%
 flowchart LR
     UI([Part 6 SPA]) -->|Same-origin /lab/request| Q([Quarkus REST Client])
     Q -->|POST /v1/chat/completions :1975| AR([Agent Router])
@@ -77,10 +77,10 @@ flowchart LR
     AR -->|One retry after 503| F([Quarkus fallback :18082])
     T([Learner]) -.->|Set failure mode / inspect attempts| P
     T -.->|Set failure mode / inspect attempts| F
-    style C fill:#D4E6F1,stroke:#2E6B8A
-    style AR fill:#E8E0F0,stroke:#6B5B8A
-    style P fill:#D8F0D8,stroke:#3D7A3D
-    style F fill:#E8DCC4,stroke:#6B5B45
+    style C fill:#D4E6F1,stroke:#2E6B8A,color:#1F1F1F,stroke-width:2px
+    style AR fill:#E8E0F0,stroke:#6B5B8A,color:#1F1F1F,stroke-width:2px
+    style P fill:#D8F0D8,stroke:#3D7A3D,color:#1F1F1F,stroke-width:2px
+    style F fill:#E8DCC4,stroke:#6B5B45,color:#1F1F1F,stroke-width:2px
 ```
 
 The Quarkus backends return fixed completions and never forward requests to each other. The real gateway makes every routing and retry
@@ -284,6 +284,7 @@ Each stub should report `requests: 1`. This is request-time fallback, not a demo
 background health checks or circuit breaking.
 
 ```mermaid
+%%{init: {"look":"handDrawn","theme":"base","themeVariables":{"darkMode":false,"background":"#FFFCF5","primaryColor":"#D4E6F1","primaryBorderColor":"#2E6B8A","primaryTextColor":"#1F1F1F","secondaryColor":"#D8F0D8","secondaryTextColor":"#1F1F1F","tertiaryColor":"#E8DCC4","tertiaryTextColor":"#1F1F1F","textColor":"#1F1F1F","lineColor":"#4A4035","edgeLabelBackground":"#FFFCF5","clusterBkg":"#F5F5F0","clusterBorder":"#6B5B45","fontSize":"16px","actorBkg":"#D4E6F1","actorBorder":"#2E6B8A","actorTextColor":"#1F1F1F","actorLineColor":"#6B5B45","signalColor":"#4A4035","signalTextColor":"#1F1F1F"},"flowchart":{"nodeSpacing":35,"rankSpacing":55,"padding":18}}}%%
 sequenceDiagram
     participant C as Client
     participant R as Agent Router

@@ -209,3 +209,41 @@
     padding: 2rem 1.35rem;
   }
 }
+
+/* A paper surface keeps pastel hand-drawn diagrams readable in both palettes.
+   Material renders SVGs in a shadow root, so its theme variables must inherit
+   from this container rather than target SVG descendants. */
+.md-typeset .mermaid {
+  --md-mermaid-label-fg-color: #1f1f1f;
+  --md-mermaid-label-bg-color: #fffcf5;
+  --md-mermaid-edge-color: #4a4035;
+  --md-mermaid-node-bg-color: #d4e6f1;
+  --md-mermaid-node-fg-color: #2e6b8a;
+  --md-mermaid-sequence-actor-bg-color: #d4e6f1;
+  --md-mermaid-sequence-actor-border-color: #2e6b8a;
+  --md-mermaid-sequence-actor-fg-color: #1f1f1f;
+  --md-mermaid-sequence-actor-line-color: #6b5b45;
+  --md-mermaid-sequence-message-line-color: #4a4035;
+  --md-mermaid-sequence-message-fg-color: #1f1f1f;
+  color-scheme: light;
+  color: #1f1f1f;
+  background: #fffcf5;
+  border: 1px solid #8b8070;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  text-align: center;
+  margin: 1.5rem auto;
+  overflow-x: auto;
+}
+
+.md-typeset pre:has(.mermaid) {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+@media (max-width: 600px) {
+  .md-typeset .mermaid {
+    padding: 0.5rem;
+  }
+}

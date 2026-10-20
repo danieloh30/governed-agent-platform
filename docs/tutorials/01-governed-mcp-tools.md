@@ -36,7 +36,7 @@ The solution is to build a stateless **MCP Tool Server** in Java using Quarkus. 
 ## Architecture: How Goose Integrates with Quarkus MCP
 
 ```mermaid
-%%{init: {'look':'handDrawn','theme':'neutral','themeVariables': {'lineColor':'#4A4035'}}}%%
+%%{init: {"look":"handDrawn","theme":"base","themeVariables":{"darkMode":false,"background":"#FFFCF5","primaryColor":"#D4E6F1","primaryBorderColor":"#2E6B8A","primaryTextColor":"#1F1F1F","secondaryColor":"#D8F0D8","secondaryTextColor":"#1F1F1F","tertiaryColor":"#E8DCC4","tertiaryTextColor":"#1F1F1F","textColor":"#1F1F1F","lineColor":"#4A4035","edgeLabelBackground":"#FFFCF5","clusterBkg":"#F5F5F0","clusterBorder":"#6B5B45","fontSize":"16px","actorBkg":"#D4E6F1","actorBorder":"#2E6B8A","actorTextColor":"#1F1F1F","actorLineColor":"#6B5B45","signalColor":"#4A4035","signalTextColor":"#1F1F1F"},"flowchart":{"nodeSpacing":35,"rankSpacing":55,"padding":18}}}%%
 flowchart TD
     G(["Goose AI agent<br/>CLI · Desktop · ACP"])
 
@@ -50,9 +50,9 @@ flowchart TD
     G -->|"MCP JSON-RPC<br/>Streamable HTTP"| TOOL
     JSON -->|"CDI / reactive clients"| SYS(["Enterprise APIs<br/>databases · dev UI"])
 
-    style G fill:#D4E6F1,stroke:#2E6B8A
-    style QMCP fill:#F5F5F0,stroke:#8B8070
-    style SYS fill:#D8F0D8,stroke:#3D7A3D
+    style G fill:#D4E6F1,stroke:#2E6B8A,color:#1F1F1F,stroke-width:2px
+    style QMCP fill:#F5F5F0,stroke:#8B8070,color:#1F1F1F,stroke-width:2px
+    style SYS fill:#D8F0D8,stroke:#3D7A3D,color:#1F1F1F,stroke-width:2px
 ```
 
 The flow has three actors:

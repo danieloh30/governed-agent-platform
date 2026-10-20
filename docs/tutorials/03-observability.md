@@ -40,17 +40,17 @@ This creates **black holes in telemetry dashboards** — the exact gap that auto
 The fix is standard distributed tracing, applied to the MCP transport layer:
 
 ```mermaid
-%%{init: {'look':'handDrawn','theme':'neutral','themeVariables': {'lineColor':'#4A4035'}}}%%
+%%{init: {"look":"handDrawn","theme":"base","themeVariables":{"darkMode":false,"background":"#FFFCF5","primaryColor":"#D4E6F1","primaryBorderColor":"#2E6B8A","primaryTextColor":"#1F1F1F","secondaryColor":"#D8F0D8","secondaryTextColor":"#1F1F1F","tertiaryColor":"#E8DCC4","tertiaryTextColor":"#1F1F1F","textColor":"#1F1F1F","lineColor":"#4A4035","edgeLabelBackground":"#FFFCF5","clusterBkg":"#F5F5F0","clusterBorder":"#6B5B45","fontSize":"16px","actorBkg":"#D4E6F1","actorBorder":"#2E6B8A","actorTextColor":"#1F1F1F","actorLineColor":"#6B5B45","signalColor":"#4A4035","signalTextColor":"#1F1F1F"},"flowchart":{"nodeSpacing":35,"rankSpacing":55,"padding":18}}}%%
 flowchart LR
     G([Goose client]) -->|MCP + traceparent| AG([agentgateway])
     AG -->|MCP + traceparent| MCP([Quarkus MCP server<br/>OpenTelemetry])
     AG -->|OTLP gRPC| J[(Jaeger collector<br/>:4317 / UI :16686)]
     MCP -->|OTLP HTTP| J
 
-    style G fill:#D4E6F1,stroke:#2E6B8A
-    style AG fill:#E8E0F0,stroke:#6B5B8A
-    style MCP fill:#D8F0D8,stroke:#3D7A3D
-    style J fill:#E8DCC4,stroke:#6B5B45
+    style G fill:#D4E6F1,stroke:#2E6B8A,color:#1F1F1F,stroke-width:2px
+    style AG fill:#E8E0F0,stroke:#6B5B8A,color:#1F1F1F,stroke-width:2px
+    style MCP fill:#D8F0D8,stroke:#3D7A3D,color:#1F1F1F,stroke-width:2px
+    style J fill:#E8DCC4,stroke:#6B5B45,color:#1F1F1F,stroke-width:2px
 ```
 
 - **agentgateway** exports spans for every proxied MCP request and propagates `traceparent` headers to the backend.

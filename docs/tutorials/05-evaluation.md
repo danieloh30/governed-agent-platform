@@ -36,7 +36,7 @@ The solution is an **evaluation framework** that treats MCP tool services like a
 ## Architecture
 
 ```mermaid
-%%{init: {'look':'handDrawn','theme':'neutral','themeVariables': {'lineColor':'#4A4035'}}}%%
+%%{init: {"look":"handDrawn","theme":"base","themeVariables":{"darkMode":false,"background":"#FFFCF5","primaryColor":"#D4E6F1","primaryBorderColor":"#2E6B8A","primaryTextColor":"#1F1F1F","secondaryColor":"#D8F0D8","secondaryTextColor":"#1F1F1F","tertiaryColor":"#E8DCC4","tertiaryTextColor":"#1F1F1F","textColor":"#1F1F1F","lineColor":"#4A4035","edgeLabelBackground":"#FFFCF5","clusterBkg":"#F5F5F0","clusterBorder":"#6B5B45","fontSize":"16px","actorBkg":"#D4E6F1","actorBorder":"#2E6B8A","actorTextColor":"#1F1F1F","actorLineColor":"#6B5B45","signalColor":"#4A4035","signalTextColor":"#1F1F1F"},"flowchart":{"nodeSpacing":35,"rankSpacing":55,"padding":18}}}%%
 flowchart LR
     DATA[(Golden datasets<br/>accuracy · validation · workflow)] --> RUN
     API([Eval REST API :8083]) --> RUN
@@ -50,11 +50,11 @@ flowchart LR
         CLIENT --> EVAL --> COMPARE
     end
 
-    style DATA fill:#E8E0F0,stroke:#6B5B8A
-    style API fill:#D4E6F1,stroke:#2E6B8A
-    style RUN fill:#F5F5F0,stroke:#8B8070
-    style MCP fill:#D8F0D8,stroke:#3D7A3D
-    style REPORT fill:#E8DCC4,stroke:#6B5B45
+    style DATA fill:#E8E0F0,stroke:#6B5B8A,color:#1F1F1F,stroke-width:2px
+    style API fill:#D4E6F1,stroke:#2E6B8A,color:#1F1F1F,stroke-width:2px
+    style RUN fill:#F5F5F0,stroke:#8B8070,color:#1F1F1F,stroke-width:2px
+    style MCP fill:#D8F0D8,stroke:#3D7A3D,color:#1F1F1F,stroke-width:2px
+    style REPORT fill:#E8DCC4,stroke:#6B5B45,color:#1F1F1F,stroke-width:2px
 ```
 
 The Eval Runner is a standalone Quarkus application that:
