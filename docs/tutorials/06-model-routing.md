@@ -440,6 +440,7 @@ time in addition to the estimates. Complete the core smoke checks before changin
 - [Standalone CLI](https://theagentrouter.ai/docs/cli/aigwrun/)
 - [Provider fallback and retry configuration](https://theagentrouter.ai/docs/capabilities/traffic/provider-fallback/)
 
-This completes the six-part learning path: validate tools, secure access, observe execution,
-govern workflows, test controls, and make model requests resilient. Each lab remains
-independently runnable; the follow-up exercises above are optional extensions.
+This adds resilience to model requests alongside tool validation, access control, tracing,
+workflow governance, and regression evaluation. Continue with [Part 7: Governed Sandbox
+Execution](07-sandbox-execution.md) to run a bounded reconciliation script in OpenSandbox
+and verify execution limits, denied egress, and cleanup. Each lab remains independently runnable.

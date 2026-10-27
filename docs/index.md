@@ -6,18 +6,18 @@ hide:
 ---
 
 <section class="hero" markdown>
-<p class="hero__eyebrow">Six-part hands-on tutorial</p>
+<p class="hero__eyebrow">Seven-part hands-on tutorial</p>
 
 # Build agents that enterprises can trust
 
-<p class="hero__lead">Design a governed Java agent platform one control at a time—with MCP, A2A, Quarkus, agentgateway, OpenTelemetry, human approval, and continuous evaluation. Extend it with model routing and failover using Agent Router.</p>
+<p class="hero__lead">Design a governed Java agent platform one control at a time—with MCP, A2A, Quarkus, agentgateway, OpenTelemetry, human approval, and continuous evaluation. Extend it with model routing using Agent Router and bounded code execution using OpenSandbox.</p>
 
 [Start the tutorials](tutorials/index.md){ .md-button .md-button--primary }
 [View on GitHub](https://github.com/danieloh30/governed-agent-platform){ .md-button target="_blank" rel="noopener noreferrer" }
 </section>
 
 <div class="stat-strip">
-  <div class="stat"><strong>6</strong><span>guided tutorials</span></div>
+  <div class="stat"><strong>7</strong><span>guided tutorials</span></div>
   <div class="stat"><strong>Java 25</strong><span>modern Quarkus stack</span></div>
   <div class="stat"><strong>MCP + A2A</strong><span>open agent protocols</span></div>
   <div class="stat"><strong>Local first</strong><span>inspect every control</span></div>
@@ -29,7 +29,7 @@ hide:
   <a class="path-card" href="tutorials/">
     <span class="path-card__icon">01</span>
     <strong>Learn the platform</strong>
-    <span>Follow the six-part path from typed MCP tools through evaluation and model routing with Agent Router.</span>
+    <span>Follow the seven-part path from typed MCP tools through model routing and governed sandbox execution.</span>
   </a>
   <a class="path-card" href="https://github.com/danieloh30/governed-agent-platform#quick-start">
     <span class="path-card__icon">▶</span>
@@ -57,6 +57,7 @@ The examples follow **Acme FinServ**, a fictional B2B payments company operating
 | [4](tutorials/04-multi-agent-governance.md) | Workflow policy, human approval, and Agent Skills | State transitions, approval record, and investigation evidence |
 | [5](tutorials/05-evaluation.md) | Golden datasets and regression gates | Repeatable control test report |
 | [6](tutorials/06-model-routing.md) | Model routing and bounded provider failover | Backend attempt counts and routing smoke checks |
+| [7](tutorials/07-sandbox-execution.md) | Bounded sandbox execution and cleanup | Reconciliation findings, failed egress probes, execution results, and deletion checks |
 
 !!! warning "Lab scope"
     These examples teach control mechanics. They are not a compliance certification, production identity provider, durable workflow engine, or complete threat model.

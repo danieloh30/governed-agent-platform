@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Part 7 · Governed Sandbox Execution</title>
+  <style>
+    :root { color-scheme: light; --ink:#19283b; --muted:#596779; --line:#dce1e7; --teal:#006d77; }
+    * { box-sizing:border-box; }
+    body { margin:0; color:var(--ink); background:#f5f6f8; font:16px/1.6 system-ui,sans-serif; }
+    header { background:#15283d; color:#fff; padding:40px max(24px,calc((100vw - 1160px)/2)); }
+    .eyebrow { color:#8fdfd7; font-size:12px; letter-spacing:.14em; text-transform:uppercase; }
+    h1 { margin:8px 0; font-size:clamp(28px,4vw,42px); line-height:1.2; }
+    header p { color:#d0dbe6; max-width:800px; }
+    main { max-width:1208px; padding:28px 24px 64px; margin:auto; }
+    .policy { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:24px; }
+    .policy span { background:white; border:1px solid var(--line); border-radius:24px; padding:5px 12px; font-size:13px; }
+    .grid { display:grid; grid-template-columns:340px minmax(0,1fr); gap:24px; align-items:start; }
+    section { background:white; border:1px solid var(--line); border-radius:12px; padding:24px; }
+    h2 { font-size:20px; margin:0 0 12px; } h3 { font-size:15px; margin:22px 0 8px; }
+    .scenario { border-bottom:1px solid var(--line); padding:0 0 18px; margin-bottom:18px; }
+    .scenario:last-child { border:0; margin:0; padding:0; }
+    .scenario p { font-size:14px; color:var(--muted); margin:6px 0 12px; }
+    button { font:inherit; font-size:14px; font-weight:600; padding:10px 14px; color:white; background:var(--teal); border:0; border-radius:6px; cursor:pointer; }
+    button:disabled { opacity:.5; cursor:wait; } button:focus-visible,a:focus-visible { outline:3px solid #e69f00; outline-offset:3px; }
+    #download { background:#edf4f4; color:var(--teal); margin-top:16px; }
+    .note,.meta { color:var(--muted); font-size:14px; overflow-wrap:anywhere; }
+    #status { display:inline-block; padding:3px 10px; border-radius:5px; font-size:13px; font-weight:700; background:#e9eef4; }
+    #status[data-state="COMPLETED"] { color:#086040; background:#e3f4ea; }
+    #status[data-state="FAILED"] { color:#9c2929; background:#fce8e8; }
+    pre { white-space:pre-wrap; overflow-wrap:anywhere; font:13px/1.6 ui-monospace,monospace; background:#f4f6f8; border:1px solid var(--line); border-radius:6px; padding:16px; max-height:460px; overflow:auto; }
+    #events { padding-left:22px; font-size:14px; }
+    .table-wrap { overflow:auto; } table { border-collapse:collapse; width:100%; font-size:13px; }
+    th,td { padding:9px; border-bottom:1px solid var(--line); text-align:left; white-space:nowrap; }
+    #error { color:#9c2929; overflow-wrap:anywhere; }
+    a { color:var(--teal); } header a { color:#8fdfd7; }
+    @media(max-width:780px) { .grid { grid-template-columns:1fr; } main { padding:18px 14px; } section { padding:18px; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="eyebrow">Acme FinServ · Part 7</div>
+    <h1>Governed sandbox execution</h1>
+    <p>Investigate a settlement discrepancy in a temporary OpenSandbox. Every run uses fixed synthetic data, a bounded script, resource limits, and denied outbound access.</p>
+    <a href="https://danieloh30.github.io/governed-agent-platform/tutorials/07-sandbox-execution/">Tutorial and setup instructions ↗</a>
+  </header>
+  <main>
+    <div class="policy" id="policy"><span>Loading server policy…</span></div>
+    <div class="grid">
+      <section aria-labelledby="scenarios-title">
+        <h2 id="scenarios-title">Run the controls</h2>
+        <div class="scenario"><strong>1 · Reconcile settlements</strong><p>Compare the ledger and settlement CSVs. Expect three discrepancies and a −4500 cent delta.</p><button data-scenario="reconcile">Run reconciliation</button></div>
+        <div class="scenario"><strong>2 · Check outbound access</strong><p>Attempt hostname and direct-IP connections. Both should fail under the configured policy.</p><button data-scenario="egress-check">Check denied egress</button></div>
+        <div class="scenario"><strong>3 · Enforce a deadline</strong><p>Start a 30-second sleep with a 2-second command timeout. Expect a failed execution and cleanup.</p><button data-scenario="timeout">Trigger timeout</button></div>
+        <div class="scenario"><strong>4 · Recover from script failure</strong><p>Exit with code 7. The remote sandbox must still be deleted.</p><button data-scenario="script-error">Trigger script failure</button></div>
+      </section>
+      <section aria-labelledby="evidence-title">
+        <h2 id="evidence-title">Execution evidence</h2>
+        <div role="status" aria-live="polite"><span id="status">READY</span> <span id="cleanup" class="meta"></span></div>
+        <p id="identity" class="meta">No run submitted. Start OpenSandbox with ./sandbox.sh up before running a scenario.</p>
+        <p id="error" role="alert"></p>
+        <ol id="events"></ol>
+        <div id="result"></div>
+        <h3>Returned evidence</h3>
+        <pre id="raw">Run a scenario to collect actual execution results.</pre>
+        <button id="download" disabled>Download evidence JSON</button>
+        <p class="note">A failed timeout or error scenario is expected. Check cleanup separately: DELETED means the lifecycle server acknowledged deletion. Two failed network probes do not establish comprehensive isolation. This localhost lab does not move money or authenticate users.</p>
+      </section>
+    </div>
+  </main>
+  <script>
+    let evidence;
+    const byId = id => document.getElementById(id);
+    const buttons = [...document.querySelectorAll('[data-scenario]')];
+    function status(value) { byId('status').textContent = value; byId('status').dataset.state = value; }
+    function renderResult(run) {
+      const container = byId('result'); container.replaceChildren();
+      let output; try { output = JSON.parse(run.stdout); } catch { return; }
+      if (!Array.isArray(output.discrepancies)) return;
+      const summary = document.createElement('p');
+      summary.textContent = `${output.discrepancies.length} discrepancies · delta ${output.deltaCents} cents`;
+      container.append(summary);
+      const wrap = document.createElement('div'); wrap.className = 'table-wrap';
+      const table = document.createElement('table');
+      const header = table.createTHead().insertRow();
+      for (const text of ['Payment', 'Expected cents', 'Settled cents', 'Reason']) {
+        const th = document.createElement('th'); th.scope = 'col'; th.textContent = text; header.append(th);
+      }
+      const body = table.createTBody();
+      for (const item of output.discrepancies) {
+        const row = body.insertRow();
+        for (const value of [item.paymentId, item.expectedCents ?? 'missing', item.settledCents ?? 'missing', item.reason]) row.insertCell().textContent = value;
+      }
+      wrap.append(table); container.append(wrap);
+    }
+    async function run(scenario) {
+      buttons.forEach(button => button.disabled = true); byId('download').disabled = true;
+      status('RUNNING'); byId('error').textContent = ''; byId('cleanup').textContent = '';
+      byId('events').replaceChildren(); byId('result').replaceChildren();
+      byId('identity').textContent = 'Creating a sandbox and waiting for its execution result…';
+      byId('raw').textContent = 'Waiting for the server…'; evidence = null;
+      try {
+        const response = await fetch('/api/runs', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({scenario}) });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || `HTTP ${response.status}`);
+        evidence = result; status(result.status); byId('cleanup').textContent = `Cleanup: ${result.cleanup}`;
+        byId('identity').textContent = `Run ${result.runId} · sandbox ${result.sandboxId || 'unconfirmed'} · ${result.durationMs} ms`;
+        byId('error').textContent = result.error || '';
+        for (const event of result.events) { const item = document.createElement('li'); item.textContent = event; byId('events').append(item); }
+        byId('raw').textContent = JSON.stringify(result,null,2); renderResult(result); byId('download').disabled = false;
+      } catch(error) { status('FAILED'); byId('error').textContent = error.message; byId('raw').textContent = 'No evidence response received. Inspect the server logs before retrying; a disconnected request can still be running.'; }
+      finally { buttons.forEach(button => button.disabled = false); }
+    }
+    buttons.forEach(button => button.addEventListener('click', () => run(button.dataset.scenario)));
+    byId('download').addEventListener('click', () => {
+      if (!evidence) return;
+      const url = URL.createObjectURL(new Blob([JSON.stringify(evidence,null,2)], {type:'application/json'}));
+      const link = document.createElement('a'); link.href = url; link.download = `sandbox-${evidence.runId}.json`; link.click(); URL.revokeObjectURL(url);
+    });
+    fetch('/api/policy').then(response => { if (!response.ok) throw new Error(`HTTP ${response.status}`); return response.json(); }).then(policy => {
+      byId('policy').replaceChildren();
+      for (const text of [`CPU ${policy.cpu}`, `Memory ${policy.memory}`, `TTL ${policy.ttlSeconds}s`, `Egress ${policy.networkDefault}`, `Concurrency ${policy.maxConcurrentRuns}`]) {
+        const item = document.createElement('span'); item.textContent = text; byId('policy').append(item);
+      }
+    }).catch(error => { byId('policy').textContent = `Policy unavailable: ${error.message}`; });
+  </script>
+</body>
+</html>

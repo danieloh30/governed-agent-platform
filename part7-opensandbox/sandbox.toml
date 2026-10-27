@@ -1,0 +1,38 @@
+# Single-user local lab. The control-plane port is published on loopback only.
+[server]
+host = "0.0.0.0"
+port = 8090
+api_key = "part7-local-demo-key"
+max_sandbox_timeout_seconds = 300
+
+[runtime]
+type = "docker"
+execd_image = "docker.io/opensandbox/execd:v1.1.0"
+
+[proxy]
+# Server and sandbox containers share the engine's bridge network.
+resolve_internal = true
+
+[docker]
+network_mode = "bridge"
+# The containerized server probes host-published egress ports through this alias.
+host_ip = "host.docker.internal"
+publish_host = "0.0.0.0"
+port_range_min = 42000
+port_range_max = 43000
+drop_capabilities = ["AUDIT_WRITE", "MKNOD", "NET_ADMIN", "NET_RAW", "SYS_ADMIN", "SYS_MODULE", "SYS_PTRACE", "SYS_TIME", "SYS_TTY_CONFIG"]
+no_new_privileges = true
+pids_limit = 256
+
+[egress]
+image = "docker.io/opensandbox/egress:v1.1.7"
+mode = "dns+nft"
+disable_ipv6 = true
+readiness_timeout_seconds = 30.0
+
+[store]
+type = "sqlite"
+path = "/tmp/part7-opensandbox.db"
+
+[ingress]
+mode = "direct"

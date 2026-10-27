@@ -1,0 +1,8 @@
+extensions:
+  settlement-reconciliation:
+    name: Settlement reconciliation
+    type: streamable_http
+    uri: http://127.0.0.1:8084/mcp
+    enabled: true
+    timeout: 150
+    description: Fixed synthetic reconciliation and sandbox control checks

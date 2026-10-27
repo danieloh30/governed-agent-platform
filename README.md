@@ -5,7 +5,7 @@
 [![Dependabot](https://img.shields.io/badge/Dependabot-enabled-025E8C?logo=dependabot)](https://github.com/danieloh30/governed-agent-platform/security/dependabot)
 [![Auto-merge Dependabot PRs](https://github.com/danieloh30/governed-agent-platform/actions/workflows/dependabot-auto-merge.yml/badge.svg)](https://github.com/danieloh30/governed-agent-platform/actions/workflows/dependabot-auto-merge.yml)
 
-A six-part tutorial for platform engineers covering tool security, observability, human approval, continuous evaluation, and model routing and failover. Goose provides the interactive agent client for the Java platform; Part 6 uses deterministic Quarkus model backends to teach Agent Router in 30 minutes.
+A seven-part tutorial for platform engineers covering tool security, observability, human approval, continuous evaluation, model routing and failover, and sandbox execution. Goose provides the interactive agent client for the Java platform; Part 6 uses deterministic Quarkus model backends to teach Agent Router in 30 minutes.
 
 > **📚 Read the complete tutorial at [danieloh30.github.io/governed-agent-platform](https://danieloh30.github.io/governed-agent-platform/)**
 >
@@ -36,6 +36,7 @@ that makes it non-optional:
 | 4 | AGENTS.md policy + HITL approval gates | **SOX-style change management** — documented controls on high-risk operations |
 | 5 | Golden-dataset regression evaluation | **Continuous control validation** — proof the controls never silently regress |
 | 6 | Model routing + bounded fallback | **Service continuity** — reproducible provider failure and recovery checks |
+| 7 | Bounded sandbox execution + cleanup | **Execution containment** — resource limits, denied egress, and lifecycle evidence |
 
 The personas who show up across the parts: **Maya**, a platform engineer rolling out Goose;
 **Sofia**, an SRE who runs `deploy-production`; and **Priya**, an external SOC 2 auditor who
@@ -53,6 +54,7 @@ The documentation source lives in [`docs/`](docs/). Start from the **[published 
 | 4 | [Multi-Agent Orchestration with A2A Protocol](docs/tutorials/04-multi-agent-governance.md) | `part4-multi-agent/` | A2A Java SDK (`@PublicAgentCard` + `AgentExecutor`) with AGENTS.md governance, HITL approval gates, MCP tool delegation, and an Agent Skills refund playbook |
 | 5 | [Automated Agent Evaluation and Regression Testing](docs/tutorials/05-evaluation.md) | `part5-evaluation/` | Golden datasets, MCP eval runner with accuracy/latency/validation testing, CI/CD integration |
 | 6 | [Model Routing and Failover with Agent Router](docs/tutorials/06-model-routing.md) | `part6-agent-router/` | Quarkus model backends, OpenAI-compatible routing, bounded retries, and Java verification (30 min) |
+| 7 | [Governed Code Execution with OpenSandbox](docs/tutorials/07-sandbox-execution.md) | `part7-opensandbox/` | Quarkus MCP reconciliation tool, temporary Python sandbox, egress checks, execution limits, and cleanup evidence |
 
 ## Architecture
 
@@ -61,6 +63,9 @@ The documentation source lives in [`docs/`](docs/). Start from the **[published 
 flowchart LR
     G([Goose client]) -->|MCP :3000| AG
     G -->|Model requests| AR([Part 6: Agent Router])
+    G -->|MCP :8084| SB([Part 7: Quarkus sandbox tool])
+    SB --> OS([OpenSandbox :8090])
+    OS --> PY([Temporary Python workload])
     AR --> PRIMARY([Primary model backend])
     AR --> FALLBACK([Fallback model backend])
     G -->|A2A :8082| FLOW
@@ -164,6 +169,18 @@ cd part6-agent-router
 The terminal lab uses Agent Router on `:1975` and model stubs on `:18081`/`:18082`. Follow the
 [Part 6 tutorial](docs/tutorials/06-model-routing.md) to change a route and trigger fallback.
 
+Part 7 runs independently and needs a local Docker or Podman engine:
+
+```bash
+cd part7-opensandbox
+./sandbox.sh up
+./start-all.sh
+# Open http://127.0.0.1:8084/
+# In another terminal, from the repository root:
+python3 part7-opensandbox/smoke.py
+# After stopping Quarkus: ./sandbox.sh down from part7-opensandbox/
+```
+
 ## Documentation Deployment
 
 The documentation is live at **[danieloh30.github.io/governed-agent-platform](https://danieloh30.github.io/governed-agent-platform/)**. A GitHub Actions workflow builds the Material for MkDocs site from `docs/` and deploys it to GitHub Pages with HTTPS enabled.
@@ -177,7 +194,7 @@ governed-agent-platform/
 ├── pom.xml                          # Parent POM (aggregator)
 ├── docs/                            # GitHub Pages source
 │   ├── index.md                     # Documentation landing page
-│   ├── tutorials/                   # Six-part learning path
+│   ├── tutorials/                   # Seven-part learning path
 │   └── enterprise/                  # Production-readiness deep dives
 ├── part1-quarkus-mcp/               # Quarkus MCP server
 │   ├── pom.xml
@@ -210,13 +227,20 @@ governed-agent-platform/
 │   │   └── workflow-regression.json
 │   ├── index.html                   # Evaluation Console SPA
 │   └── start-all.sh                 # Launches MCP server + eval runner
-└── part6-agent-router/              # Model routing and failover
-    ├── index.html                  # Independent Part 6 SPA served by Quarkus
-    ├── config.yaml                 # Pinned standalone gateway configuration
-    ├── install.sh                  # Checksum-verified CLI installation
-    ├── pom.xml                     # Quarkus REST, validation, health, REST Client
-    ├── src/main/java/               # Model backends, launcher, Java verifier
-    ├── src/test/java/               # Quarkus endpoint contract tests
-    ├── smoke.sh                    # Run the Quarkus routing verifier
-    └── start-all.sh                 # Launch or run with --smoke
+├── part6-agent-router/              # Model routing and failover
+│   ├── index.html                  # Independent Part 6 SPA served by Quarkus
+│   ├── config.yaml                 # Pinned standalone gateway configuration
+│   ├── install.sh                  # Checksum-verified CLI installation
+│   ├── pom.xml                     # Quarkus REST, validation, health, REST Client
+│   ├── src/main/java/               # Model backends, launcher, Java verifier
+│   ├── src/test/java/               # Quarkus endpoint contract tests
+│   ├── smoke.sh                    # Run the Quarkus routing verifier
+│   └── start-all.sh                 # Launch or run with --smoke
+└── part7-opensandbox/              # Governed sandbox execution
+    ├── sandbox.sh                  # Start/stop pinned OpenSandbox control plane
+    ├── sandbox.toml                # Engine, egress, and process-limit configuration
+    ├── src/main/java/              # Quarkus MCP tool, SDK adapter, evidence lifecycle
+    ├── src/main/resources/         # Synthetic workload + same-origin console
+    ├── smoke.py                    # Real MCP, execution, and deletion checks
+    └── start-all.sh                # Build and launch Quarkus
 ```
