@@ -116,15 +116,15 @@ echo "[tasks] Sample tasks generated -- open the SPA to view and approve."
 echo ""
 
 # ── Summary ──
-W=65
+W=72
 border=$(printf '%*s' "$W" '' | tr ' ' '-')
 echo "+${border}+"
 printf "| %-$(( W - 2 ))s |\n" "All services running"
 echo "+${border}+"
 printf "| %-$(( W - 2 ))s |\n" ""
-printf "| %-$(( W - 2 ))s |\n" "Quarkus MCP Server : http://localhost:8080/mcp"
+printf "| %-$(( W - 2 ))s |\n" "Quarkus MCP Server  : http://localhost:8080/mcp"
 printf "| %-$(( W - 2 ))s |\n" "MCP Console        : http://localhost:8080/console/index.html"
-printf "| %-$(( W - 2 ))s |\n" "Quarkus A2A Flow   : http://localhost:8082"
+printf "| %-$(( W - 2 ))s |\n" "Quarkus A2A Flow    : http://localhost:8082"
 printf "| %-$(( W - 2 ))s |\n" "Agent Card         : http://localhost:8082/.well-known/agent-card.json"
 SPA_URL="http://localhost:${SPA_PORT}/index.html"
 printf "| %-$(( W - 2 ))s |\n" "A2A Console SPA    : $SPA_URL"
