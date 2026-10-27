@@ -76,8 +76,17 @@ public class GovernanceEngine {
         if (requiresApproval.containsKey(operation)) {
             String reason = requiresApproval.get(operation);
             if (operation.equals("process-refund")) {
-                int amount = 0;
-                try { amount = Integer.parseInt(args.getOrDefault("amount", "0")); } catch (NumberFormatException ignored) {}
+                int amount;
+                String rawAmount = args.getOrDefault("amount", "");
+                try {
+                    if (!rawAmount.matches("[0-9]+")) throw new NumberFormatException();
+                    amount = Integer.parseInt(rawAmount);
+                    if (amount <= 0) throw new NumberFormatException();
+                } catch (NumberFormatException invalidAmount) {
+                    return new GovernanceResult(Decision.BLOCKED,
+                        "Refund amount must be a positive whole-dollar integer within the supported range (1-2147483647)",
+                        "high");
+                }
                 if (amount <= 1000) {
                     return new GovernanceResult(Decision.AUTO_APPROVED,
                         "Refund amount $" + amount + " within auto-approval threshold ($1000)",

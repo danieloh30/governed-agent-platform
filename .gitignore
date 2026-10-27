@@ -42,3 +42,6 @@ base-costs.json
 
 ### MkDocs ###
 site/
+
+# Local tutorial skill installation (source is part4-multi-agent/skills/)
+part4-multi-agent/.goose/skills/

@@ -54,7 +54,7 @@ The examples follow **Acme FinServ**, a fictional B2B payments company operating
 | [1](tutorials/01-governed-mcp-tools.md) | Typed schemas and boundary validation | Rejected malformed tool arguments |
 | [2](tutorials/02-agentgateway-security.md) | Agent authentication, tool authorization, guardrails | Identity and policy decisions |
 | [3](tutorials/03-observability.md) | Trace propagation and telemetry | End-to-end request timeline |
-| [4](tutorials/04-multi-agent-governance.md) | Workflow policy and human approval | State transitions and approval record |
+| [4](tutorials/04-multi-agent-governance.md) | Workflow policy, human approval, and Agent Skills | State transitions, approval record, and investigation evidence |
 | [5](tutorials/05-evaluation.md) | Golden datasets and regression gates | Repeatable control test report |
 | [6](tutorials/06-model-routing.md) | Model routing and bounded provider failover | Backend attempt counts and routing smoke checks |
 

@@ -20,7 +20,7 @@ max-execution-time-seconds: 300
 
 ### Requires Human Approval
 - migrate-schema: Database schema migrations on production tables
-- process-refund: Customer refund processing (auto-approved below $1000 threshold)
+- process-refund: Simulated customer refund (positive whole-dollar amounts up to $1000 inclusive auto-approved; invalid amounts blocked)
 - scale-infrastructure: Infrastructure replica scaling operations
 - deploy-production: Production environment deployments
 

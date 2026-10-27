@@ -83,17 +83,10 @@ public class AgentExecutorProducer {
         }
 
         private void handleHitlFollowUp(String taskId, String messageText, AgentEmitter emitter) throws A2AError {
-            if (messageText.toUpperCase().contains("APPROVED")) {
-                Log.infof("Task %s approved via A2A", taskId);
-                TaskInstance task = engine.approveTask(taskId);
-                emitter.startWork();
-                emitter.addArtifact(List.of(new TextPart(task.getLastAgentMessage())));
-                emitter.complete();
-            } else {
-                Log.infof("Task %s rejected via A2A", taskId);
-                engine.rejectTask(taskId, messageText);
-                emitter.fail(agentMessage(emitter, "Task rejected: " + messageText));
-            }
+            // Agent-supplied message text is not an operator approval record.
+            engine.submitTask(taskId, messageText);
+            emitter.requiresInput(agentMessage(emitter,
+                "Task remains pending. An operator must approve or reject it via the admin API."));
         }
 
         @Override

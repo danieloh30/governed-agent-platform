@@ -50,7 +50,7 @@ The documentation source lives in [`docs/`](docs/). Start from the **[published 
 | 1 | [Building Governed MCP Tool Services with Quarkus and Goose](docs/tutorials/01-governed-mcp-tools.md) | `part1-quarkus-mcp/` | Quarkus MCP server exposing enterprise tools over Streamable HTTP, connected to Goose AI agent |
 | 2 | [Securing and Scaling Goose-to-Java Agent Traffic with agentgateway](docs/tutorials/02-agentgateway-security.md) | `part2-agentgateway/` | agentgateway as a security proxy with JWT auth, RBAC via CEL, and ExtMCP guardrails against tool poisoning |
 | 3 | [End-to-End Tracing and Observability](docs/tutorials/03-observability.md) | `part3-observability/` | W3C Trace Context propagation across all layers with Quarkus OpenTelemetry, agentgateway tracing, and Jaeger |
-| 4 | [Multi-Agent Orchestration with A2A Protocol](docs/tutorials/04-multi-agent-governance.md) | `part4-multi-agent/` | A2A Java SDK (`@PublicAgentCard` + `AgentExecutor`) with AGENTS.md governance, HITL approval gates, and MCP tool delegation to Part 1 |
+| 4 | [Multi-Agent Orchestration with A2A Protocol](docs/tutorials/04-multi-agent-governance.md) | `part4-multi-agent/` | A2A Java SDK (`@PublicAgentCard` + `AgentExecutor`) with AGENTS.md governance, HITL approval gates, MCP tool delegation, and an Agent Skills refund playbook |
 | 5 | [Automated Agent Evaluation and Regression Testing](docs/tutorials/05-evaluation.md) | `part5-evaluation/` | Golden datasets, MCP eval runner with accuracy/latency/validation testing, CI/CD integration |
 | 6 | [Model Routing and Failover with Agent Router](docs/tutorials/06-model-routing.md) | `part6-agent-router/` | Quarkus model backends, OpenAI-compatible routing, bounded retries, and Java verification (30 min) |
 

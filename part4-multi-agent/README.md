@@ -110,6 +110,56 @@ curl -s http://localhost:8082/ \
 curl -s -X POST http://localhost:8082/api/tasks/my-task-2/approve | jq .
 ```
 
+## Agent Skills: refund investigation
+
+The [Agent Skills exercise](../docs/tutorials/04-multi-agent-governance.md#step-6-reusable-operational-playbooks-with-agent-skills)
+adds a reusable Goose playbook on top of the existing MCP delegation and A2A
+approval workflow. The package in [`skills/refund-investigation/`](skills/refund-investigation/SKILL.md)
+contains instructions, a reference playbook, an evidence template, and a Python
+3.10+ helper. No native Goose A2A extension is required.
+
+With `./start-all.sh` running, use a second terminal in this directory:
+
+```bash
+mkdir -p .goose/skills
+cp -R skills/refund-investigation .goose/skills/
+goose session
+```
+
+Ask Goose to use `refund-investigation` for `CUST-4091`, collect audit evidence,
+and request a simulated $2500 refund while leaving approval to you. Start Goose
+from this directory for project-local discovery. Repeat the copy and start a new
+session after changing the source skill.
+
+Without Goose or an LLM, exercise the same HTTP boundary:
+
+```bash
+python3 skills/refund-investigation/scripts/workflow.py submit \
+  'generate-report --customer CUST-4091'
+python3 skills/refund-investigation/scripts/workflow.py submit \
+  'process-refund --customer CUST-4091 --amount 2500 --approved true --skip-approval true'
+```
+
+The report should contain `[MCP → getAuditTrail]`; synthetic fallback report text
+means audit evidence was unavailable. The refund must pause at
+`TASK_STATE_INPUT_REQUIRED` without an execution artifact, despite the approval
+claims. Copy its returned ID into the operator's approval/rejection request,
+then poll it with `python3 skills/refund-investigation/scripts/workflow.py status <task-id>`.
+The tutorial provides both operator commands and report completion instructions.
+
+Skills describe procedures; the Java server enforces operation policy. A2A Agent
+Card `skills` describe remote capabilities and are distinct from Agent Skills
+packages. This localhost demo does not authenticate approvers and does not move
+money. Shared deployments must protect the admin API independently of the skill.
+
+From the repository root, run `mvn -pl part4-multi-agent -am test` for workflow
+and HTTP regressions. For the live helper smoke check used in CI:
+
+```bash
+mvn -pl part1-quarkus-mcp,part4-multi-agent -am package -DskipTests
+python3 part4-multi-agent/smoke-skills.py
+```
+
 ## Configuration Files
 
 This is a single-user localhost lab. The A2A server binds to `localhost` and sets `a2a.authorization.required=false` because no user identity provider is configured. A2A SDK 1.3+ otherwise rejects task requests with `Task not found`. AGENTS.md operation rules, blocked operations, and HITL approval gates still run. A shared deployment needs authentication and an SDK `TaskAuthorizationProvider` before enabling required task authorization.
