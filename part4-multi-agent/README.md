@@ -181,6 +181,13 @@ Open or reload the SPA and use **5 · Goose Skill Investigation**:
 5. Once Goose finishes its turn, click **Continue Investigation** and send the
    prepared message to poll the same task and finish the evidence report.
 
+> **Demo UI choice:** ACP stands for **Agent Client Protocol**. The UI offers
+> one-time permission choices to keep tool actions visible during the demo.
+> ACP also supports persistent choices such as `allow_always` and `reject_always`;
+> it does not require one-time choices. See the
+> [ACP permission options](https://agentclientprotocol.com/protocol/tool-calls#requesting-permission).
+> Tool permission and the Quarkus refund approval gate remain separate.
+
 The optional launcher uses `goose serve` and ACP WebSocket on loopback port
 3284. It copies the source skill into `target/goose-workspace/.goose/skills/`,
 uses your existing provider configuration, and asks Goose to use `approve`

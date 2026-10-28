@@ -641,12 +641,20 @@ panel is missing after updating the tutorial code, reload the page. Then:
 2. Click **Investigate $2500 Refund** to populate the prompt. Review it and
    click **Send Message**.
 3. Watch streamed Goose replies and skill/tool activity. Resolve any **Goose
-   tool permission** requests explicitly; the UI offers one-time choices only.
+   tool permission** requests explicitly.
 4. The console observes new backend tasks. When the refund reaches
    `input-required`, its server-generated ID, operation, and reason appear in
    the existing **Human Approval Required** panel. Approve or reject there.
 5. Once the Goose turn ends, click **Continue Investigation**. Review and send
    its prompt to poll the same refund task and complete the evidence report.
+
+!!! note "One-time permissions are a demo UI choice"
+    **ACP** stands for **Agent Client Protocol**, the protocol connecting this
+    browser client to Goose. This UI offers one-time permission choices to keep
+    tool actions visible during the demo. ACP also supports persistent choices
+    such as `allow_always` and `reject_always`; it does not require one-time
+    choices. See the [ACP permission options](https://agentclientprotocol.com/protocol/tool-calls#requesting-permission).
+    Tool permission and the Quarkus refund approval gate remain separate.
 
 The investigation button fills the input; it does not submit an unseen prompt.
 The continuation button also requires an explicit send and never resubmits a
