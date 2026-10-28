@@ -402,6 +402,11 @@ body {
 .goose-permission pre { white-space:pre-wrap; overflow-wrap:anywhere; max-height:200px; overflow:auto; }
 .policy-source { white-space:pre-wrap; overflow-wrap:anywhere; max-height:460px; overflow:auto; padding:16px; background:var(--surface-inset); border:1px solid var(--gridline); border-radius:var(--radius-sm); font-size:.8rem; line-height:1.6; color:var(--text-primary); }
 .policy-links a { color:var(--cat-1); }
+.policy-summary { cursor:pointer; list-style:none; }
+.policy-summary::-webkit-details-marker { display:none; }
+.policy-summary h2::before { content:'▸'; display:inline-block; margin-right:10px; color:var(--cat-1); }
+details[open] > .policy-summary h2::before { content:'▾'; }
+.policy-summary:focus-visible { outline:2px solid var(--cat-1); outline-offset:-2px; }
 @media(max-width:800px) { .goose-layout { grid-template-columns:1fr; } .goose-transcript,.goose-tools { height:260px; } }
 </style>
 </head>
@@ -479,20 +484,19 @@ body {
         <div class="node-label">Governance</div>
         <div class="node-title">AGENTS.md</div>
         <div class="node-port mono">rules file</div>
-        <div class="node-port policy-links"><a href="https://agents.md/" target="_blank" rel="noopener noreferrer">agents.md ↗</a></div>
         <div class="node-port policy-links"><a href="http://localhost:8082/api/governance/agents.md" target="_blank" rel="noopener noreferrer">View loaded policy ↗</a></div>
       </div>
     </div>
   </div>
 
   <!-- ── Controls ── -->
-  <section class="card" id="agents-md-policy" aria-labelledby="agents-md-title" style="margin-bottom:24px">
-    <div class="card-header"><h2 id="agents-md-title">AGENTS.md · Loaded Governance Policy</h2><a class="card-badge" href="http://localhost:8082/api/governance/agents.md" target="_blank" rel="noopener noreferrer">Open raw file ↗</a></div>
+  <details class="card" id="agents-md-policy" style="margin-bottom:24px">
+    <summary class="card-header policy-summary"><h2 id="agents-md-title">AGENTS.md · Loaded Governance Policy</h2></summary>
     <div class="card-body" style="font-size:.85rem;color:var(--text-secondary)">
-      <p style="margin-bottom:12px">Contents of <code>src/main/resources/AGENTS.md</code> loaded by the running Quarkus server at startup.</p>
+      <p class="policy-links" style="margin-bottom:12px">Contents of <code>src/main/resources/AGENTS.md</code> loaded by the running Quarkus server at startup. <a href="http://localhost:8082/api/governance/agents.md" target="_blank" rel="noopener noreferrer">Open raw file ↗</a></p>
       <pre class="policy-source mono" id="agents-md-content">Loading the server’s AGENTS.md…</pre>
     </div>
-  </section>
+  </details>
 
   <div class="controls-bar">
     <span class="section-label">Demo Steps</span>

@@ -62,10 +62,10 @@ the investigation procedure; Java and the server policy enforce the approval
 boundary. See [the tutorial explanation](../docs/tutorials/04-multi-agent-governance.md#what-is-agentsmd).
 
 The SPA shows the actual startup-loaded file in **AGENTS.md · Loaded Governance
-Policy**. Its raw-file link and the architecture box's **View loaded policy**
-link open `http://localhost:8082/api/governance/agents.md`; the architecture box
-also links to `https://agents.md/`. Rebuild and restart Part 4 after changing
-the policy, then reload the SPA to see the new content.
+Policy**, collapsed by default. Click the heading to expand it. Its raw-file
+link and the architecture box's **View loaded policy** link open
+`http://localhost:8082/api/governance/agents.md`. Rebuild and restart Part 4
+after changing the policy, then reload the SPA to see the new content.
 
 ## Quick Start
 
