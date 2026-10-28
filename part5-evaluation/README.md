@@ -54,6 +54,18 @@ Part 1 uses `quarkus-mcp-server-hibernate-validator` to return these rejections 
 
 CI runs the golden suites against both packaged services using `python3 part5-evaluation/smoke.py` from the repository root after building them. This check also verifies CORS and the absence of missing-discovery warnings and validation stack traces.
 
+## Optional OpenEnv Behavioral Lab
+
+The [OpenEnv advanced lab](openenv/README.md) adds repeatable, multi-step refund
+policy evaluation through real OpenEnv WebSocket sessions. Its separate console
+on **http://localhost:8085/lab** shows action traces, task success, reward, and
+policy violations. Approval, rejection, bypass attempts, and step exhaustion
+are synthetic scenarios; the main MCP suites still test the actual Java services.
+
+Keep this lab running and start OpenEnv in another terminal using its README.
+The extension requires Python 3.12 and an isolated virtual environment, with no
+model credentials or container engine. Allow an additional 20 minutes.
+
 ## REST API Examples
 
 ### List available suites

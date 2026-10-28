@@ -181,6 +181,8 @@ python3 part7-opensandbox/smoke.py
 # After stopping Quarkus: ./sandbox.sh down from part7-opensandbox/
 ```
 
+Part 5 includes an optional [OpenEnv behavioral evaluation extension](part5-evaluation/openenv/README.md): replay synthetic refund policies in isolated WebSocket sessions, inspect each action, and gate task success separately from policy violations. The independent console runs on port 8085 with Python 3.12; no model credentials are needed.
+
 ## Documentation Deployment
 
 The documentation is live at **[danieloh30.github.io/governed-agent-platform](https://danieloh30.github.io/governed-agent-platform/)**. A GitHub Actions workflow builds the Material for MkDocs site from `docs/` and deploys it to GitHub Pages with HTTPS enabled.

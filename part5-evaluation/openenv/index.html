@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>OpenEnv Behavioral Evaluation · Part 5</title>
+  <style>
+    :root{color-scheme:light dark;--bg:#f5f5f0;--card:#fff;--text:#191919;--muted:#62625e;--line:#ddddd6;--blue:#2563a5;--good:#217144;--bad:#a93232;--inset:#f8f8f5}
+    [data-theme=dark]{--bg:#17191b;--card:#222528;--text:#f1f1e9;--muted:#babdb8;--line:#44484a;--blue:#88baf2;--good:#88d8a6;--bad:#ffaaaa;--inset:#1b1e20}
+    @media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#17191b;--card:#222528;--text:#f1f1e9;--muted:#babdb8;--line:#44484a;--blue:#88baf2;--good:#88d8a6;--bad:#ffaaaa;--inset:#1b1e20}}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 Inter,system-ui,sans-serif}header{background:var(--card);border-bottom:1px solid var(--line);padding:18px max(20px,calc((100% - 1200px)/2));display:flex;align-items:center;gap:18px}header h1{font-size:18px;margin:0}header button{margin-left:auto}main{max-width:1240px;padding:24px 20px 60px;margin:auto}h2{font-size:18px;margin:0 0 12px}p{margin:0 0 16px}.muted{color:var(--muted)}a{color:var(--blue)}.card{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:24px;margin-bottom:22px;min-width:0}.controls{display:flex;gap:12px;flex-wrap:wrap;align-items:end}label{display:grid;gap:4px;flex:1;min-width:200px}button,select{font:inherit;border:1px solid var(--line);background:var(--inset);color:var(--text);border-radius:5px;padding:10px 14px}button{cursor:pointer;font-weight:600}button.primary{background:#2563a5;color:white;border-color:#2563a5}button:disabled{opacity:.5;cursor:wait}:focus-visible{outline:3px solid var(--blue);outline-offset:3px}.grid{display:grid;grid-template-columns:1fr 1.35fr;gap:22px}.case{width:100%;text-align:left;display:block;margin:10px 0;padding:14px}.case[aria-pressed=true]{border-color:var(--blue);box-shadow:inset 3px 0 var(--blue)}.case small{display:block;font-weight:400}.good{color:var(--good)}.bad{color:var(--bad)}.trace{list-style:none;padding-left:0}.trace li{padding:10px 0;border-bottom:1px solid var(--line)}code,pre{font-family:ui-monospace,monospace}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:var(--inset);padding:15px;max-height:400px;overflow:auto}details summary{cursor:pointer}.metrics{display:flex;flex-wrap:wrap;gap:12px;margin:12px 0}.metrics span{background:var(--inset);padding:8px 12px;border:1px solid var(--line);border-radius:5px}.pipeline{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:16px 0}.pipeline span{padding:14px 20px;border:2px solid var(--muted);border-radius:3px 9px 4px 8px;box-shadow:2px 1px 0 var(--line);font-family:"Segoe Print","Bradley Hand",cursive}.pipeline b{font-size:24px;color:var(--muted)}#status{border-left:3px solid var(--blue);padding:12px 16px;background:var(--inset);margin:20px 0}@media(max-width:800px){.grid{grid-template-columns:1fr}.card{padding:18px}header h1{font-size:15px}}
+  </style>
+</head>
+<body>
+<header><h1>OpenEnv Behavioral Evaluation</h1><span class="muted">Part 5 · Advanced lab</span><button id="theme" aria-label="Toggle theme">Theme</button></header>
+<main>
+  <p><strong>Acme FinServ · Resolve a synthetic $2500 refund.</strong> Replay multi-step policies through a real OpenEnv WebSocket session. Inspect what happened at each step.</p>
+  <section class="card">
+    <h2>Reset → step → observe</h2>
+    <div class="pipeline" aria-label="Evaluation flow"><span>Golden policy</span><b aria-hidden="true">→</b><span>OpenEnv session</span><b aria-hidden="true">→</b><span>Observations + reward</span><b aria-hidden="true">→</b><span>Task + policy checks</span></div>
+    <p class="muted">This is a deterministic simulation of the approval control model. Operator decisions come from evaluator fixtures. No real agent, customer service, or payment system is called. Part 4's Quarkus tests remain the checks for its actual approval gate.</p>
+    <div class="controls"><label>Scripted policy<select id="case"><option value="approved-refund">Approved refund</option><option value="rejected-refund">Rejected refund</option><option value="approval-bypass">Approval bypass · negative control</option><option value="rejection-ignored">Rejection ignored · negative control</option><option value="step-budget">Step budget · negative control</option></select></label><button class="primary" id="replay">Replay Selected</button><button id="suite">Run All Five Checks</button></div>
+  </section>
+  <div id="status" role="status" aria-live="polite">Start with Approved refund, then replay Approval bypass and compare the policy result.</div>
+  <div class="grid">
+    <section class="card"><h2>Rollout Results</h2><p class="muted">A regression check passes when observations match the fixture. Policy acceptance requires task success and zero violations. The three negative controls must remain unaccepted.</p><div id="results">No evaluations yet.</div></section>
+    <section class="card"><h2 id="trace-title">Episode Trace</h2><div id="metrics" class="metrics"></div><ol id="trace" class="trace"></ol><details><summary>View JSON evidence</summary><pre id="evidence">No evidence yet.</pre></details></section>
+  </div>
+  <p class="muted">Golden fixture: refund-v1 · OpenEnv 0.10.0 · seed 42 · eight-step limit · <a href="https://huggingface.co/docs/openenv/v0.10.0/index" target="_blank" rel="noopener noreferrer">OpenEnv documentation ↗</a></p>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+function showCase(row, button){
+  document.querySelectorAll('.case').forEach(node=>node.setAttribute('aria-pressed',String(node===button)));
+  $('trace-title').textContent=row.id;
+  $('metrics').replaceChildren();
+  for(const [label,value] of [['Task success',row.actual.task_success],['Policy accepted',row.policy_accepted],['Reward',row.actual.reward],['Violations',row.actual.violations]]){
+    const item=document.createElement('span');item.textContent=`${label}: ${value}`;$('metrics').append(item);
+  }
+  $('trace').replaceChildren();
+  for(const step of row.trace){
+    const item=document.createElement('li'),title=document.createElement('strong'),message=document.createElement('div');
+    title.textContent=`${step.observation.step_count} · ${step.action}`;
+    message.textContent=step.observation.message;
+    if(step.observation.message.startsWith('BLOCKED:'))message.className='bad';
+    item.append(title,message);$('trace').append(item);
+  }
+  $('evidence').textContent=JSON.stringify(row,null,2);
+}
+async function run(all){
+  const buttons=[$('replay'),$('suite')];buttons.forEach(button=>button.disabled=true);$('case').disabled=true;
+  $('status').textContent='Replaying through OpenEnv…';
+  try{
+    const response=await fetch('/lab/evaluate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(all?{}:{case_id:$('case').value}),signal:AbortSignal.timeout(60000)});
+    const report=await response.json();if(!response.ok)throw Error(report.detail||`HTTP ${response.status}`);
+    $('results').replaceChildren();
+    for(const row of report.cases){
+      const button=document.createElement('button'),label=document.createElement('strong'),outcome=document.createElement('small');button.className='case';button.type='button';
+      label.textContent=`${row.regression_passed?'PASS':'FAIL'} · ${row.id}`;
+      outcome.textContent=`Policy ${row.policy_accepted?'ACCEPTED':'NOT ACCEPTED'} · reward ${row.actual.reward} · ${row.actual.violations} violation${row.actual.violations===1?'':'s'}`;
+      outcome.className=row.policy_accepted?'good':'bad';button.append(label,outcome);
+      button.addEventListener('click',()=>showCase(row,button));$('results').append(button);
+    }
+    if(report.cases.length)showCase(report.cases[0],$('results').firstElementChild);
+    const matched=report.cases.filter(row=>row.regression_passed).length,accepted=report.cases.filter(row=>row.policy_accepted).length;
+    $('status').textContent=`${matched}/${report.cases.length} expected outcomes matched; ${accepted}/${report.cases.length} policies accepted. Negative controls should match expectations while remaining unaccepted.`;
+  }catch(error){$('status').textContent=`Evaluation failed: ${error.message}. Check the OpenEnv terminal.`;}
+  finally{buttons.forEach(button=>button.disabled=false);$('case').disabled=false;}
+}
+$('replay').addEventListener('click',()=>run(false));$('suite').addEventListener('click',()=>run(true));
+$('theme').addEventListener('click',()=>{const dark=document.documentElement.dataset.theme==='dark'||(!document.documentElement.dataset.theme&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.dataset.theme=dark?'light':'dark';});
+</script>
+</body>
+</html>

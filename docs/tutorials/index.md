@@ -19,6 +19,8 @@ The seven parts form a cumulative learning path. Part 1 is the shared tool backe
 
 Follow Parts 1–7 to govern tools, workflows, model traffic, and code execution. All times assume prerequisites are installed; Part 6's Goose, tracing, and quota extensions have separate time estimates. Part 7's time excludes initial image downloads.
 
+Part 5 also offers an optional [OpenEnv behavioral evaluation lab](05-evaluation.md#optional-extension-openenv-behavioral-evaluation) (20 minutes), using Python 3.12 and synthetic refund rollouts with separate task and policy gates. It runs independently on port 8085.
+
 ## Before you start
 
 Install Java 25+ and Maven 3.9+ for the Java applications. Add Goose, agentgateway, Podman, and Agent Router as required by the part. Build once from the repository root:
