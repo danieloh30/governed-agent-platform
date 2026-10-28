@@ -465,6 +465,29 @@ cd part4-multi-agent
 
 The script builds Part 1's MCP server and Part 4's A2A Flow server, starts both (MCP on :8080, A2A on :8082), and launches the interactive demo SPA. Auto-approved tasks like `analyze-logs` delegate to Part 1's MCP tools for live data.
 
+To include the optional Goose chat panel, use this command instead:
+
+```bash
+WITH_GOOSE=true ./start-all.sh
+```
+
+This automatically calls the companion `start-goose.sh` launcher. That script
+starts `goose serve` on localhost port 3284, prepares the refund skill workspace,
+and creates the temporary authenticated connection settings for the SPA. You
+do not need to run it separately when using `WITH_GOOSE=true`.
+
+If this lab is already running without Goose, open a second terminal and add
+only the Goose runtime:
+
+```bash
+cd part4-multi-agent
+./start-goose.sh 8889
+```
+
+Here `8889` is the existing SPA port, which Goose uses for its browser origin
+allowlist. Keep that terminal running. Continue with [the SPA skill
+exercise](#run-the-skill-from-the-spa) for the session and approval walkthrough.
+
 Open the **A2A Multi-Agent Console** at [http://localhost:8889/index.html](http://localhost:8889/index.html).
 
 If discovery reports `Failed to fetch`, stop the launcher with **Ctrl+C**, update the code, run `./start-all.sh` again, and reload the page. The console needs the backend's `quarkus.http.cors.enabled=true` setting to read responses across ports.
@@ -473,7 +496,8 @@ This single-user lab binds the A2A server to `localhost` and explicitly sets `a2
 
 ### Demo Walkthrough
 
-The SPA provides four guided steps that showcase the full governance spectrum:
+The SPA provides four LLM-free guided steps that showcase the full governance
+spectrum, plus an optional fifth step for a real Goose skill investigation:
 
 **Step 1 — Discover Agent:**
 Click **Discover Agent** to fetch the Agent Card from `/.well-known/agent-card.json`. The architecture diagram animates the discovery flow and loads the AGENTS.md governance rules. The stat tiles show the agent is online and governance rules are loaded.
@@ -530,6 +554,75 @@ Read `SKILL.md` first. Its frontmatter declares `name`, `description`, and
 version metadata; the body states requirements and routes the agent to the playbook, helper,
 and report template. The playbook describes evidence limits and the refund
 threshold. The helper submits or polls tasks; it has no approval command.
+
+### Run the skill from the SPA
+
+For a live demo, start the lab with the optional Goose ACP server:
+
+```bash
+cd part4-multi-agent
+WITH_GOOSE=true ./start-all.sh
+```
+
+The launcher starts a real `goose serve` process using your installed Goose and
+configured provider. Its project workspace contains a fresh copy of this skill.
+Open the console on `http://localhost:8889/index.html`, then:
+
+1. In **5 · Goose Skill Investigation**, click **Start Goose Session**.
+2. Click **Investigate $2500 Refund** to populate the prompt. Review it and
+   click **Send Message**.
+3. Watch streamed Goose replies and skill/tool activity. Resolve any **Goose
+   tool permission** requests explicitly; the UI offers one-time choices only.
+4. The console observes new backend tasks. When the refund reaches
+   `input-required`, its server-generated ID, operation, and reason appear in
+   the existing **Human Approval Required** panel. Approve or reject there.
+5. Once the Goose turn ends, click **Continue Investigation**. Review and send
+   its prompt to poll the same refund task and complete the evidence report.
+
+The investigation button fills the input; it does not submit an unseen prompt.
+The continuation button also requires an explicit send and never resubmits a
+refund itself. Transcript and tool output are rendered as text.
+
+The browser uses Goose's supported
+[Agent Client Protocol interface](https://github.com/aaif-goose/goose/blob/main/documentation/docs/gdk/acp/index.md)
+over an authenticated localhost WebSocket. ACP handles model conversations,
+tool events, and tool permissions; A2A carries the workflow requests made by
+the skill's helper. The Java workflow service continues to enforce operation
+policy and the approval gate.
+
+Goose retains its configured tool and extension access, including local command
+execution through the Developer extension. The browser client provides no
+additional terminal or filesystem capabilities through ACP. A Goose permission
+decision authorizes a tool action, not a refund. The local admin API is still
+unauthenticated, so this is not separation of duties against an unrestricted
+local agent; that needs the production controls described below.
+
+The optional launcher generates a temporary connection token in gitignored
+`target/goose-ui.json`, readable by the local SPA. It removes the file when
+stopped. Keep that file and its token-bearing connection URL private. Provider
+credentials remain in Goose. Both the SPA and Goose listener bind to loopback;
+Goose restricts browser connections to the exact SPA origins. This setup is not
+intended for shared hosting.
+
+If the panel cannot connect, inspect `target/goose-ui.log`, check your Goose
+provider configuration, and confirm that port 3284 is available. Override it
+with `GOOSE_UI_PORT`; override the executable with `GOOSE_BIN`. Beside an
+already-running Part 4 lab, `./start-goose.sh 8889` starts only the optional
+runtime. Its argument must match the SPA's port.
+
+**Cancel Turn** requests cancellation of model work, leaving already submitted
+workflow tasks intact. **Disconnect** does not delete those tasks. Reconnecting
+starts a fresh Goose conversation; do not repeat an investigation merely to
+check status. If the prompt response is lost, the panel requires disconnecting
+before another submission. Since this is a single-user lab, it observes tasks
+created after connecting rather than claiming authenticated session ownership.
+Avoid running another task-producing client during the demonstration.
+
+The four original exercises require neither Goose nor a model. The optional
+panel reports unavailable runtime/provider errors and never fabricates an agent
+response. The terminal path below remains available.
+
+### Run the skill from a terminal
 
 Keep `./start-all.sh` running in the first terminal. In a second terminal, from
 the repository root, install a project-local copy before starting Goose:
@@ -662,6 +755,12 @@ python3 part4-multi-agent/smoke-skills.py
 A2A follow-up text such as `APPROVED` also leaves a pending task at the approval
 gate; only the operator's admin decision changes it. The HTTP regression suite
 checks this alongside status synchronization after admin decisions.
+
+Run `node --test part4-multi-agent/tests/*.test.cjs` with Node 24+ to verify the
+ACP browser client without a model. With the optional runtime running,
+`node part4-multi-agent/smoke-goose.cjs --connect-only` tests a real WebSocket
+handshake. Omit `--connect-only` to create a session and stream one short test
+reply through your configured provider, which can incur provider usage.
 
 ## What We Achieved
 

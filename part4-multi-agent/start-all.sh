@@ -81,7 +81,7 @@ echo ""
 # ── Step 3: Demo SPA ──
 echo "--- Step 3/3: A2A Console SPA (:$SPA_PORT) ------------------------------"
 echo "[spa] Starting HTTP server for interactive demo..."
-python3 -m http.server "$SPA_PORT" --directory "$SCRIPT_DIR" > /dev/null 2>&1 &
+python3 -m http.server "$SPA_PORT" --bind 127.0.0.1 --directory "$SCRIPT_DIR" > /dev/null 2>&1 &
 PIDS+=($!)
 echo "[spa] PID: $!"
 
@@ -90,6 +90,11 @@ until curl -sf "http://localhost:$SPA_PORT/index.html" > /dev/null 2>&1; do
 done
 echo "[spa] A2A Console is ready on http://localhost:$SPA_PORT/index.html"
 echo ""
+
+if [[ "${WITH_GOOSE:-false}" == true ]]; then
+  "$SCRIPT_DIR/start-goose.sh" "$SPA_PORT" &
+  PIDS+=($!)
+fi
 
 # ── Generate sample tasks ──
 echo "--- Generating sample A2A tasks -----------------------------------------"

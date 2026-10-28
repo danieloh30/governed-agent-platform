@@ -64,6 +64,13 @@ This builds Part 1's MCP server and Part 4's A2A Flow server, starts both, and g
 
 Open the **A2A Console SPA** at [http://localhost:8889/index.html](http://localhost:8889/index.html) to approve or reject `demo-task-2`.
 
+To enable the optional Goose chat panel at startup, use
+`WITH_GOOSE=true ./start-all.sh`. This calls `start-goose.sh` automatically.
+That companion script starts the localhost Goose ACP server, prepares the skill
+workspace, and supplies temporary connection settings to the browser. If the
+lab is already running, `./start-goose.sh 8889` in a second terminal adds only
+Goose; `8889` must match the SPA port. See [the Goose panel walkthrough](#run-the-real-goose-session-inside-the-spa).
+
 ## Manual A2A Examples
 
 ### Discover the agent
@@ -118,6 +125,59 @@ approval workflow. The package in [`skills/refund-investigation/`](skills/refund
 contains instructions, a reference playbook, an evidence template, and a Python
 3.10+ helper. No native Goose A2A extension is required.
 
+### Run the real Goose session inside the SPA
+
+With Goose installed and a model configured, start the optional runtime:
+
+```bash
+WITH_GOOSE=true ./start-all.sh
+```
+
+Open the SPA and use **5 · Goose Skill Investigation**:
+
+1. Click **Start Goose Session**.
+2. Click **Investigate $2500 Refund**, review the prompt, then **Send Message**.
+3. Watch streamed replies and skill/tool activity. Decide on individual Goose
+   tool permission requests in this panel.
+4. When the refund task pauses, use the separate **Human Approval Required**
+   panel above to approve or reject it.
+5. Once Goose finishes its turn, click **Continue Investigation** and send the
+   prepared message to poll the same task and finish the evidence report.
+
+The optional launcher uses `goose serve` and ACP WebSocket on loopback port
+3284. It copies the source skill into `target/goose-workspace/.goose/skills/`,
+uses your existing provider configuration, and asks Goose to use `approve`
+mode. Provider keys stay in the Goose runtime. An ephemeral connection token
+is stored in gitignored `target/goose-ui.json` with mode 0600, read by the local
+SPA, and removed on shutdown. Do not share that file or its WebSocket URL.
+The SPA server now binds to loopback; the Goose server allows only its exact
+localhost/127.0.0.1 origins. This is a single-user local integration, not shared
+hosting or a shell sandbox. Goose retains its configured extension/tool access.
+
+Use `GOOSE_BIN=/path/to/goose` or `GOOSE_UI_PORT=3285` when needed. To run only
+the optional Goose component beside an already running Part 4 lab, use
+`./start-goose.sh 8889` in another terminal. The argument must match the SPA port.
+Its diagnostics are in `target/goose-ui.log`.
+
+Tool permission is distinct from refund approval. The chat never interprets an
+agent message as approval. The backend's operation checks still decide whether
+a refund pauses. Because the local admin API is unauthenticated, an unrestricted
+local Goose runtime can reach it just as a terminal user can; the playbook's
+instruction to leave decisions to the operator is not identity enforcement.
+
+The chat observes tasks created after connecting in this single-user lab; they
+are not cryptographically attributed to a Goose session. Avoid submitting other
+demo tasks concurrently. Cancel Turn requests ACP cancellation; it does not
+cancel an already submitted refund. Disconnect does not remove workflow tasks,
+and reconnecting starts a new conversation. Check pending tasks before retrying
+an investigation. A lost prompt response requires disconnecting rather than an
+automatic resubmission.
+
+Without `WITH_GOOSE=true`, the four original exercises still run. The optional
+panel explains how to enable the runtime; it never substitutes a fake response.
+
+### Use Goose from the terminal instead
+
 With `./start-all.sh` running, use a second terminal in this directory:
 
 ```bash
@@ -159,6 +219,17 @@ and HTTP regressions. For the live helper smoke check used in CI:
 mvn -pl part1-quarkus-mcp,part4-multi-agent -am package -DskipTests
 python3 part4-multi-agent/smoke-skills.py
 ```
+
+Node 24+ runs the browser client tests without a provider:
+
+```bash
+node --test part4-multi-agent/tests/*.test.cjs
+```
+
+With `start-goose.sh` running, `node part4-multi-agent/smoke-goose.cjs --connect-only`
+checks the real ACP handshake without a model request. Omit `--connect-only` to
+create a session and send one short no-tools prompt through your configured
+provider; this can incur provider usage.
 
 ## Configuration Files
 

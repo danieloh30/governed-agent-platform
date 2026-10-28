@@ -384,6 +384,23 @@ body {
   .sm-pipeline { flex-direction: column; gap: 4px; }
   .sm-arrow { transform: rotate(90deg); }
 }
+/* Optional live Goose client */
+.goose-card { margin:24px 0; }
+.goose-body { padding:20px; }
+.goose-actions { display:flex; flex-wrap:wrap; gap:8px; margin:12px 0; }
+.goose-note { color:var(--text-secondary); font-size:.82rem; margin:8px 0; }
+.goose-layout { display:grid; grid-template-columns:minmax(0,1.3fr) minmax(0,1fr); gap:18px; }
+.goose-layout h3 { font-size:.85rem; margin:8px 0; }
+.goose-transcript,.goose-tools { height:340px; overflow:auto; background:var(--surface-inset); border:1px solid var(--gridline); border-radius:6px; padding:12px; }
+.goose-message,.goose-tool { white-space:pre-wrap; overflow-wrap:anywhere; font-size:.82rem; border-bottom:1px solid var(--gridline); padding:10px 0; }
+.goose-message strong,.goose-tool strong { display:block; color:var(--cat-1); font-size:.72rem; margin-bottom:5px; }
+.goose-tool pre { white-space:pre-wrap; overflow-wrap:anywhere; max-height:180px; overflow:auto; font-size:.72rem; }
+#goose-prompt { width:100%; min-height:85px; resize:vertical; padding:12px; color:var(--text-primary); background:var(--surface-inset); border:1px solid var(--baseline); border-radius:6px; font:inherit; font-size:.84rem; }
+#goose-error { color:var(--status-crit-text); font-size:.82rem; white-space:pre-wrap; overflow-wrap:anywhere; }
+#goose-permissions:empty { display:none; }
+.goose-permission { background:var(--status-warn-bg); border:1px solid var(--status-warn); border-radius:6px; padding:12px; margin:12px 0; font-size:.82rem; }
+.goose-permission pre { white-space:pre-wrap; overflow-wrap:anywhere; max-height:200px; overflow:auto; }
+@media(max-width:800px) { .goose-layout { grid-template-columns:1fr; } .goose-transcript,.goose-tools { height:260px; } }
 </style>
 </head>
 <body>
@@ -552,8 +569,32 @@ body {
       </div>
     </div>
   </div>
+<section class="card goose-card" id="goose-panel" aria-labelledby="goose-title">
+  <div class="card-header"><h2 id="goose-title">5 · Goose Skill Investigation</h2><span class="card-badge" id="goose-status" role="status" aria-live="polite">optional · disconnected</span></div>
+  <div class="goose-body">
+    <p class="goose-note">A real Goose conversation using your configured model. Start the lab with <code>WITH_GOOSE=true ./start-all.sh</code> to enable it. The first four exercises work without Goose.</p>
+    <div class="goose-actions">
+      <button class="btn btn-primary" id="goose-connect">Start Goose Session</button>
+      <button class="btn btn-secondary" id="goose-investigate" disabled>Investigate $2500 Refund</button>
+      <button class="btn btn-secondary" id="goose-continue" disabled>Continue Investigation</button>
+      <button class="btn btn-outline" id="goose-cancel" disabled>Cancel Turn</button>
+      <button class="btn btn-outline" id="goose-disconnect" disabled>Disconnect</button>
+    </div>
+    <p class="goose-note" id="goose-session">No Goose session started.</p>
+    <p id="goose-error" role="alert"></p>
+    <div class="goose-layout">
+      <div><h3>Conversation</h3><div class="goose-transcript" id="goose-transcript" role="log" aria-label="Goose conversation"></div></div>
+      <div><h3>Skill and tool activity</h3><div class="goose-tools" id="goose-tools" role="log" aria-label="Goose tool activity"></div></div>
+    </div>
+    <div id="goose-permissions"></div>
+    <label for="goose-prompt" class="goose-note">Message to Goose</label>
+    <textarea id="goose-prompt" placeholder="Start a session, then load the refund investigation prompt." disabled></textarea>
+    <div class="goose-actions"><button class="btn btn-primary" id="goose-send" disabled>Send Message</button></div>
+    <p class="goose-note">Goose tool permissions appear here. Refund business approval appears separately in the Human Approval panel above. Allowing a tool does not approve a refund. This is a single-user local client with the same tool access as your Goose runtime.</p>
+  </div>
+</section>
 </div>
-
+<script src="goose-acp.js"></script>
 <script>
 const A2A_SERVER = 'http://localhost:8082';
 let rpcId = 0;
@@ -607,7 +648,7 @@ function addLog(tag, tagClass, msg) {
 function showJson(obj, method) {
   const view = document.getElementById('json-view');
   if (method) document.getElementById('resp-method').textContent = method;
-  const json = JSON.stringify(obj, null, 2);
+  const json = esc(JSON.stringify(obj, null, 2));
   view.innerHTML = json
     .replace(/("(?:[^"\\]|\\.)*")(\s*:)/g, '<span class="jk">$1</span>$2')
     .replace(/:\s*("(?:[^"\\]|\\.)*")/g, ': <span class="js">$1</span>')
@@ -897,10 +938,12 @@ async function stepHitlTask() {
 
 async function approveTask() {
   if (!currentHitlTaskId) return;
+  window.dispatchEvent(new Event('workflow-decision-start'));
   const taskId = currentHitlTaskId;
+  const operation = document.getElementById('hitl-operation').textContent;
   currentHitlTaskId = null;
 
-  addLog('hitl', 'hitl', '<strong>APPROVED</strong> by human operator');
+  addLog('hitl', 'hitl', 'Human operator submitted an <strong>approval decision</strong>');
   document.getElementById('hitl-panel').classList.remove('visible');
 
   setSmPhase('sm-hitl-gate', 'pass');
@@ -915,7 +958,7 @@ async function approveTask() {
     addLog('a2a', 'a2a', 'Resuming workflow execution...');
     await delay(300);
 
-    addLog('a2a', 'a2a', 'Executing the lab’s <strong>simulated schema migration</strong>');
+    addLog('a2a', 'a2a', `Executing the lab’s simulated <strong>${esc(operation)}</strong> operation`);
     await delay(400);
 
     setSmPhase('sm-executing', 'pass');
@@ -933,28 +976,32 @@ async function approveTask() {
     setNodeState('node-flow', 'pass');
 
     showJson(data, 'approve');
-    addLog('response', 'response', 'Task <strong>completed</strong>: schema migration executed successfully');
+    window.dispatchEvent(new CustomEvent('workflow-decision', { detail: { id: taskId, decision: 'approve' } }));
+    addLog('response', 'response', `Task <strong>completed</strong>: ${esc(operation)} executed successfully`);
   } catch (err) {
     addLog('error', 'error', `Approval failed: ${esc(err.message)}`);
     currentHitlTaskId = taskId;
     document.getElementById('hitl-panel').classList.add('visible');
     document.getElementById('sm-status').textContent = 'approval failed';
+  } finally {
+    window.dispatchEvent(new Event('workflow-decision-end'));
   }
 }
 
 async function rejectTask() {
   if (!currentHitlTaskId) return;
+  window.dispatchEvent(new Event('workflow-decision-start'));
   const taskId = currentHitlTaskId;
   currentHitlTaskId = null;
 
-  addLog('hitl', 'hitl', '<strong>REJECTED</strong> by human operator');
+  addLog('hitl', 'hitl', 'Human operator submitted a <strong>rejection decision</strong>');
   document.getElementById('hitl-panel').classList.remove('visible');
 
   try {
     const data = await fetchJson('/api/tasks/' + encodeURIComponent(taskId) + '/reject', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reason: 'Operator determined migration is not safe at this time' })
+      body: JSON.stringify({ reason: 'Operator rejected this workflow request after reviewing the evidence' })
     });
 
     setSmPhase('sm-hitl-gate', 'fail');
@@ -969,12 +1016,15 @@ async function rejectTask() {
     setNodeState('node-flow', 'fail');
 
     showJson(data, 'reject');
-    addLog('error', 'error', 'Task <strong>rejected</strong>: operator determined migration is not safe');
+    window.dispatchEvent(new CustomEvent('workflow-decision', { detail: { id: taskId, decision: 'reject' } }));
+    addLog('error', 'error', 'Task <strong>rejected</strong>: operator declined this workflow request');
   } catch (err) {
     addLog('error', 'error', `Rejection failed: ${esc(err.message)}`);
     currentHitlTaskId = taskId;
     document.getElementById('hitl-panel').classList.add('visible');
     document.getElementById('sm-status').textContent = 'rejection failed';
+  } finally {
+    window.dispatchEvent(new Event('workflow-decision-end'));
   }
 }
 
@@ -1086,5 +1136,6 @@ async function checkAgent() {
 checkAgent();
 setInterval(checkAgent, 10000);
 </script>
+<script src="goose-ui.js"></script>
 </body>
 </html>

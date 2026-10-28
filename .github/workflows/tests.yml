@@ -27,6 +27,14 @@ jobs:
       - name: Run tests
         run: mvn --batch-mode --no-transfer-progress test
 
+      - name: Set up Node for the Goose browser client tests
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Verify Goose ACP client
+        run: node --test part4-multi-agent/tests/*.test.cjs
+
       - name: Build workflow and evaluation services
         run: mvn --batch-mode --no-transfer-progress -pl part1-quarkus-mcp,part4-multi-agent,part5-evaluation -am package -DskipTests
 
