@@ -285,17 +285,21 @@ background health checks or circuit breaking.
 
 ```mermaid
 %%{init: {"look":"handDrawn","theme":"base","themeVariables":{"darkMode":false,"background":"#FFFCF5","primaryColor":"#D4E6F1","primaryBorderColor":"#2E6B8A","primaryTextColor":"#1F1F1F","secondaryColor":"#D8F0D8","secondaryTextColor":"#1F1F1F","tertiaryColor":"#E8DCC4","tertiaryTextColor":"#1F1F1F","textColor":"#1F1F1F","lineColor":"#4A4035","edgeLabelBackground":"#FFFCF5","clusterBkg":"#F5F5F0","clusterBorder":"#6B5B45","fontSize":"16px","actorBkg":"#D4E6F1","actorBorder":"#2E6B8A","actorTextColor":"#1F1F1F","actorLineColor":"#6B5B45","signalColor":"#4A4035","signalTextColor":"#1F1F1F"},"flowchart":{"nodeSpacing":35,"rankSpacing":55,"padding":18}}}%%
-sequenceDiagram
-    participant C as Client
-    participant R as Agent Router
-    participant P as Quarkus primary
-    participant F as Quarkus fallback
-    C->>R: One acme-support request
-    R->>P: Attempt 1 (priority 0)
-    P-->>R: 503 unavailable
-    R->>F: Attempt 2 (priority 1)
-    F-->>R: 200 fixed completion
-    R-->>C: 200 fallback response
+flowchart TD
+    C["1 · Client sends<br/>acme-support request"]
+    P["2 · Agent Router calls primary<br/>Attempt 1 · priority 0"]
+    E["3 · Primary returns<br/>503 unavailable"]
+    F["4 · Agent Router calls fallback<br/>Attempt 2 · priority 1"]
+    A["5 · Fallback returns<br/>200 fixed completion"]
+    D["6 · Client receives<br/>200 fallback response"]
+    C --> P --> E --> F --> A --> D
+
+    style C fill:#D4E6F1,stroke:#2E6B8A,color:#1F1F1F,stroke-width:2px
+    style P fill:#E8DCC4,stroke:#6B5B45,color:#1F1F1F,stroke-width:2px
+    style E fill:#F8D7D0,stroke:#A34736,color:#1F1F1F,stroke-width:2px
+    style F fill:#E8DCC4,stroke:#6B5B45,color:#1F1F1F,stroke-width:2px
+    style A fill:#D8F0D8,stroke:#3D7A3D,color:#1F1F1F,stroke-width:2px
+    style D fill:#D4E6F1,stroke:#2E6B8A,color:#1F1F1F,stroke-width:2px
 ```
 
 ### When Both Backends Fail
