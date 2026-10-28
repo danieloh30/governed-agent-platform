@@ -47,6 +47,20 @@ stateDiagram-v2
 
 - Everything from Part 1 (Java 25+, Maven 3.9+)
 
+## What is AGENTS.md?
+
+[AGENTS.md](https://agents.md/) is an open Markdown format for providing agents
+with project context and instructions. The [official project](https://agents.md/)
+explains its purpose and provides examples.
+
+This demo packages its [policy file](src/main/resources/AGENTS.md) with Quarkus.
+`GovernanceEngine` parses the lab's auto-approved, human-approval-required, and
+blocked categories; `WorkflowEngine` enforces the resulting decision before
+execution. Those categories are application conventions, not a standard
+AGENTS.md authorization schema. The Agent Skills `SKILL.md` package describes
+the investigation procedure; Java and the server policy enforce the approval
+boundary. See [the tutorial explanation](../docs/tutorials/04-multi-agent-governance.md#what-is-agentsmd).
+
 ## Quick Start
 
 ```bash

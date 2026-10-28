@@ -71,7 +71,7 @@ flowchart LR
 - **A2A (Agent2Agent)** — the Linux Foundation standard for multi-agent interoperability. Goose discovers the Quarkus backend via an Agent Card and delegates tasks using JSON-RPC over HTTP. The A2A Java SDK (`@PublicAgentCard` + `AgentExecutor`) handles protocol compliance automatically.
 - **Quarkus Flow** — a lightweight state machine implementing the CNCF Serverless Workflow concepts: states, transitions, and action handlers. Each delegated task flows through governance validation, optional HITL approval, and execution.
 - **MCP Tool Delegation** — auto-approved operations like `analyze-logs`, `health-check`, and `generate-report` delegate to Part 1's MCP server for live tool execution. The `quarkus-langchain4j-mcp` extension provides a managed `McpClient` that handles Streamable HTTP transport and MCP sessions automatically.
-- **AGENTS.md** — a declarative governance file that defines which operations are auto-approved, which require human approval, and which are permanently blocked. The Quarkus server parses this file at startup and enforces it on every incoming A2A task.
+- **[AGENTS.md](https://agents.md/)** — an open Markdown format for giving agents project context and instructions. This tutorial uses an AGENTS.md file to describe which operations are auto-approved, require human approval, or are blocked. The Quarkus server parses those application-specific rules at startup and enforces them on every incoming A2A task.
 
 The A2A task lifecycle drives the entire flow:
 
@@ -165,7 +165,36 @@ No JAX-RS endpoint needed — the SDK handles agent card serving and JSON-RPC ro
 
 ## Step 2: Defining Governance Rules with AGENTS.md
 
-AGENTS.md is a declarative governance file that lives alongside the application code. The Quarkus server reads it at startup and enforces its rules on every incoming A2A task.
+### What is AGENTS.md?
+
+[AGENTS.md](https://agents.md/) is an open format for supplying AI agents with
+project context and instructions. It is a Markdown file, commonly used to
+document setup commands, tests, coding conventions, and operational guidance.
+Its predictable name helps compatible agents discover that guidance alongside
+the code. See the [official explanation and examples](https://agents.md/).
+
+AGENTS.md has no required fields or standard authorization schema. Instructions
+in a Markdown file do not, by themselves, authenticate callers, block tool
+execution, or record a human approval.
+
+### How this tutorial uses AGENTS.md
+
+Our [example policy file](https://github.com/danieloh30/governed-agent-platform/blob/main/part4-multi-agent/src/main/resources/AGENTS.md)
+lives in `part4-multi-agent/src/main/resources/AGENTS.md` and is packaged with
+the Quarkus application. It describes three operation categories: auto-approved,
+human approval required, and blocked. These headings and the refund threshold
+are conventions implemented by this tutorial, rather than fields defined by
+the AGENTS.md format.
+
+`GovernanceEngine` reads the file at startup, and `WorkflowEngine` applies the
+result to every incoming A2A task before execution. That Java enforcement is
+what makes a $2500 refund pause and a `drop-database` request fail, even if an
+agent's prompt asks to skip review.
+
+Later in this chapter, the Agent Skills package supplies a reusable refund
+procedure through `SKILL.md`. The skill tells Goose how to investigate; the
+server's AGENTS.md rules and Java code decide whether the requested operation
+may execute.
 
 Create `src/main/resources/AGENTS.md`:
 

@@ -482,6 +482,16 @@ body {
   </div>
 
   <!-- ── Controls ── -->
+  <section class="card" aria-labelledby="agents-md-title" style="margin-bottom:24px">
+    <div class="card-header"><h2 id="agents-md-title">What is AGENTS.md?</h2></div>
+    <div class="card-body" style="font-size:.85rem;color:var(--text-secondary)">
+      <p><a href="https://agents.md/" target="_blank" rel="noopener noreferrer">AGENTS.md</a> is an open Markdown format for giving AI agents project context and instructions, such as setup commands, tests, conventions, and operational guidance.</p>
+      <p style="margin-top:10px">In this demo, the Quarkus server reads an AGENTS.md policy at startup. Its Java governance engine enforces three categories: <strong>auto-approved</strong>, <strong>human approval required</strong>, and <strong>blocked</strong>. These categories are this lab’s conventions; the Markdown file alone does not enforce permissions.</p>
+      <p style="margin-top:10px">The refund <code>SKILL.md</code> playbook tells Goose how to investigate. The server’s policy and approval gate decide whether its requested operation can execute.</p>
+      <p style="margin-top:10px"><a href="https://agents.md/" target="_blank" rel="noopener noreferrer">AGENTS.md project and examples ↗</a> · <a href="https://github.com/danieloh30/governed-agent-platform/blob/main/part4-multi-agent/src/main/resources/AGENTS.md" target="_blank" rel="noopener noreferrer">View this demo’s policy file ↗</a></p>
+    </div>
+  </section>
+
   <div class="controls-bar">
     <span class="section-label">Demo Steps</span>
     <button class="btn btn-primary" id="btn-discover" onclick="stepDiscover()">
