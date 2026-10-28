@@ -42,7 +42,7 @@ jobs:
       - name: Delete workloads and stop runtime
         if: always()
         run: ./part7-opensandbox/sandbox.sh down
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: sandbox-evidence
