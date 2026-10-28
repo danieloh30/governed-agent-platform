@@ -191,6 +191,13 @@ result to every incoming A2A task before execution. That Java enforcement is
 what makes a $2500 refund pause and a `drop-database` request fail, even if an
 agent's prompt asks to skip review.
 
+The SPA's **AGENTS.md · Loaded Governance Policy** panel displays the actual
+Markdown captured by the running server at startup, including its operation
+lists. **Open raw file** and **View loaded policy** in the architecture box
+open `http://localhost:8082/api/governance/agents.md`. The box also links to the
+official `agents.md` project. After editing the policy, rebuild and restart
+Part 4 to load the new file, then reload the SPA.
+
 Later in this chapter, the Agent Skills package supplies a reusable refund
 procedure through `SKILL.md`. The skill tells Goose how to investigate; the
 server's AGENTS.md rules and Java code decide whether the requested operation

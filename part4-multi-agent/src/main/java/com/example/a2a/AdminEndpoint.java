@@ -90,6 +90,13 @@ public class AdminEndpoint {
         return governance.getRules();
     }
 
+    @GET
+    @Path("governance/agents.md")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String getGovernanceSource() {
+        return governance.getPolicySource();
+    }
+
     // Invalid task IDs or bad state transitions surface as 400s — one mapper
     // replaces the per-endpoint try/catch blocks.
     @ServerExceptionMapper({IllegalArgumentException.class, IllegalStateException.class})

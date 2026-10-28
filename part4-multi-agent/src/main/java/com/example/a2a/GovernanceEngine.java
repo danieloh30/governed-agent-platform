@@ -1,8 +1,7 @@
 package com.example.a2a;
 
-import java.io.BufferedReader;
 import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -24,6 +23,7 @@ public class GovernanceEngine {
     private final Map<String, String> requiresApproval = new LinkedHashMap<>();
     private final Map<String, String> blocked = new LinkedHashMap<>();
     private int maxIterations = 10;
+    private String policySource = "";
 
     void onStart(@Observes StartupEvent ev) {
         parseAgentsMd();
@@ -33,7 +33,8 @@ public class GovernanceEngine {
         try (InputStream is = Thread.currentThread().getContextClassLoader()
                 .getResourceAsStream("AGENTS.md")) {
             if (is == null) return;
-            List<String> lines = new BufferedReader(new InputStreamReader(is)).lines().toList();
+            policySource = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+            List<String> lines = policySource.lines().toList();
             String section = null;
 
             for (String line : lines) {
@@ -109,6 +110,8 @@ public class GovernanceEngine {
     }
 
     public int getMaxIterations() { return maxIterations; }
+
+    public String getPolicySource() { return policySource; }
 
     public Map<String, Object> getRules() {
         Map<String, Object> rules = new LinkedHashMap<>();

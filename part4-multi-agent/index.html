@@ -400,6 +400,8 @@ body {
 #goose-permissions:empty { display:none; }
 .goose-permission { background:var(--status-warn-bg); border:1px solid var(--status-warn); border-radius:6px; padding:12px; margin:12px 0; font-size:.82rem; }
 .goose-permission pre { white-space:pre-wrap; overflow-wrap:anywhere; max-height:200px; overflow:auto; }
+.policy-source { white-space:pre-wrap; overflow-wrap:anywhere; max-height:460px; overflow:auto; padding:16px; background:var(--surface-inset); border:1px solid var(--gridline); border-radius:var(--radius-sm); font-size:.8rem; line-height:1.6; color:var(--text-primary); }
+.policy-links a { color:var(--cat-1); }
 @media(max-width:800px) { .goose-layout { grid-template-columns:1fr; } .goose-transcript,.goose-tools { height:260px; } }
 </style>
 </head>
@@ -477,18 +479,18 @@ body {
         <div class="node-label">Governance</div>
         <div class="node-title">AGENTS.md</div>
         <div class="node-port mono">rules file</div>
+        <div class="node-port policy-links"><a href="https://agents.md/" target="_blank" rel="noopener noreferrer">agents.md ↗</a></div>
+        <div class="node-port policy-links"><a href="http://localhost:8082/api/governance/agents.md" target="_blank" rel="noopener noreferrer">View loaded policy ↗</a></div>
       </div>
     </div>
   </div>
 
   <!-- ── Controls ── -->
-  <section class="card" aria-labelledby="agents-md-title" style="margin-bottom:24px">
-    <div class="card-header"><h2 id="agents-md-title">What is AGENTS.md?</h2></div>
+  <section class="card" id="agents-md-policy" aria-labelledby="agents-md-title" style="margin-bottom:24px">
+    <div class="card-header"><h2 id="agents-md-title">AGENTS.md · Loaded Governance Policy</h2><a class="card-badge" href="http://localhost:8082/api/governance/agents.md" target="_blank" rel="noopener noreferrer">Open raw file ↗</a></div>
     <div class="card-body" style="font-size:.85rem;color:var(--text-secondary)">
-      <p><a href="https://agents.md/" target="_blank" rel="noopener noreferrer">AGENTS.md</a> is an open Markdown format for giving AI agents project context and instructions, such as setup commands, tests, conventions, and operational guidance.</p>
-      <p style="margin-top:10px">In this demo, the Quarkus server reads an AGENTS.md policy at startup. Its Java governance engine enforces three categories: <strong>auto-approved</strong>, <strong>human approval required</strong>, and <strong>blocked</strong>. These categories are this lab’s conventions; the Markdown file alone does not enforce permissions.</p>
-      <p style="margin-top:10px">The refund <code>SKILL.md</code> playbook tells Goose how to investigate. The server’s policy and approval gate decide whether its requested operation can execute.</p>
-      <p style="margin-top:10px"><a href="https://agents.md/" target="_blank" rel="noopener noreferrer">AGENTS.md project and examples ↗</a> · <a href="https://github.com/danieloh30/governed-agent-platform/blob/main/part4-multi-agent/src/main/resources/AGENTS.md" target="_blank" rel="noopener noreferrer">View this demo’s policy file ↗</a></p>
+      <p style="margin-bottom:12px">Contents of <code>src/main/resources/AGENTS.md</code> loaded by the running Quarkus server at startup.</p>
+      <pre class="policy-source mono" id="agents-md-content">Loading the server’s AGENTS.md…</pre>
     </div>
   </section>
 
@@ -710,6 +712,17 @@ async function fetchJson(path, options) {
   return res.json();
 }
 
+async function loadGovernancePolicy() {
+  const view = document.getElementById('agents-md-content');
+  try {
+    const response = await fetch(A2A_SERVER + '/api/governance/agents.md', { cache: 'no-store' });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    view.textContent = await response.text();
+  } catch (error) {
+    view.textContent = `Could not load AGENTS.md: ${error.message}. Restart Part 4 with ./start-all.sh, then reload this page.`;
+  }
+}
+
 async function a2aCall(method, params) {
   const data = await fetchJson('/', {
     method: 'POST',
@@ -774,6 +787,7 @@ async function stepDiscover() {
     setNodeState('node-agents-md', 'active');
 
     const gov = await fetchJson('/api/governance');
+    await loadGovernancePolicy();
     addLog('governance', 'governance', `Loaded AGENTS.md governance: <strong>${Object.keys(gov.autoApproved || {}).length} auto-approved</strong>, <strong>${Object.keys(gov.requiresApproval || {}).length} HITL-required</strong>, <strong>${Object.keys(gov.blocked || {}).length} blocked</strong>`);
     await delay(300);
     setNodeState('node-agents-md', 'pass');
@@ -1144,6 +1158,7 @@ async function checkAgent() {
 }
 
 checkAgent();
+loadGovernancePolicy();
 setInterval(checkAgent, 10000);
 </script>
 <script src="goose-ui.js"></script>

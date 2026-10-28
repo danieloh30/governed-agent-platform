@@ -10,6 +10,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.UUID;
+import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -27,6 +28,18 @@ class BrowserA2aTest {
         assertFalse(json.readTree(card.body()).path("skills").isEmpty());
         var governance = get("/api/governance");
         assertTrue(json.readTree(governance.body()).has("requiresApproval"));
+    }
+
+    @Test
+    void browserCanReadTheActualLoadedAgentsMd() throws Exception {
+        var response = get("/api/governance/agents.md");
+        assertTrue(response.headers().firstValue("content-type").orElseThrow().startsWith("text/plain"));
+        try (var source = getClass().getResourceAsStream("/AGENTS.md")) {
+            assertNotNull(source);
+            assertEquals(new String(source.readAllBytes(), StandardCharsets.UTF_8), response.body());
+        }
+        assertTrue(response.body().contains("### Requires Human Approval"));
+        assertTrue(response.body().contains("- process-refund:"));
     }
 
     @Test
