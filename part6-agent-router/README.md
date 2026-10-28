@@ -76,7 +76,7 @@ One packaged application serves three roles:
 |---|---|---|
 | Backend | `serve`; default when no command is supplied | REST completion and failure-control endpoints |
 | Launcher | `run`, using the `cli` profile via `start-all.sh` | Start two backends and Agent Router, wait for readiness, clean up owned processes |
-| Verifier | `smoke`, using the `cli` profile via `smoke.sh` | Run six real HTTP routing checks with Quarkus REST Client |
+| Verifier | `smoke` via `smoke.sh`, or `responses-smoke` via `responses-smoke.sh`, using the `cli` profile | Run six routing checks or four Responses checks with Quarkus REST Client |
 
 The launcher starts the same JAR with `-Dquarkus.http.port=18081 -Dmodel.backend-name=primary`
 and `-Dquarkus.http.port=18082 -Dmodel.backend-name=fallback`. Each process has isolated CDI
@@ -85,9 +85,11 @@ state. The `cli` profile disables the launcher's and verifier's HTTP listeners.
 | Endpoint on each backend | Purpose |
 |---|---|
 | `POST /v1/chat/completions` | Fixed OpenAI-shaped JSON response; Bean Validation checks model, messages, and non-streaming input |
+| `POST /v1/responses` | Optional Open Responses text/function subset with stateless history replay and semantic SSE |
 | `GET /admin` | Read backend name, mode, attempt counter, and last upstream model |
 | `POST /admin` | Set `healthy`, `unavailable` (503), or `bad-request` (400); optionally reset counters |
 | `/lab/state`, `/lab/request`, `/lab/backends/{backend}`, `/lab/reset`, `/lab/verify` | Same-origin console API; model requests always pass through Agent Router |
+| `/lab/responses`, `/lab/responses/verify` | Same-origin Responses request facade and four routed compatibility checks |
 | `GET /q/health/ready` | SmallRye Health readiness; remains UP during deliberately simulated provider errors |
 
 `ModelResource` handles HTTP, `ModelService` holds synchronized in-memory state, and `ModelApi`
@@ -106,7 +108,7 @@ curl -sS -w '\n' http://localhost:18082/admin
 ```
 
 `reset:true` clears the counter and last model. A GET reads state without counting an attempt.
-Restarting clears all backend state. Streaming requests, missing/empty model or message fields,
+Restarting clears all backend state. Chat Completions streaming requests, missing/empty model or message fields,
 and unsupported control modes return 400 before changing state. Bodies above 64 KiB return 413.
 
 ## Configuration Files
@@ -143,7 +145,9 @@ SKIP_BUILD=true ./start-all.sh --smoke
 Endpoint tests cover completion format, state transitions, malformed/invalid input, body-size
 limits, and readiness. The six routing checks cover healthy primary, unmatched model, 503
 fallback, non-retryable 400, both backends unavailable, and recovery. They assert exact backend
-attempt counts and upstream model names. Run without concurrent clients because the verifier
+attempt counts and upstream model names. Four additional Responses checks cover text output
+items, bounded fallback, function-call/result replay across backend recovery, and semantic
+SSE event preservation. `--smoke` runs both suites. Run without concurrent clients because the verifier
 changes modes and resets counters. Neither test layer evaluates generated answer quality.
 
 ## Troubleshooting
@@ -166,6 +170,33 @@ Persistent binaries and logs stay in `.bin/` and `.runtime/`. Startup waits are 
 cleanup targets only owned process handles. It never edits global provider configuration.
 
 ## Optional Extensions
+
+### Open Responses compatibility (15 minutes)
+
+With Part 6 running, use the console's **Open Responses · Provider Portability**
+card. **Send Responses Text** and **Inspect Responses SSE** use the model/message
+fields above. **Run Four Responses Checks** returns the function-call,
+continuation, and SSE evidence in Response Inspector. Terminal equivalent:
+
+```bash
+./responses-smoke.sh
+```
+
+The function call originates on the fallback while the primary is unavailable.
+The Java client validates `get_support_status` and its synthetic customer arguments,
+then supplies a fixed read-only result. After primary recovery, it replays the
+original input, call, and matching `function_call_output` using `call_id` and
+`store:false`. No provider-local response ID or session affinity is required.
+
+This deterministic text/function subset demonstrates the Open Responses item
+contract through Agent Router v1.1.0. The console buffers SSE for inspection;
+it does not measure incremental token delivery. Stored continuation, multimodal
+input, compaction, WebSockets, and arbitrary tools are unsupported. These checks
+do not establish full Open Responses conformance or real-model answer quality.
+See the [step-by-step extension](../docs/tutorials/06-model-routing.md#optional-extension-open-responses-compatibility)
+and [upstream specification](https://www.openresponses.org/specification).
+
+### Further exercises
 
 The [tutorial](../docs/tutorials/06-model-routing.md#optional-follow-up-exercises) outlines
 Goose with real inference (15–20 minutes), Jaeger tracing (10–15 minutes), and token quotas

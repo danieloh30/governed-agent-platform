@@ -407,6 +407,116 @@ while preserving the tool and workflow governance learners already built.
 | Observability | Stub attempt counters and local gateway logs | Monitor errors, latency, selected backend, and usage with telemetry content controls |
 | Validation | Deterministic transport checks | Add live-provider contract tests and separate answer-quality evaluations |
 
+## Optional Extension: Open Responses Compatibility
+
+The routing checks above use Chat Completions. A shared endpoint path and a
+successful failover do not establish that clients can also use the same input,
+tool, and streaming contracts across backends.
+
+[Open Responses](https://www.openresponses.org/) specifies an interoperable
+model interface built around **input/output items**, function calls and their
+results, and semantic streaming events. The reference for this exercise is the
+[2026-04-24 specification](https://www.openresponses.org/specification).
+The pinned [Agent Router v1.1 release](https://theagentrouter.ai/release-notes/v1.1/)
+supports `/v1/responses`, so this extension uses the same router, route, model
+alias, and backends as the core lab. Allow an additional **15 minutes**.
+
+### Send a Responses request
+
+Keep the Part 6 launcher running. In the console's **Open Responses · Provider
+Portability** card, click **Send Responses Text**. It uses the model and message
+fields above and displays the real routed result in Response Inspector.
+The equivalent request is:
+
+```bash
+curl --fail-with-body -sS http://localhost:1975/v1/responses \
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer acme-local-demo' \
+  -d '{"model":"acme-support","input":"Summarize Acme support status.","store":false}'
+```
+
+Expect `object: "response"`, `status: "completed"`, and an `output` array with
+an assistant message containing an `output_text` part. Inspect
+`output[0].content[0].text`, rather than `choices[0].message.content`. Usage
+contains input/output token fields; as in the core lab, these counts are fixed
+illustrative values. The demo Bearer value is not an authentication mechanism;
+this localhost lab still has no caller identity enforcement.
+
+### Replay a function call across backend recovery
+
+Click **Run Four Responses Checks**. The Java verifier sends real requests
+through Agent Router and returns the function-call and continuation evidence.
+It resets backend modes and counters, so run it without other clients.
+
+The function-call exercise proceeds as follows:
+
+1. Configure the primary to return 503. The fallback emits a `function_call`
+   item for the declared `get_support_status` tool, including `call_id` and a
+   JSON string of arguments for synthetic customer `CUST-4091`.
+2. The Java client validates the function name and arguments against its fixed
+   read-only dispatcher. It produces a synthetic `ACTIVE` status. The model
+   response itself does not execute a tool, grant permission, or issue a refund.
+3. Restore the primary. Send the original user message, the function-call item,
+   and a `function_call_output` item containing the **same `call_id`** and the
+   JSON-string result, with `store:false`.
+4. The recovered primary answers from that complete history. No
+   `previous_response_id`, session affinity, or provider-local response lookup
+   is used. The verifier checks backend attempt counts and upstream model mapping.
+
+This is a deterministic demonstration of a portable conversation representation.
+It does not establish that different real models produce equivalent answers.
+Server-side response IDs from one provider cannot be assumed to exist on a
+fallback provider; stateless history replay is an explicit design choice here.
+
+### Inspect semantic streaming events
+
+Click **Inspect Responses SSE**, or run:
+
+```bash
+curl -N --fail-with-body -sS http://localhost:1975/v1/responses \
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer acme-local-demo' \
+  -d '{"model":"acme-support","input":"Status?","store":false,"stream":true}'
+```
+
+The stream includes `response.created`, `response.in_progress`, output-item and
+text-part events, a `response.output_text.delta`, and a terminal
+`response.completed`. Each SSE `event:` matches the JSON body's `type`, with
+ordered `sequence_number` values. The verifier checks those properties after
+the stream traverses Agent Router. These fixed stubs emit frames without token
+generation delays; the console facade buffers SSE for inspection. It does not
+measure incremental token delivery or streaming latency. Mid-stream recovery
+and replay after partial delivery are outside this exercise.
+
+### Verify and understand the boundary
+
+With the lab running, from `part6-agent-router/`:
+
+```bash
+./responses-smoke.sh
+```
+
+Expect **four Responses checks**: primary text, bounded fallback, function-call
+continuation across recovery, and SSE event preservation. The existing
+`./smoke.sh` still runs the original six routing checks. Starting the lab with
+`./start-all.sh --smoke` runs both suites and shuts it down; CI uses that path.
+`ResponsesResourceTest` also covers malformed input, unsupported fields,
+unknown tools, unmatched call IDs, streaming envelopes, and failure counters.
+
+The backend implements a limited text/function subset, with `model`, `input`,
+`tools`, `stream`, and `store:false`. It rejects unsupported features instead of
+silently accepting them: stored continuation, images/audio, compaction,
+WebSockets, background jobs, and arbitrary tool names are not implemented.
+`ResponsesService` builds the response envelope and SSE events;
+`ResponsesExamples` owns the validated local tool dispatcher; `ResponsesChecks`
+verifies the real routed behavior. The browser reaches it through the same-origin
+`/lab/responses` facade.
+
+These checks are not the full [upstream acceptance suite](https://www.openresponses.org/compliance).
+Before claiming provider compatibility, run the upstream schema and acceptance
+tests against the exact providers and features you intend to use, along with
+the gateway's auth, failure, and streaming behavior.
+
 ## Optional Follow-Up Exercises
 
 These are separate extensions, outside the 30-minute lab. Allow installation/model-download

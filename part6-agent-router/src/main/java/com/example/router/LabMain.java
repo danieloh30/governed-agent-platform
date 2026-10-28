@@ -14,6 +14,8 @@ public class LabMain implements QuarkusApplication {
     @Inject
     RoutingChecks checks;
 
+    @Inject ResponsesChecks responsesChecks;
+
     @Override
     public int run(String... args) {
         try {
@@ -21,6 +23,7 @@ public class LabMain implements QuarkusApplication {
                 case "serve" -> Quarkus.waitForExit();
                 case "run" -> launcher.run(Arrays.copyOfRange(args, 1, args.length));
                 case "smoke" -> checks.run();
+                case "responses-smoke" -> responsesChecks.run();
                 default -> throw new IllegalArgumentException("Use serve, run, or smoke");
             }
             return 0;

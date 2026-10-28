@@ -443,6 +443,16 @@ textarea { resize:vertical; min-height:80px; }
     <section class="card"><div class="card-header"><h2>Response Inspector</h2><span class="card-badge" id="response-label">No response</span></div><div class="card-body"><pre class="json-view mono" id="response">Waiting for a request…</pre></div></section>
   </div>
   <section class="card"><div class="card-header"><h2>Routing Verification</h2><span class="card-badge">Same checks as ./smoke.sh</span></div><div class="card-body"><ol class="check-list" id="checks"><li>Primary routing and model-name mapping</li><li>Unmatched model reaches neither backend</li><li>503 falls back exactly once</li><li>400 is not retried</li><li>Both unavailable returns 503 with bounded attempts</li><li>Recovery returns to primary</li></ol></div></section>
+  <section class="card" style="margin-top:24px"><div class="card-header"><h2>Open Responses · Provider Portability</h2><span class="card-badge">Optional extension</span></div><div class="card-body">
+    <p class="guide">Use the same router with <code>/v1/responses</code>. These deterministic checks cover text output items, bounded fallback, a function-call/result round trip across backend recovery, and semantic SSE events. They reset backend modes and counters.</p>
+    <div class="controls-bar">
+      <button class="btn btn-secondary" id="responses-text">Send Responses Text</button>
+      <button class="btn btn-secondary" id="responses-stream">Inspect Responses SSE</button>
+      <button class="btn btn-primary" id="responses-verify">Run Four Responses Checks</button>
+    </div>
+    <ol class="check-list" id="responses-checks"><li>Text output items through primary</li><li>503 fallback with bounded attempts</li><li>Function call from fallback, continuation on recovered primary</li><li>SSE event sequence and terminal response</li></ol>
+    <p class="stat-sub">Uses the model/message fields above. The console buffers SSE for inspection; it does not measure live token latency. This limited text/function subset is not full Open Responses conformance or real inference.</p>
+  </div></section>
 </main>
 <script>
 const $ = id => document.getElementById(id);
@@ -462,7 +472,7 @@ function log(kind, message) {
 async function api(path, body, raw = false) {
   const response = await fetch(`/lab/${path}`, { method: body === undefined ? 'GET' : 'POST',
     headers: body === undefined ? {} : {'Content-Type':'application/json'},
-    body: body === undefined ? undefined : JSON.stringify(body), signal: AbortSignal.timeout(path === 'verify' ? 90000 : 20000) });
+    body: body === undefined ? undefined : JSON.stringify(body), signal: AbortSignal.timeout(path.endsWith('verify') ? 90000 : 20000) });
   const text = await response.text(); let data;
   try { data = JSON.parse(text); } catch { data = text; }
   if (!raw && !response.ok) throw new Error(data?.error?.message || `HTTP ${response.status}: ${text}`);
@@ -549,6 +559,21 @@ $('verify').addEventListener('click', () => action(async () => {
     inspect(report, 'Routing verification'); log('VERIFY', `${report.passed.length}/6 routing checks passed`);
     feedback('All six checks passed. Both backends are restored to healthy with counters cleared.');
   } catch (error) { $('stat-checks').textContent = 'Failed'; $('stat-checks').className = 'stat-value crit'; throw error; }
+}));
+async function sendResponses(stream) {
+  const result = await api('responses', {model:$('model').value,input:$('message').value,store:false,stream}, true);
+  inspect(result.body, stream ? 'Responses SSE' : 'Responses JSON');
+  $('stat-http').textContent = `HTTP ${result.status}`;
+  log('RESPONSES', `POST /v1/responses · ${stream ? 'SSE events' : 'output items'} · HTTP ${result.status}`);
+  feedback('Inspect the returned output items or SSE events in Response Inspector. Backend controls apply to both API paths.');
+}
+$('responses-text').addEventListener('click', () => action(() => sendResponses(false)));
+$('responses-stream').addEventListener('click', () => action(() => sendResponses(true)));
+$('responses-verify').addEventListener('click', () => action(async () => {
+  const report = await api('responses/verify', {});
+  [...$('responses-checks').children].forEach((item, index) => { item.textContent = 'PASS · ' + report.passed[index]; item.className = 'check-pass'; });
+  inspect(report, 'Responses compatibility evidence'); log('RESPONSES', `${report.passed.length}/4 Responses checks passed`);
+  feedback('Four Responses checks passed. Both backends restored to healthy; inspect function-call and SSE evidence above.');
 }));
 $('theme').addEventListener('click', () => {
   const current = document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark':'light');

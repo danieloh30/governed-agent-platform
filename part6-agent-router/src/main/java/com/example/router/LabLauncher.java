@@ -34,6 +34,8 @@ public class LabLauncher {
     @Inject
     RoutingChecks checks;
 
+    @Inject ResponsesChecks responsesChecks;
+
     private final List<OwnedProcess> processes = new CopyOnWriteArrayList<>();
     private Path runtime;
     private ScheduledExecutorService tracker;
@@ -95,6 +97,7 @@ public class LabLauncher {
             System.out.println("Quarkus controls: http://localhost:18081/admin and :18082/admin");
             if (options.smoke()) {
                 checks.run();
+                responsesChecks.run();
             } else {
                 System.out.println("Use a second terminal for the tutorial. Ctrl+C stops only this lab.");
                 while (true) {

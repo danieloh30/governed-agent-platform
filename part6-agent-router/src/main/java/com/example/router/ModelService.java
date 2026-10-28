@@ -28,17 +28,23 @@ public class ModelService {
     }
 
     public synchronized Result complete(CompletionRequest request) {
-        requests++;
-        lastModel = request.model();
-        if (!mode.equals("healthy")) {
-            int status = mode.equals("unavailable") ? 503 : 400;
-            return new Result(status, new ErrorResponse(new ErrorDetail(
-                    backend + ": simulated " + mode, "lab_error", Integer.toString(status))));
-        }
+        Result failure = attempt(request.model());
+        if (failure != null) return failure;
         return new Result(200, new Completion("chatcmpl-" + backend + "-" + requests,
                 "chat.completion", 0, request.model(),
                 List.of(new Choice(0, new Message("assistant",
                         backend + ": Acme support request received (stub; no inference)."), "stop")),
                 new Usage(12, 8, 20)));
+    }
+
+    public synchronized Result attempt(String model) {
+        requests++;
+        lastModel = model;
+        if (!mode.equals("healthy")) {
+            int status = mode.equals("unavailable") ? 503 : 400;
+            return new Result(status, new ErrorResponse(new ErrorDetail(
+                    backend + ": simulated " + mode, "lab_error", Integer.toString(status))));
+        }
+        return null;
     }
 }

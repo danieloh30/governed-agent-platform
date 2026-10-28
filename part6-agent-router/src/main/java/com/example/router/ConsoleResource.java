@@ -21,7 +21,9 @@ import static com.example.router.ModelApi.*;
 @Produces(MediaType.APPLICATION_JSON)
 public class ConsoleResource {
     @RestClient ModelGatewayClient gateway;
+    @RestClient ResponsesGatewayClient responses;
     @Inject RoutingChecks checks;
+    @Inject ResponsesChecks responsesChecks;
 
     public record BackendView(boolean available, State state, String error) {}
     public record Snapshot(boolean gatewayReady, BackendView primary, BackendView fallback) {}
@@ -47,6 +49,22 @@ public class ConsoleResource {
             return Response.status(response.getStatus()).type(MediaType.APPLICATION_JSON)
                     .entity(response.readEntity(String.class)).build();
         } catch (RuntimeException error) { throw unavailable("Agent Router is unreachable. Start ./start-all.sh."); }
+    }
+
+    @POST
+    @Path("responses")
+    public synchronized Response responses(com.fasterxml.jackson.databind.JsonNode request) {
+        try (Response response = responses.create(request)) {
+            return Response.status(response.getStatus()).type(response.getMediaType())
+                .entity(response.readEntity(String.class)).build();
+        } catch (RuntimeException error) { throw unavailable("Agent Router is unreachable. Start ./start-all.sh."); }
+    }
+
+    @POST
+    @Path("responses/verify")
+    public synchronized ResponsesChecks.Report verifyResponses() {
+        try { return responsesChecks.run(); }
+        catch (RuntimeException error) { throw unavailable("Responses checks failed: " + error.getMessage()); }
     }
 
     @POST

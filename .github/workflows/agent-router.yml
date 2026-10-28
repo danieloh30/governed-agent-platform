@@ -30,12 +30,12 @@ jobs:
           cache: maven
       - name: Check script syntax
         run: |
-          bash -n part6-agent-router/install.sh part6-agent-router/start-all.sh part6-agent-router/smoke.sh
+          bash -n part6-agent-router/install.sh part6-agent-router/start-all.sh part6-agent-router/smoke.sh part6-agent-router/responses-smoke.sh
       - name: Build and test Quarkus backends
         run: mvn --batch-mode --no-transfer-progress -pl part6-agent-router -am verify
       - name: Install pinned Agent Router
         run: ./part6-agent-router/install.sh
-      - name: Verify routing, failover, and recovery
+      - name: Verify routing, Responses compatibility, failover, and recovery
         run: ./part6-agent-router/start-all.sh --smoke
         env:
           SKIP_BUILD: "true"
