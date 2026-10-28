@@ -127,13 +127,30 @@ contains instructions, a reference playbook, an evidence template, and a Python
 
 ### Run the real Goose session inside the SPA
 
-With Goose installed and a model configured, start the optional runtime:
+With Goose installed and a model configured, choose one startup path.
+
+**App already running (usual demo flow):** keep `./start-all.sh` running and
+open a second terminal in `part4-multi-agent/`:
+
+```bash
+./start-goose.sh 8889
+```
+
+Wait for `[goose] ACP ready` and keep that terminal running. This starts only
+Goose; no app restart is needed. The argument must match the existing SPA port.
+If the original launcher already used `WITH_GOOSE=true`, skip this command.
+
+**Lab not running yet:** start everything together from this directory:
 
 ```bash
 WITH_GOOSE=true ./start-all.sh
 ```
 
-Open the SPA and use **5 · Goose Skill Investigation**:
+This calls `start-goose.sh` automatically. Do not run a second `start-all.sh`
+beside an existing launcher: either use the second-terminal path above or stop
+the old launcher with Ctrl+C before using the combined command.
+
+Open or reload the SPA and use **5 · Goose Skill Investigation**:
 
 1. Click **Start Goose Session**.
 2. Click **Investigate $2500 Refund**, review the prompt, then **Send Message**.
@@ -154,10 +171,12 @@ The SPA server now binds to loopback; the Goose server allows only its exact
 localhost/127.0.0.1 origins. This is a single-user local integration, not shared
 hosting or a shell sandbox. Goose retains its configured extension/tool access.
 
-Use `GOOSE_BIN=/path/to/goose` or `GOOSE_UI_PORT=3285` when needed. To run only
-the optional Goose component beside an already running Part 4 lab, use
-`./start-goose.sh 8889` in another terminal. The argument must match the SPA port.
-Its diagnostics are in `target/goose-ui.log`.
+Use `GOOSE_BIN=/path/to/goose` or `GOOSE_UI_PORT=3285` when needed. Diagnostics
+are in `target/goose-ui.log`.
+
+After the demo, click **Disconnect**. With separate terminals, Ctrl+C in the
+Goose terminal stops only Goose; Ctrl+C in the original launcher stops the app.
+With the combined launcher, Ctrl+C stops all services together.
 
 Tool permission is distinct from refund approval. The chat never interprets an
 agent message as approval. The backend's operation checks still decide whether

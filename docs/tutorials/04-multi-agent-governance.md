@@ -465,7 +465,8 @@ cd part4-multi-agent
 
 The script builds Part 1's MCP server and Part 4's A2A Flow server, starts both (MCP on :8080, A2A on :8082), and launches the interactive demo SPA. Auto-approved tasks like `analyze-logs` delegate to Part 1's MCP tools for live data.
 
-To include the optional Goose chat panel, use this command instead:
+If you want Goose available from the beginning, start the stopped lab with this
+command instead of the command above:
 
 ```bash
 WITH_GOOSE=true ./start-all.sh
@@ -476,8 +477,9 @@ starts `goose serve` on localhost port 3284, prepares the refund skill workspace
 and creates the temporary authenticated connection settings for the SPA. You
 do not need to run it separately when using `WITH_GOOSE=true`.
 
-If this lab is already running without Goose, open a second terminal and add
-only the Goose runtime:
+If you already ran `./start-all.sh`, **keep it running**. Do not launch a second
+copy of `start-all.sh`; its services would compete for the same ports. Open a
+second terminal and add only the Goose runtime:
 
 ```bash
 cd part4-multi-agent
@@ -485,7 +487,7 @@ cd part4-multi-agent
 ```
 
 Here `8889` is the existing SPA port, which Goose uses for its browser origin
-allowlist. Keep that terminal running. Continue with [the SPA skill
+allowlist. Keep both terminals running. No app restart is needed. Continue with [the SPA skill
 exercise](#run-the-skill-from-the-spa) for the session and approval walkthrough.
 
 Open the **A2A Multi-Agent Console** at [http://localhost:8889/index.html](http://localhost:8889/index.html).
@@ -557,16 +559,47 @@ threshold. The helper submits or polls tasks; it has no approval command.
 
 ### Run the skill from the SPA
 
-For a live demo, start the lab with the optional Goose ACP server:
+At this point, the app from Step 5 is normally already running. You need Goose
+installed and a model configured for this optional exercise. Choose the setup
+that matches your current state:
 
-```bash
-cd part4-multi-agent
-WITH_GOOSE=true ./start-all.sh
-```
+=== "App already running (usual demo flow)"
 
-The launcher starts a real `goose serve` process using your installed Goose and
-configured provider. Its project workspace contains a fresh copy of this skill.
-Open the console on `http://localhost:8889/index.html`, then:
+    Keep the original `./start-all.sh` terminal running. In a **second terminal**,
+    from the repository root, run:
+
+    ```bash
+    cd part4-multi-agent
+    ./start-goose.sh 8889
+    ```
+
+    This adds only Goose to the running lab. **No app restart is needed.** Keep
+    this second terminal running and wait for the `[goose] ACP ready` message.
+    The argument `8889` must match the existing SPA port.
+
+    If Step 5 was already started with `WITH_GOOSE=true`, Goose is included:
+    skip this command and proceed to **Start Goose Session** in the SPA.
+
+=== "Lab not running yet"
+
+    From the repository root, start all services and Goose together:
+
+    ```bash
+    cd part4-multi-agent
+    WITH_GOOSE=true ./start-all.sh
+    ```
+
+    This calls `start-goose.sh` automatically. Do not run the companion script
+    again. If you choose this route while an older launcher is still running,
+    stop the older launcher with **Ctrl+C first** to avoid port conflicts.
+
+`start-goose.sh` starts a real `goose serve` process using your installed Goose
+and configured provider. It prepares a project workspace containing a fresh
+copy of the skill and supplies temporary authenticated connection settings to
+the browser. It does not start another MCP server, A2A server, or SPA.
+
+Keep the console open on `http://localhost:8889/index.html`. If the new fifth
+panel is missing after updating the tutorial code, reload the page. Then:
 
 1. In **5 · Goose Skill Investigation**, click **Start Goose Session**.
 2. Click **Investigate $2500 Refund** to populate the prompt. Review it and
@@ -604,11 +637,16 @@ credentials remain in Goose. Both the SPA and Goose listener bind to loopback;
 Goose restricts browser connections to the exact SPA origins. This setup is not
 intended for shared hosting.
 
-If the panel cannot connect, inspect `target/goose-ui.log`, check your Goose
-provider configuration, and confirm that port 3284 is available. Override it
-with `GOOSE_UI_PORT`; override the executable with `GOOSE_BIN`. Beside an
-already-running Part 4 lab, `./start-goose.sh 8889` starts only the optional
-runtime. Its argument must match the SPA's port.
+If the panel cannot connect, check the second terminal for `[goose] ACP ready`,
+inspect `target/goose-ui.log`, and check your Goose provider configuration.
+Goose uses port 3284 by default; override it with `GOOSE_UI_PORT` if another
+Goose server occupies that port. Override the executable with `GOOSE_BIN`.
+
+When finished, click **Disconnect** in the SPA. If you started Goose in a
+second terminal, press **Ctrl+C in that terminal** to stop Goose; the original
+app and its four exercises remain running. Press **Ctrl+C in the original
+launcher terminal** when you are ready to stop the app too. If you used the
+combined `WITH_GOOSE=true` launcher, **Ctrl+C in its terminal stops everything**.
 
 **Cancel Turn** requests cancellation of model work, leaving already submitted
 workflow tasks intact. **Disconnect** does not delete those tasks. Reconnecting
