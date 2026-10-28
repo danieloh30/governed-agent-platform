@@ -21,6 +21,8 @@ Follow Parts 1–7 to govern tools, workflows, model traffic, and code execution
 
 Part 5 also offers an optional [OpenEnv behavioral evaluation lab](05-evaluation.md#optional-extension-openenv-behavioral-evaluation) (20 minutes), using Python 3.12 and synthetic refund rollouts with separate task and policy gates. It runs independently on port 8085.
 
+Part 5 also has an optional [Langfuse + real Goose experiment extension](05-evaluation.md#optional-extension-langfuse-experiments-with-real-goose-runs) (30 minutes after downloads), comparing prompt variants with separate task, policy, and answer-report scores in a local self-hosted project.
+
 ## Before you start
 
 Install Java 25+ and Maven 3.9+ for the Java applications. Add Goose, agentgateway, Podman, and Agent Router as required by the part. Build once from the repository root:

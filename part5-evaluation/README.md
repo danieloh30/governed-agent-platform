@@ -66,6 +66,14 @@ Keep this lab running and start OpenEnv in another terminal using its README.
 The extension requires Python 3.12 and an isolated virtual environment, with no
 model credentials or container engine. Allow an additional 20 minutes.
 
+## Optional Langfuse + Goose Experiments
+
+The [Langfuse runbook](langfuse/README.md) adds a local self-hosted experiment UI
+on **http://localhost:3000** and compares two real Goose prompt variants against
+the same synthetic refund cases. Inspect actual MCP action traces, task success,
+policy compliance, and reporting quality independently. It uses its own virtual
+environment and Compose stack; leave the core lab running while starting it.
+
 ## REST API Examples
 
 ### List available suites

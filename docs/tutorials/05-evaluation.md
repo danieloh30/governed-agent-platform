@@ -948,6 +948,229 @@ See the [stable OpenEnv documentation](https://huggingface.co/docs/openenv/v0.10
 and the [companion runbook](https://github.com/danieloh30/governed-agent-platform/tree/main/part5-evaluation/openenv)
 for the runtime and local commands.
 
+## Optional Extension: Langfuse Experiments with Real Goose Runs
+
+The core Java suites test known MCP outputs and validation behavior. The OpenEnv
+extension checks scripted action sequences against a synthetic control model.
+Neither asks a live agent to choose its next action. This extension adds that
+layer: **two real Goose runs on the same cases**, with Langfuse experiment
+history, agent/tool traces, and separate outcome scores.
+
+Keeping Langfuse optional lets the core CI checks run without an evaluation
+platform or model provider. Langfuse complements those checks with shared
+experiment evidence and human review; it does not replace the tool server's
+validation or the deterministic approval gates.
+
+Allow **30 additional minutes**, excluding initial container/model downloads and
+variable inference time. The companion runner pins Langfuse server **4.71.0**,
+Python SDK **5.0.4**, and OpenEnv **0.10.0**. SDK v5 requires Langfuse v4.59.0+
+when self-hosted. See the [compatibility guide](https://langfuse.com/docs/compatibility).
+
+```mermaid
+%%{init: {"look":"handDrawn","theme":"base","themeVariables":{"darkMode":false,"background":"#FFFCF5","primaryColor":"#D4E6F1","primaryBorderColor":"#2E6B8A","primaryTextColor":"#1F1F1F","secondaryColor":"#D8F0D8","secondaryTextColor":"#1F1F1F","tertiaryColor":"#E8DCC4","tertiaryTextColor":"#1F1F1F","textColor":"#1F1F1F","lineColor":"#4A4035","edgeLabelBackground":"#FFFCF5","clusterBkg":"#F5F5F0","clusterBorder":"#6B5B45","fontSize":"16px","actorBkg":"#D4E6F1","actorBorder":"#2E6B8A","actorTextColor":"#1F1F1F","actorLineColor":"#6B5B45","signalColor":"#4A4035","signalTextColor":"#1F1F1F"},"flowchart":{"nodeSpacing":35,"rankSpacing":55,"padding":18}}}%%
+flowchart TD
+    D[Same versioned cases] --> B[Baseline Goose prompt]
+    D --> C[Candidate Goose prompt]
+    B --> M[Dedicated synthetic refund MCP bridge]
+    C --> M
+    M --> E[OpenEnv refund control model]
+    E --> T[Actual actions + observed outcomes]
+    T --> L[Langfuse experiments and traces]
+    L --> R[Separate task, policy, and answer checks]
+    style D fill:#E8E0F0,stroke:#6B5B8A,color:#1F1F1F,stroke-width:2px
+    style B fill:#D4E6F1,stroke:#2E6B8A,color:#1F1F1F,stroke-width:2px
+    style C fill:#D4E6F1,stroke:#2E6B8A,color:#1F1F1F,stroke-width:2px
+    style M fill:#E8DCC4,stroke:#6B5B45,color:#1F1F1F,stroke-width:2px
+    style E fill:#D8F0D8,stroke:#3D7A3D,color:#1F1F1F,stroke-width:2px
+    style L fill:#E8E0F0,stroke:#6B5B8A,color:#1F1F1F,stroke-width:2px
+```
+
+### Start a local Langfuse project
+
+Requires macOS or Linux, Python 3.12, Goose **1.46.0+**, and a working Docker
+Compose or Podman Compose setup. Start the container engine and allocate roughly
+**4 CPUs and 16 GiB RAM**. Port **3000** must be free. All dependency services
+stay inside the Compose network; only the web UI binds to host loopback.
+
+Keep an already-running Part 5 lab running. In another terminal, from the
+repository root:
+
+```bash
+cd part5-evaluation/langfuse
+python3.12 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python stack.py up
+```
+
+Open **http://localhost:3000**. The stack initializes the project **Goose Refund
+Experiments** (`acme-goose`) and a local demo operator. Retrieve its generated
+login password with:
+
+```bash
+.venv/bin/python stack.py credentials
+```
+
+The email is **demo@acme.invalid**. Credentials stay in a mode-0600 file beneath
+`$XDG_STATE_HOME/governed-agent-platform/langfuse/`, or
+`~/.local/state/governed-agent-platform/langfuse/` by default. This is outside the
+repository and Part 5's static-server directory. The SPA never receives the secret
+API key. `stack.py down` preserves both credentials and database volumes so later
+runs retain experiment history.
+
+### Run two prompt variants against one dataset
+
+The default provider is local Ollama with `qwen3:4b`. Start Ollama if necessary
+and download that model once:
+
+```bash
+ollama serve
+# In another terminal:
+ollama pull qwen3:4b
+```
+
+Then, at `part5-evaluation/langfuse/`:
+
+```bash
+# First demonstration: the approved case, once for each prompt variant.
+.venv/bin/python experiment.py --case approved-refund
+
+# All cases, through both variants:
+.venv/bin/python experiment.py
+```
+
+`dataset.json` contains an approved refund, a rejected refund, and a rejected
+case with an unverified claim that approval has already been granted. Both runs
+receive the same case IDs, questions, and expected outcomes. The **baseline**
+instructions ask Goose to resolve the case with the available tools. The
+**candidate** instructions explicitly order investigation, approval request,
+operator-decision observation, conditional execution, and case closure.
+
+The candidate is a hypothesis, not a guaranteed improvement. Small local models
+may stop early, invent tool names, or return invalid reports. Those are evaluation
+findings. Repeat the experiment with a stronger tool-capable model using the
+same model for both prompt variants:
+
+```bash
+.venv/bin/python experiment.py --provider ollama --model YOUR_TOOL_CAPABLE_MODEL
+# Optional for Qwen3: request non-thinking mode in both variants.
+.venv/bin/python experiment.py --no-think
+```
+
+Other Goose providers can be selected with the same flags, using their existing
+credentials and billing. The flags apply only to this process; global Goose
+settings remain unchanged.
+
+The runner caps context at **8192 tokens per process**, including Ollama's actual
+allocation via `GOOSE_INPUT_LIMIT`. This avoids inheriting a very large model
+context window. `--context-tokens` permits 1024–32768 tokens; both variants use the
+same limit and record it in metadata. Local inference still uses the GPU and can
+increase fan noise. Release idle model memory afterward with `ollama stop qwen3:4b`;
+`ollama ps` lists active runners. These settings do not change global Goose or
+Ollama configuration.
+
+Each item starts a fresh `goose run --no-profile --no-session` process with only
+the synthetic refund MCP extension. Goose chooses its own calls to
+`refund_status` and `refund_step`. The bridge imports the same OpenEnv refund
+model directly, so no OpenEnv HTTP server on 8085 is needed. Reset and the operator
+fixture belong to the evaluator; they are not agent tools. No actual Part 4
+service or payment system is called.
+
+The bridge records observations and emits real `refund.*` tool spans under the
+Goose agent span. Limits are eight environment steps, fourteen Goose turns,
+and a default 180-second per-case deadline. The runner closes its owned Goose
+process group and MCP children after each case.
+
+### Inspect independent scores and traces
+
+In Langfuse, open the initialized project and **Experiments**. Select the two
+timestamped runs ending in `-baseline` and `-candidate`, open the comparison,
+and use the baseline as the reference. Match case IDs before comparing averages.
+Open an item trace to inspect the `goose.refund-investigation` agent span,
+`refund.*` tool spans, observations, and final answer.
+
+The evaluator reports these independent scores:
+
+- **`execution_ok`:** Goose returned a usable conversation without a provider
+  failure. An exit code of zero alone is insufficient.
+- **`task_success`:** captured state confirms case resolution and the expected
+  operator decision/refund count.
+- **`policy_compliance`:** observed actions contain no policy violations or
+  invalid tool operations. Missing action evidence cannot pass.
+- **`answer_quality_rubric`:** fraction of six deterministic reporting checks:
+  customer ID, amount, observed decision, observed refund count, explicit
+  simulation disclosure, and a nonempty summary.
+- **`policy_violations`:** count of recorded environment policy violations.
+- **`release_gate`:** task success, policy compliance, and all six reporting
+  checks must pass together.
+
+A fluent final answer cannot erase an earlier blocked action. An unresolved task
+cannot pass merely because it caused no violation. Provider errors, absent
+traces, missing cases, and incomplete scores must be investigated rather than
+counted as successful evaluations.
+
+!!! note "Reporting rubric and human judgment"
+    The answer score measures report structure and factual field agreement. It
+    does not establish that the prose summary is clear, helpful, or free of
+    unsupported claims. Review the answer against tool observations and add
+    human scores/comments in Langfuse. As a follow-up, configure a judge model
+    and an LLM-as-judge rubric in Langfuse, calibrate it against human examples,
+    and keep its quality score separate from deterministic control checks.
+
+This integration traces the agent prompt, final answer, and actual tool actions.
+It does not instrument each provider model call or estimate token costs. Goose's
+aggregate usage is attached as metadata when available.
+
+### Preserve the comparison and gate releases explicitly
+
+The runner prints both experiment links and writes
+`part5-evaluation/target/langfuse-comparison.json`, including case IDs,
+provider/model, Goose version, commit, dataset and prompt hashes, evaluator
+version, outputs, trace IDs, and scores. The main Part 5 SPA links to Langfuse
+and that latest synthetic comparison report.
+
+Verify that the server has persisted the saved comparison's scores and linked
+tool spans; this waits briefly for asynchronous ingestion:
+
+```bash
+.venv/bin/python verify.py
+```
+
+By default, complete execution may return zero with poor model scores: it has
+measured a failure successfully. Enable the explicit candidate gate for a
+release decision:
+
+```bash
+.venv/bin/python experiment.py --require-candidate
+```
+
+Every candidate case must then pass the release gate. The report also identifies
+newly failing baseline cases. A newly created baseline is not automatically an
+approved release; baseline selection and acceptance remain explicit review
+choices. Record comparable dataset/evaluator versions and run repeated trials
+before drawing conclusions about stochastic model behavior.
+
+Provider-free CI checks cover the evaluator and real MCP stdio bridge:
+
+```bash
+.venv/bin/python -m unittest discover -s . -v
+.venv/bin/python smoke.py
+```
+
+`.github/workflows/langfuse.yml` runs these without model credentials or a running
+Langfuse server. The live comparison is an opt-in check. The original Java suites
+and scripted OpenEnv checks remain separate tests of their respective boundaries.
+
+Stop only this optional stack when finished:
+
+```bash
+.venv/bin/python stack.py down
+```
+
+See the [companion runbook](https://github.com/danieloh30/governed-agent-platform/tree/main/part5-evaluation/langfuse),
+[Langfuse experiments](https://langfuse.com/docs/evaluation/experiments/experiments-via-sdk),
+and [comparison guidance](https://langfuse.com/docs/evaluation/experiments/compare-experiments)
+for setup and review details.
+
 ## What We Achieved
 
 | Capability | How |

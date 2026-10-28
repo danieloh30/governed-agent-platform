@@ -183,6 +183,8 @@ python3 part7-opensandbox/smoke.py
 
 Part 5 includes an optional [OpenEnv behavioral evaluation extension](part5-evaluation/openenv/README.md): replay synthetic refund policies in isolated WebSocket sessions, inspect each action, and gate task success separately from policy violations. The independent console runs on port 8085 with Python 3.12; no model credentials are needed.
 
+Part 5 also offers [Langfuse + real Goose experiments](part5-evaluation/langfuse/README.md): compare two prompts against the same synthetic refund cases, inspect actual MCP action traces, and review independent task, policy, and reporting scores in a local Langfuse project.
+
 ## Documentation Deployment
 
 The documentation is live at **[danieloh30.github.io/governed-agent-platform](https://danieloh30.github.io/governed-agent-platform/)**. A GitHub Actions workflow builds the Material for MkDocs site from `docs/` and deploys it to GitHub Pages with HTTPS enabled.

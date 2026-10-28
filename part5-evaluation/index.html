@@ -509,6 +509,17 @@ body {
     </div>
   </section>
 
+  <section class="card" style="margin-bottom:28px">
+    <div class="card-header"><h2>Langfuse · Live Goose Experiments</h2><span class="card-badge">Optional extension</span></div>
+    <div class="card-body">
+      <p>Compare baseline and candidate Goose prompts on the same synthetic cases. Review actual tool traces and separate task, policy, and reporting scores.</p>
+      <p style="margin:12px 0;color:var(--text-muted)">Start the local Langfuse stack and run <code>part5-evaluation/langfuse/experiment.py</code> using the setup guide. The runner uses a dedicated synthetic refund tool; model behavior can vary.</p>
+      <a class="btn btn-secondary" href="http://localhost:3000" target="_blank" rel="noopener noreferrer">Open Langfuse ↗</a>
+      <a href="target/langfuse-comparison.json" target="_blank" rel="noopener noreferrer" style="margin-left:12px">Latest comparison evidence ↗</a>
+      <a href="https://danieloh30.github.io/governed-agent-platform/tutorials/05-evaluation/#optional-extension-langfuse-experiments-with-real-goose-runs" target="_blank" rel="noopener noreferrer" style="margin-left:12px">Setup and demo guide ↗</a>
+    </div>
+  </section>
+
   <div class="card report-card" id="report-card">
     <div class="card-header">
       <h2>Evaluation Report</h2>
