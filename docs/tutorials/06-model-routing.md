@@ -38,7 +38,7 @@ latency; retrying every error can hide a malformed request. Maya needs to answer
 
 [Agent Router](https://aaif.io/projects/agent-router), formerly Envoy AI Gateway, is an AAIF
 project built on Envoy. Its `aigw` CLI runs the gateway locally. This lab uses **Agent Router
-v1.1.0**, whose standalone runtime uses **Envoy 1.38.1**. The CLI and configuration API still
+v1.2.0**, whose standalone runtime uses **Envoy 1.39.2**. The CLI and configuration API still
 contain the earlier `aigw` and `aigateway.envoyproxy.io` names.
 
 The platform has two distinct request paths in this teaching architecture:
@@ -114,6 +114,11 @@ The installer verifies the release asset's SHA-256 checksum and places the execu
 `.bin/aigw`. It does not change your global PATH or Goose configuration. On the first start,
 Agent Router downloads its pinned Envoy binary into the lab's ignored `.runtime/` directory.
 Allow extra time for that download when preparing a workshop.
+
+!!! note "Updating an existing Part 6 checkout"
+    Stop the existing launcher with Ctrl+C before replacing its binary. Run
+    `./install.sh` again to install v1.2.0, then start `./start-all.sh` without
+    `SKIP_BUILD=true` so the launcher is rebuilt for the updated version pin.
 
 ## Step 1: Start the Model Traffic Lab (5 Minutes)
 
@@ -421,9 +426,10 @@ tool, and streaming contracts across backends.
 model interface built around **input/output items**, function calls and their
 results, and semantic streaming events. The reference for this exercise is the
 [2026-04-24 specification](https://www.openresponses.org/specification).
-The pinned [Agent Router v1.1 release](https://theagentrouter.ai/release-notes/v1.1/)
-supports `/v1/responses`, so this extension uses the same router, route, model
-alias, and backends as the core lab. Allow an additional **15 minutes**.
+This lab pins [Agent Router v1.2.0](https://theagentrouter.ai/release-notes/v1.2/)
+and verifies its `/v1/responses` behavior with the same router, route, model
+alias, and backends as the core lab. Responses support predates this release;
+the pin identifies the tested runtime. Allow an additional **15 minutes**.
 
 ### Send a Responses request
 
@@ -550,7 +556,7 @@ time in addition to the estimates. Complete the core smoke checks before changin
 - [Quarkus REST Client](https://quarkus.io/guides/rest-client)
 - [Quarkus command mode](https://quarkus.io/guides/command-mode-reference)
 - [Agent Router at AAIF](https://aaif.io/projects/agent-router)
-- [Pinned Agent Router v1.1.0 release](https://github.com/theagentrouter/agent-router/releases/tag/v1.1.0)
+- [Pinned Agent Router v1.2.0 release](https://github.com/theagentrouter/agent-router/releases/tag/v1.2.0)
 - [Standalone CLI](https://theagentrouter.ai/docs/cli/aigwrun/)
 - [Provider fallback and retry configuration](https://theagentrouter.ai/docs/capabilities/traffic/provider-fallback/)
 

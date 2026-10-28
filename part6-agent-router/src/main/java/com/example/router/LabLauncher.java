@@ -46,7 +46,7 @@ public class LabLauncher {
         Options options = Options.parse(root, args);
         Path binary = Path.of(System.getenv().getOrDefault("AIGW_BIN", root.resolve(".bin/aigw").toString()));
         if (!Files.isExecutable(binary)) {
-            throw new IllegalStateException("Run ./install.sh first, or set AIGW_BIN to an executable v1.1.0 path");
+            throw new IllegalStateException("Run ./install.sh first, or set AIGW_BIN to an executable v1.2.0 path");
         }
         if (!Files.isRegularFile(options.config())) {
             throw new IllegalArgumentException("Missing configuration: " + options.config());
@@ -88,7 +88,7 @@ public class LabLauncher {
                     "AI_GATEWAY_TRACING_SEMCONV", "gen_ai",
                     "OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT", "false"),
                     state.resolve("gateway.log"));
-            System.out.println("Starting Agent Router v1.1.0; first start downloads Envoy 1.38.1.");
+            System.out.println("Starting Agent Router v1.2.0; first start downloads Envoy 1.39.2.");
             System.out.println("Logs: " + state);
             await("Agent Router readiness", Duration.ofSeconds(180),
                     () -> healthy("http://127.0.0.1:1064/health") && listening(1975));
@@ -142,8 +142,8 @@ public class LabLauncher {
                 throw new IllegalStateException("aigw version check timed out");
             }
             String output = new String(version.getInputStream().readAllBytes(), java.nio.charset.StandardCharsets.UTF_8).trim();
-            if (version.exitValue() != 0 || !output.equals("Envoy AI Gateway CLI: v1.1.0")) {
-                throw new IllegalStateException("Expected aigw v1.1.0; got: " + output);
+            if (version.exitValue() != 0 || !output.equals("Envoy AI Gateway CLI: v1.2.0")) {
+                throw new IllegalStateException("Expected aigw v1.2.0; got: " + output);
             }
         } finally {
             if (version.isAlive()) version.destroyForcibly();

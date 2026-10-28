@@ -2,7 +2,7 @@
 
 **Long-form guide:** [Part 6 tutorial](../docs/tutorials/06-model-routing.md)
 
-30-minute lab: run Agent Router **v1.1.0** against two instances of a Quarkus model simulator.
+30-minute lab: run Agent Router **v1.2.0** against two instances of a Quarkus model simulator.
 Exercise routing, fallback, non-retryable errors, and recovery without API keys or a GPU.
 Agent Router/Envoy performs the routing; the Quarkus backends return deterministic completions.
 They do not perform inference. Backend, launcher, and verification logic is Java.
@@ -43,9 +43,13 @@ mvn package -DskipTests
 ```
 
 Installation checks release SHA-256 digests and writes `.bin/aigw`. The first launch downloads
-Envoy **1.38.1**. `start-all.sh` builds the app before launching; set `SKIP_BUILD=true` to reuse
+Envoy **1.39.2**. `start-all.sh` builds the app before launching; set `SKIP_BUILD=true` to reuse
 an existing build. The gateway listener is unauthenticated, so use a trusted local machine;
 Quarkus backend and control endpoints bind to loopback.
+
+Updating an existing Part 6 checkout: stop its launcher with Ctrl+C, run
+`./install.sh` to replace the local CLI with v1.2.0, then run `./start-all.sh`
+without `SKIP_BUILD=true` so the launcher is rebuilt for the new pin.
 
 Open **http://localhost:18081/** for the Model Routing Console. It follows the same SPA
 layout and light/dark theme as Parts 1–5. Its standalone source is `part6-agent-router/index.html`;
@@ -121,7 +125,7 @@ and unsupported control modes return 400 before changing state. Bodies above 64 
 | `src/main/resources/application.properties` | Ports, backend identity, CLI profile, client timeouts |
 | `src/main/java/com/example/router/` | Java API, backend state, launcher, and verifier |
 | `src/test/java/com/example/router/` | Quarkus REST contract tests |
-| `install.sh` | Platform-aware, checksum-verified installation of v1.1.0 |
+| `install.sh` | Platform-aware, checksum-verified installation of v1.2.0 |
 | `start-all.sh` | Build and launch; accepts `--config /path/to/config.yaml` or `--smoke` |
 | `smoke.sh` | Run the packaged Quarkus verifier against an already running lab |
 | `.runtime/*.log` | Ignored gateway, primary, and fallback logs from the most recent launch |
@@ -155,7 +159,7 @@ changes modes and resets counters. Neither test layer evaluates generated answer
 | Symptom | Action |
 |---|---|
 | Console does not connect | Run `./start-all.sh` and open `http://localhost:18081/`; opening the HTML file directly does not start the services |
-| Missing CLI | Run `./install.sh`, or set `AIGW_BIN` to an absolute v1.1.0 executable path |
+| Missing CLI | Run `./install.sh`, or set `AIGW_BIN` to an absolute v1.2.0 executable path |
 | Missing application JAR | Run `./start-all.sh` without `SKIP_BUILD=true` |
 | Checksum mismatch | Do not run the downloaded asset; confirm the pinned release and retry |
 | Port unavailable | Stop the owning process yourself; the launcher never kills a process to claim a port |
@@ -189,7 +193,7 @@ original input, call, and matching `function_call_output` using `call_id` and
 `store:false`. No provider-local response ID or session affinity is required.
 
 This deterministic text/function subset demonstrates the Open Responses item
-contract through Agent Router v1.1.0. The console buffers SSE for inspection;
+contract through Agent Router v1.2.0. The console buffers SSE for inspection;
 it does not measure incremental token delivery. Stored continuation, multimodal
 input, compaction, WebSockets, and arbitrary tools are unsupported. These checks
 do not establish full Open Responses conformance or real-model answer quality.

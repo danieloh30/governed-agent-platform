@@ -2,11 +2,11 @@
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
-VERSION=v1.1.0
+VERSION=v1.2.0
 case "$(uname -s)-$(uname -m)" in
-  Darwin-arm64) ASSET=aigw-darwin-arm64; SHA256=ad940b02fd114025d0e275219754a0dda23c0dd41bd970a84a7b7efae1d05fa5 ;;
-  Linux-x86_64) ASSET=aigw-linux-amd64; SHA256=92033245890d1bf3369dfbf3939f5ef17d46ab89e535ec8db3f7bf4f1ff14d92 ;;
-  Linux-aarch64|Linux-arm64) ASSET=aigw-linux-arm64; SHA256=d45d3242b39998c18a1a2cba9fa36f3799d6fe50e33430a65691c4899c7f8ae6 ;;
+  Darwin-arm64) ASSET=aigw-darwin-arm64; SHA256=4be4a8fdfee58acc52aba1a9e71e598df00a17ad05477cb3f4e706604636df3e ;;
+  Linux-x86_64) ASSET=aigw-linux-amd64; SHA256=8c0b375261be88c4547eeb9afbf4cb3ca0bcfebbc29c8e97cc9f427f8d6bd6cd ;;
+  Linux-aarch64|Linux-arm64) ASSET=aigw-linux-arm64; SHA256=3b9971171f9b02edbf04130f3ec209b5376b7f42c78f3e871b1785bac7d6c932 ;;
   *) echo "This release supports macOS Apple Silicon and Linux x86_64/ARM64. See README.md." >&2; exit 1 ;;
 esac
 mkdir -p .bin
