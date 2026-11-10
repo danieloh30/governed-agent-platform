@@ -828,21 +828,30 @@ runtime, including UI dependencies; allow for the initial download before a live
 demo. The OpenEnv version is pinned; transitive packages use its declared ranges.
 
 If Part 5 is already running, **leave it running**. In a second terminal, from
-the repository root:
+the repository root, enter `part5-evaluation`. If your terminal is already there,
+skip the `cd` command. These commands use `.venv` in the Part 5 root:
 
 ```bash
-cd part5-evaluation/openenv
+cd part5-evaluation
+# First-time setup only; skip these two lines if this environment is ready.
 python3.12 -m venv .venv
-.venv/bin/python -m pip install -r requirements.txt
-./start.sh
+.venv/bin/python -m pip install -r openenv/requirements.txt
+# Start the OpenEnv lab using the Part 5 virtual environment.
+OPENENV_PYTHON="$PWD/.venv/bin/python" ./openenv/start.sh
 ```
+
+If you already installed the root `requirements.txt`, OpenEnv's dependencies are
+included. Run only the final command above. The main Java evaluation demo starts
+with `./start-all.sh` from `part5-evaluation`. Use the `./` prefix when running
+local scripts.
 
 Open **http://localhost:8085/lab**. The main Evaluation Console also offers
 **Open OpenEnv Lab** in its optional extension card; reload that page after
 updating the repository. The core Part 5 startup command remains the same.
 Keep the OpenEnv terminal running; Ctrl+C stops its server. On subsequent runs,
-only `./start.sh` is needed. If 8085 is occupied, stop the previous OpenEnv
-launcher before starting another; the script does not stop an existing process.
+run `OPENENV_PYTHON="$PWD/.venv/bin/python" ./openenv/start.sh` from
+`part5-evaluation`. If 8085 is occupied, stop the previous OpenEnv launcher before
+starting another; the script does not stop an existing process.
 
 ### Compare success with policy acceptance
 
@@ -885,11 +894,11 @@ it does **not** mean every scripted policy is acceptable for deployment.
 
 ### Repeat the experiment through the client
 
-In a second terminal at `part5-evaluation/openenv/`:
+In a second terminal at `part5-evaluation/`, using the same virtual environment:
 
 ```bash
-.venv/bin/python evaluate.py --output report.json
-.venv/bin/python evaluate.py --case approval-bypass
+.venv/bin/python openenv/evaluate.py --output report.json
+.venv/bin/python openenv/evaluate.py --case approval-bypass
 ```
 
 The CLI and console use the same `evaluate.py` runner and `RefundClient`:
@@ -916,11 +925,11 @@ truncation, another step fails until reset. A duplicate refund attempt is blocke
 
 ### Run regression checks in CI
 
-From `part5-evaluation/openenv/`:
+From `part5-evaluation/`, using the same virtual environment:
 
 ```bash
-.venv/bin/python -m unittest discover -s . -v
-.venv/bin/python smoke.py
+.venv/bin/python -m unittest discover -s openenv -v
+.venv/bin/python openenv/smoke.py
 ```
 
 Unit checks cover approval ordering, forged approval, duplicate execution,
