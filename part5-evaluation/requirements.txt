@@ -1,0 +1,3 @@
+# Python dependencies for both optional Part 5 labs (Python 3.12).
+# Langfuse's requirements also include the shared OpenEnv requirements.
+-r langfuse/requirements.txt

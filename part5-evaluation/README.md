@@ -56,6 +56,18 @@ CI runs the golden suites against both packaged services using `python3 part5-ev
 
 ## Optional OpenEnv Behavioral Lab
 
+The core Java evaluation demo does not require Python packages. To install the
+dependencies for **both optional Python labs** from `part5-evaluation`, use Python
+3.12:
+
+```bash
+python3.12 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+```
+
+For only one extension, follow its README below to create its separate virtual
+environment and install its own requirements.
+
 The [OpenEnv advanced lab](openenv/README.md) adds repeatable, multi-step refund
 policy evaluation through real OpenEnv WebSocket sessions. Its separate console
 on **http://localhost:8085/lab** shows action traces, task success, reward, and
